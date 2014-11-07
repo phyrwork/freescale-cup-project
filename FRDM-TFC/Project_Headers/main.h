@@ -8,18 +8,28 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-#include "derivative.h" /* include peripheral declarations */
-#include "TFC\TFC.h"
-#include "AutoExposure.h"
-#include "LineDetection.h"
-#include "SpeedControl.h"
-#include "SpeedSensor.h"
-#include "SteeringControl.h"
-#include "TargetSpeedControl.h"
-#include "ActiveDifferential.h"
-//#include "i2c.h"
-#include "MMA8451Q.h"
-#include "typedefs_structs\carState_s.h"
+#include "devices/MKL25Z4.h" /* include peripheral declarations */
+#include "devices/arm_cm0.h"
+#include "devices/CrystalClock.h"
+#include "devices/TFC_SHIELD.h"
+#include "devices/MMA8451Q.h"
+//#include "io/I2C.h"
+#include "io/UART.h"
+#include "io/ADC.h"
+#include "sensors/camera/LineScanCamera.h"
+#include "sensors/camera/AutoExposure.h"
+#include "sensors/camera/LineDetection.h"
+#include "sensors/SpeedSensor.h"
+#include "control/Speed.h"
+#include "control/Steering.h"
+#include "control/Motor.h"
+#include "control/Servo.h"
+#include "control/TargetSpeed.h"
+#include "control/ActiveDifferential.h"
+#include "support/ARM_SysTick.h"
+#include "support/carState_s.h"
+#include "support/Terminal.h"
+
 
 
 void TFC_Init(carState_s* carState);

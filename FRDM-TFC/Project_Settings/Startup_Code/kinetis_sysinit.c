@@ -5,7 +5,7 @@
  */
  
 #include "kinetis_sysinit.h"
-#include "derivative.h"
+#include "devices/derivative.h"
 
 /**
  **===========================================================================
