@@ -8,20 +8,19 @@
 
 void uart0_init (int sysclk, int baud);
 
-ByteQueue SDA_SERIAL_OUTGOING_QUEUE;
-ByteQueue SDA_SERIAL_INCOMING_QUEUE;
-
-
-uint8_t SDA_SERIAL_OUTGOING_QUEUE_Storage[SDA_SERIAL_OUTGOING_QUEUE_SIZE];
-uint8_t SDA_SERIAL_INCOMING_QUEUE_Storage[SDA_SERIAL_INCOMING_QUEUE_SIZE];
-
+/* RingBuffer storage and structures */
+uint8_t RxBufferData[RB_RX_SIZE];
+uint8_t TxBufferData[RB_TX_SIZE];
+RingBuffer RxBuffer;
+RingBuffer TxBuffer;
 
 void TFC_InitUARTs()
 {
 	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
-
-	InitByteQueue(&SDA_SERIAL_OUTGOING_QUEUE,SDA_SERIAL_OUTGOING_QUEUE_SIZE,SDA_SERIAL_OUTGOING_QUEUE_Storage);
-	InitByteQueue(&SDA_SERIAL_INCOMING_QUEUE,SDA_SERIAL_INCOMING_QUEUE_SIZE,SDA_SERIAL_INCOMING_QUEUE_Storage);
+	
+	/* Initialise ring buffers */
+	rbInit(&RxBuffer, RxBufferData, sizeof RxBufferData);
+	rbInit(&TxBuffer, TxBufferData, sizeof TxBufferData);
 	
 	PORTA_PCR1 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;   
 	PORTA_PCR2 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;  
@@ -43,26 +42,33 @@ void TFC_InitUARTs()
 
 void TFC_UART_Process()
 {
-	if(BytesInQueue(&SDA_SERIAL_OUTGOING_QUEUE)>0 && (UART0_S1 & UART_S1_TDRE_MASK))
-			UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
+	/* If data in transmitter buffer */ 
+	if(rbUsed(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
+		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
 
 
 void UART0_IRQHandler()
 {
 	uint8_t Temp;
-		
+	
+	/* If receive register full flag is set */
 	if(UART0_S1 & UART_S1_RDRF_MASK)
 	{
-		ByteEnqueue(&SDA_SERIAL_INCOMING_QUEUE,UART0_D);
+		/* Push data from UART onto receive buffer */
+		rbPush(&RxBuffer, UART0_D);
 	}
+	/* If transmitter data register empty flag set */
 	if(UART0_S1 & UART_S1_TDRE_MASK)
 	{
-		if(BytesInQueue(&SDA_SERIAL_OUTGOING_QUEUE)>0)
+		/* If there is data in transmitter buffer */
+		if(rbUsed(&TxBuffer))
 		{
-			ByteDequeue(&SDA_SERIAL_OUTGOING_QUEUE,&Temp);
-			UART0_D = Temp;
+			/* Pop value from transmitter buffer */
+			rbPop(&TxBuffer, &Temp);
+			UART0_D = Temp; //Write TX data to UART data register.
 		}
+		/* Otherwise... */
 		else
 		{
 			//if there is nothing left in the queue then disable interrupts

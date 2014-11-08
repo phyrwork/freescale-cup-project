@@ -1,11 +1,13 @@
-/*  RingBuffer.h
- *  ========================================================
+/*  RingBuffer.c
+ *  =========================================================
  *  Specialist ring buffer structure and methods for use
  *  with zero-delimited messsages and DMA.
- *  --------------------------------------------------------
+ *  ---------------------------------------------------------
  *  Author: Connor Newton
  *  Completed: 7 Nov, 2014
- *  Revised: n/a
+ *  Revised: 8 Nov, 2014 - various bugfixes; modified rbPop
+ *           to return status code and write data to provided
+ *           pointer
  */
 
 #include "io/RingBuffer.h"
@@ -16,7 +18,7 @@ inline uint16_t rbAvailable(RingBuffer * rb);
 inline uint16_t rbUsed(RingBuffer * rb);
 uint8_t rbPush(RingBuffer * rb, uint8_t datum);
 uint8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size);
-uint8_t rbPop(RingBuffer * rb);
+uint8_t rbPop(RingBuffer * rb, uint8_t * datum);
 uint16_t rbPopFrame(RingBuffer * rb, uint8_t * array);
 Vector8u rbPopDma(RingBuffer * rb);
 inline uint16_t rbFrames(RingBuffer * rb);
@@ -147,24 +149,24 @@ uint8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size) {
  *  uint16_t size   - size of frame in bytes.
  *  uint8_t return  - storage success true/false.
  */
-uint8_t rbPop(RingBuffer * rb) {
+uint8_t rbPop(RingBuffer * rb, uint8_t * datum) {
 
-  uint8_t datum; /* Value to be popped from RingBufferqr */
-
-  /* Pop data from buffer */
-  datum = rb->elems[rb->head++];
-
-  /* Check if head pointer has reached limit of buffer */
-  if (rb->head == rb->size) rb->head = 0; //Wrap head pointer around if appropriate.
-
-  /* Count frame boundaries */
-  if (datum == 0) rb->frame--;
-
-  /* Increment read count -- do this last so that
-     data cannot be written prematurely by an ISR */
-  rb->read++;
-
-  return datum;
+	if ( rbUsed(rb) ){
+	  /* Pop data from buffer */
+	  *datum = rb->elems[rb->head++];
+	
+	  /* Check if head pointer has reached limit of buffer */
+	  if (rb->head == rb->size) rb->head = 0; //Wrap head pointer around if appropriate.
+	
+	  /* Count frame boundaries */
+	  if (*datum == 0) rb->frame--;
+	
+	  /* Increment read count -- do this last so that
+		 data cannot be written prematurely by an ISR */
+	  rb->read++;
+	
+	  return 1;
+	} else return 0;
 }
 
 /*  rbPopFrame()

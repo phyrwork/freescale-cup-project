@@ -7,6 +7,8 @@
  *  Completed: 7 Nov, 2014
  *  Revised: n/a
  */
+#ifndef TFTP_RING_BUFFER_
+#define TFTP_RING_BUFFER_
 
 #include <stdint.h>
 
@@ -37,7 +39,9 @@ uint16_t rbAvailable(RingBuffer * rb);
 uint16_t rbUsed(RingBuffer * rb);
 uint8_t rbPush(RingBuffer * rb, uint8_t datum);
 uint8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size);
-uint8_t rbPop(RingBuffer * rb);
+uint8_t rbPop(RingBuffer * rb, uint8_t * datum);
 uint16_t rbPopFrame(RingBuffer * rb, uint8_t * array);
 Vector8u rbPopDma(RingBuffer * rb);
 uint16_t rbFrames(RingBuffer * rb);
+
+#endif /*TFTP_RING_BUFFER_ */
