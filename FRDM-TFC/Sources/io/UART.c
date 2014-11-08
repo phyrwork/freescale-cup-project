@@ -4,6 +4,7 @@
 #include "devices/CrystalClock.h"
 #include "config.h"
 #include "support/Queue.h"
+#include "io/RingBuffer.h"
 
 void uart0_init (int sysclk, int baud);
 
