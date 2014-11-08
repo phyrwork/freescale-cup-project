@@ -23,6 +23,14 @@
 #define SDA_SERIAL_OUTGOING_QUEUE_SIZE	2048
 #define SDA_SERIAL_INCOMING_QUEUE_SIZE	128
 
+/* Terminal defines from depreciated Terminal.h */
+#define TERMINAL_OUT_QUEUE			
+#define TERMINAL_IN_QUEUE			
+#define TERMINAL_PRINTF(...)   		
+#define TERMINAL_PUTC(c)        	
+#define TERMINAL_READABLE       	
+#define TERMINAL_GETC           	
+
 /* SERIAL IO */
 #define RB_MAX_DMA_SIZE 128
 

@@ -84,6 +84,7 @@ void uart0_init (int sysclk, int baud)
     uint32_t reg_temp = 0;
     uint32_t temp = 0;
     
+    /* Enable clock gate to UART0 */
     SIM_SCGC4 |= SIM_SCGC4_UART0_MASK;
     
     // Disable UART0 before changing registers

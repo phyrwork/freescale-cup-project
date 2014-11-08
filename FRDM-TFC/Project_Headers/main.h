@@ -28,7 +28,7 @@
 #include "control/ActiveDifferential.h"
 #include "support/ARM_SysTick.h"
 #include "support/carState_s.h"
-#include "support/Terminal.h"
+#include "config.h"
 
 
 
