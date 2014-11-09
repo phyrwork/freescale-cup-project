@@ -4,6 +4,7 @@
 #include "devices/CrystalClock.h"
 #include "config.h"
 #include "io/RingBuffer.h"
+#include "io/Frame.h"
 
 void uart0_init (int sysclk, int baud);
 
@@ -13,7 +14,7 @@ uint8_t TxBufferData[RB_TX_SIZE];
 RingBuffer RxBuffer;
 RingBuffer TxBuffer;
 
-void TFC_InitUARTs()
+void UART0_Init()
 {
 	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
 	
@@ -30,22 +31,39 @@ void TFC_InitUARTs()
 	SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;
 	
 	//We have to feed this function the clock in KHz!
-     uart0_init (CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
-	 //Enable recieve interrupts
+    uart0_init (CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
      
-     UART0_C2 |= UART_C2_RIE_MASK;
-     enable_irq(INT_UART0-16);
-	
+	//Enable recieve interrupts
+    UART0_C2 |= UART_C2_RIE_MASK;
+    enable_irq(INT_UART0-16);
 }
 
-
-void TFC_UART_Process()
+/*	To do - move this into a periodic routine
+	if main loop too slow OR make sure to call
+	this from the telemetry data collection
+	routines */
+void UART0_Process()
 {
 	/* If data in transmitter buffer */ 
 	if(rbUsed(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
 		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
 
+/* Encapsulate message and add to transmit buffer */
+uint8_t UART0_Send(uint8_t * msg, uint16_t size) {
+	uint8_t buffer[FR_MAX_ENC_SIZE]; //This is redundant data! See note below:
+	size = SerialEncode(msg, size, buffer);
+	return rbPushFrame(&TxBuffer, buffer, size);
+	
+	/* Consider modifying SerialEncode/SerialDecode to pass
+	 * pointers to internal buffer(s) to reduce write overhead
+	 * if it seems like is an issue. */
+}
+
+/* Pull messages out of the RxBuffer */
+uint16_t UART0_Receive(uint8_t * msg) {
+	/* TO DO! */
+}
 
 void UART0_IRQHandler()
 {

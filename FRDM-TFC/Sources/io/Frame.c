@@ -20,17 +20,8 @@
 #include "support/cobs.h"
 #include "config.h"
 
-/*	
- *
- *	
- */
-#define CONTROLSIZE	2
-#define CHECKSIZE	2
-#define BUFFERSIZE	SERIAL_MAX_MSG_SIZE + CONTROLSIZE + CHECKSIZE
-// MAXMSGLEN defined in Config.h. VALIDITY OF MESSAFE LENGTH SHOULD BE CHECKED ELSEWHERE.
-
 /*	Message Buffers */
-uint8_t buffer[BUFFERSIZE + 1];
+uint8_t buffer[FR_MAX_ENC_SIZE];
 
 /*	SerialEncapsulate()
  *
@@ -43,9 +34,9 @@ uint8_t buffer[BUFFERSIZE + 1];
  */
 uint16_t SerialEncode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
 
-	uint16_t r; //read pos.
-	uint16_t w; //write pos.
-	uint16_t c; //checksum
+	uint16_t r = 0; //read pos.
+	uint16_t w = 0; //write pos.
+	uint16_t c = 0; //checksum
 
 	/* Populate encapuslation buffer with control data and message */
 
@@ -74,10 +65,10 @@ uint16_t SerialEncode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
  */
 uint16_t SerialDecode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
 	
-	uint16_t r; //read pos.
-	uint16_t w; //write pos.
-	uint16_t c; //checksum
-	uint16_t l; //decapsulated message length
+	uint16_t r = 0; //read pos.
+	uint16_t w = 0; //write pos.
+	uint16_t c = 0; //checksum
+	uint16_t l = 0; //decapsulated message length
 
 	/* Decode with COBS */
 	r = cobs_decode(msg, msgLen, buffer);
@@ -98,6 +89,6 @@ uint16_t SerialDecode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
 	return l;
 }
 
-#undef CONTROLSIZE
-#undef CHECKSIZE
+#undef FR_CTRL_SIZE
+#undef FR_CHK_SIZE
 #undef BUFFERSIZE

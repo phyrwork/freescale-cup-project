@@ -13,7 +13,7 @@ void TFC_Init(carState_s* carState)
 	TFC_InitMotorPWM();
 	TFC_InitADCs(carState);
 	TFC_InitLineScanCamera();
-	TFC_InitUARTs();
+	UART0_Init();
 	TFC_HBRIDGE_DISABLE;
 	TFC_SetMotorPWM(0, 0);
 	TFC_InitSpeedSensor();
@@ -25,7 +25,7 @@ void TFC_Init(carState_s* carState)
 void TFC_Task()
 {
 #if defined(TERMINAL_USE_SDA_SERIAL)
-	TFC_UART_Process();
+	UART0_Process();
 #endif
 }
 
