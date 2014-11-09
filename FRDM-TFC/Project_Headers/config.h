@@ -32,6 +32,7 @@
 #define TERMINAL_GETC           	
 
 /* SERIAL IO */
+#define SERIAL_MAX_MSG_SIZE 64
 #define RB_RX_SIZE 2048
 #define RB_TX_SIZE 256
 #define RB_MAX_DMA_SIZE 128
