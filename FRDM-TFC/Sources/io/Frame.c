@@ -51,7 +51,9 @@ uint16_t SerialEncode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
 
 
 	/* Encode with COBS and return */
-	return cobs_encode(buffer, w, rtnMsg);
+	w = cobs_encode(buffer, w, rtnMsg);
+	buffer[w++] = '\0'; // Add delimiting zero.
+	return w;
 }
 
 /*	SerialDecapsulate()
@@ -71,7 +73,7 @@ uint16_t SerialDecode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
 	uint16_t l = 0; //decapsulated message length
 
 	/* Decode with COBS */
-	r = cobs_decode(msg, msgLen, buffer);
+	r = cobs_decode(msg, msgLen - 1 , buffer);
 
 	/* Pop checksum and validate message */
 	((uint8_t *)&c)[1] = buffer[--r];

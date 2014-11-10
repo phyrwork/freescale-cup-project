@@ -23,7 +23,7 @@
 #define FR_CTRL_SIZE		2
 #define FR_CHK_SIZE			2
 #define FR_MAX_UNENC_SIZE	(SERIAL_MAX_MSG_SIZE + FR_CTRL_SIZE + FR_CHK_SIZE)
-#define FR_MAX_ENC_SIZE		(uint32_t)(1 + (FR_MAX_UNENC_SIZE * 1.04f))
+#define FR_MAX_ENC_SIZE		(uint32_t)(2 + (FR_MAX_UNENC_SIZE * 1.04f))
 
 /*	SerialEncapsulate()
  *
