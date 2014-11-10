@@ -40,14 +40,14 @@ uint16_t SerialEncode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
 
 	/* Populate encapuslation buffer with control data and message */
 
-	buffer[w++] = ((uint8_t *)&msgLen)[0]; //Write byte-wise, MSB then LSB
-	buffer[w++] = ((uint8_t *)&msgLen)[1]; //(Casting to uint16_t incompatible with 32-bit alignment)
+	buffer[w++] = ((uint8_t *)&msgLen)[1]; //Write byte-wise, MSB then LSB
+	buffer[w++] = ((uint8_t *)&msgLen)[0]; //(Casting to uint16_t incompatible with 32-bit alignment)
 
 	for(r = 0; r < msgLen; r++) buffer[w++] = msg[r]; //Copy message to buffer
 
 	c = CRC16(CRC16_FIRSTPASS, buffer, w); //Perform checksum on buffer up to this point
-	buffer[w++] = ((uint8_t *)&c)[0]; //and write byte-wise as before.
-	buffer[w++] = ((uint8_t *)&c)[1];
+	buffer[w++] = ((uint8_t *)&c)[1]; //and write byte-wise as before.
+	buffer[w++] = ((uint8_t *)&c)[0];
 
 
 	/* Encode with COBS and return */
@@ -76,14 +76,14 @@ uint16_t SerialDecode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
 	r = cobs_decode(msg, msgLen - 1 , buffer);
 
 	/* Pop checksum and validate message */
-	((uint8_t *)&c)[1] = buffer[--r];
 	((uint8_t *)&c)[0] = buffer[--r];
+	((uint8_t *)&c)[1] = buffer[--r];
 	if ( c != CRC16(CRC16_FIRSTPASS, buffer, r) ) return 0; //if checksum fails: message invalid; return false
 
 	r = 0;
 	/* Pop length */
-	((uint8_t *)&l)[0] = buffer[r++];
 	((uint8_t *)&l)[1] = buffer[r++];
+	((uint8_t *)&l)[0] = buffer[r++];
 
 	/* Copy message to location provided */
 	for(w = 0; w < l; w++) rtnMsg[w] = buffer[r++];
