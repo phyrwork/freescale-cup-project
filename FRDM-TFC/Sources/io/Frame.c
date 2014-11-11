@@ -52,7 +52,7 @@ uint16_t SerialEncode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
 
 	/* Encode with COBS and return */
 	w = cobs_encode(buffer, w, rtnMsg);
-	buffer[w++] = '\0'; // Add delimiting zero.
+	rtnMsg[w++] = '\0'; // Add delimiting zero.
 	return w;
 }
 
