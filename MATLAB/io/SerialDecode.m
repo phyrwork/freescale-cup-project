@@ -1,9 +1,14 @@
-function [ valid, output ] = SerialDecode( input )
+function [ output ] = SerialDecode( input )
 %SerialDecode
     
     % Ensure input is uint8[], un-COBS
     input = input(1:length(input) - 1);
-    input = uint8(cobs_decode(input));
+    try
+        input = uint8(cobs_decode(input));
+    catch
+        output = uint8([]);
+        error('Error unstuffing frame.');
+    end
     
     % Get checksums
     crc_i = input(length(input) - 1:length(input));
@@ -13,13 +18,10 @@ function [ valid, output ] = SerialDecode( input )
     
     % Verify checksums
     if (crc_i ~= crc_a)
-        output = char('Checksum miss. Discarding message.');
-        valid = false;
-        return;
+        error('Checksum miss. Discarding message.');
     end
     
     % Return output
     output = input(3:length(input) - 2);
     output = uint8(output);
-    valid = true;
 end
