@@ -5,7 +5,7 @@ classdef TftpRecord
     properties
         attribute   = cast([], 'char');
         times       = cast([], 'single');
-        size        = cast([], 'uint32');
+        rsize        = cast([], 'uint32');
         values;
     end
     
@@ -16,33 +16,33 @@ classdef TftpRecord
     % methods
     methods
         % TftpRecord constructor
-        function obj = TftpRecord(attribute, varargin)
+        function obj = TftpRecord(varargin)
             % parse arguments
             p = inputParser;
-            addRequired(p, 'attribute', @ischar);
+            addOptional(p, 'attribute', '[padding_record]',@ischar);
             addOptional(p, 'type', 'single', @ischar);
-            addOptional(p, 'height', 1, @isnumeric);
-            parse(p, attribute, varargin{:});
+            addOptional(p, 'ssize', 1, @isnumeric);
+            parse(p, varargin{:});
             
             % set properties
             obj.attribute = p.Results.attribute;
             obj.type = p.Results.type;
             obj.times = zeros(1, 512, 'single');
-            obj.values = zeros(p.Results.height, 512, obj.type);
+            obj.values = zeros(p.Results.ssize, 512, obj.type);
         end
         
         % get.size
         % ----------
         % Class preallocates when vectors are full for faster writes
         % so need to call this method to get real length of record
-        function size = get.size(obj)
+        function rsize = get.rsize(obj)
             % times and values operated on in parallel so should be the
             % same as long as nothing else modifies them:
             % if there is a way to set public:read-only that would be
             % useful
-            size = find(obj.times ~= 0, 1, 'last');
-            if ( isempty(size) )
-                size = 0;
+            rsize = find(obj.times ~= 0, 1, 'last');
+            if ( isempty(rsize) )
+                rsize = 0;
             end
         end
         
@@ -54,14 +54,14 @@ classdef TftpRecord
             end
             
             % extend arrays if necessary
-            if ( length(obj.times) < obj.size + length(times) )
+            if ( length(obj.times) < obj.rsize + length(times) )
                 obj.times = [obj.times, zeros(1, 512, 'single')];
                 obj.values = [obj.values, zeros(size(values, 1), 512, obj.type)];
             end
             
             % push values
-            start = obj.size + 1;
-            finish = obj.size + length(times);
+            start = obj.rsize + 1;
+            finish = obj.rsize + length(times);
             obj.times(:,start:finish) = single(times);
             obj.values(:,start:finish) = cast(values, obj.type);
         end

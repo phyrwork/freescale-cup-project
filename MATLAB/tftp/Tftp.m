@@ -15,8 +15,8 @@ classdef Tftp
         function obj = Tftp()
             % list of attached modules (attributes/commands)
             obj = obj.addModules({...
-                LinescanAttribute('00', 'linescan0'),...
-                LinescanAttribute('01', 'linescan1'),...
+                LinescanAttribute('06', 'linescan0'),...
+                LinescanAttribute('07', 'linescan1'),...
                 AngularVelocityAttribute('02', 'w_fl'),...
                 AngularVelocityAttribute('03', 'w_fr'),...
                 AngularVelocityAttribute('04', 'w_rl'),...
@@ -35,29 +35,32 @@ classdef Tftp
             % extract time code
             time = frame(1:obj.sizeof_time);
             time = obj.formatTime(time);
-            f_index = obj.sizeof_time + 1; % advance frame read index
+            index = obj.sizeof_time + 1; % advance frame read index
             
             % parse rest of frame into segments
             segments = TftpSegment.empty;
-            while ( f_index <= length(frame) )
-                % read code and lookup module
-                code = frame(f_index);
-                m_index = obj.lookupCode(code);
+            while ( index <= length(frame) )
+                % parse code and get module parameters
+                code = frame(index);
+                fsize = obj.modules{code}.fsize;
+                
+                % parse value and decode
+                value = frame(index + 1:index + fsize);
+                value = obj.modules{code}.decode(value);
                 
                 % create segment
-                value = frame(f_index + 1:f_index + obj.modules{m_index}.fsize);
                 segment = TftpSegment(code, time, value);
                 segments = [segments, segment];
                 
                 % update frame read index
-                f_index = f_index + obj.modules{m_index}.fsize + 1;
+                index = index + fsize + 1;
             end
         end
         
         % pack
-        function frame = pack(obj, segments)
+        %function frame = pack(obj, segments)
             % TODO - this can wait until implementation of commands
-        end
+        %end
         
         % getAttributeType
         function type = getAttributeType(obj, attribute)
@@ -71,7 +74,7 @@ classdef Tftp
         end
     end
     
-    methods (Access = protected)
+    methods (Access = private)
         % add modules
         function obj = addModules(obj, modules)
             for i = 1:length(modules)
@@ -85,19 +88,7 @@ classdef Tftp
                 end
 
                 % add module
-                index = length(obj.codes) + 1;
-                obj.codes(index) = module.code;
-                obj.modules{index} = module;
-            end
-        end
-        
-        % lookup code
-        function index = lookupCode(obj, code)
-            % 'first' for speed - should only be one match anyways
-            index = find(obj.codes == code, 1, 'first');
-            if ( isempty(index) )
-                index = 0;
-                error('Segment code not found.');
+                obj.modules{module.code} = module;
             end
         end
         

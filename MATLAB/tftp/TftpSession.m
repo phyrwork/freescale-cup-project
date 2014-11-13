@@ -18,43 +18,29 @@ classdef TftpSession < Tftp
             
             % set properties
             obj.id = p.Results.id;
-        end
-        
-        % lookup
-        function index = lookupAttribute(obj, attribute)
-            % search list of records for attribute
-            index = strmatch(attribute, obj.attributes, 'exact');
-            if ( isempty(index) ) index = 0; end;
+            
+            % instantiate records
+            for i = 1:length(obj.modules)
+                module = obj.modules{i};
+                if ( isempty(module) ) continue; end;
+                obj = obj.addRecord(module);
+            end
         end
         
         % addRecord
-        function obj = addRecord(obj, attribute, type, height)
+        function obj = addRecord(obj, module)
             % instantiate record
-            obj.attributes = [obj.attributes, attribute];
-            obj.records(length(obj.attributes)) = TftpRecord(attribute, type, height);
+            obj.records(module.code) = TftpRecord(...
+                module.attribute,...
+                module.mtype,...
+                module.ssize...
+            );
         end
         
         % push()
-        function obj = push(obj, attribute, times, values)
-            % validate input
-            if ( ~ischar(attribute) )
-                error('Attribute identifier must be of type char()');
-            end
-            
-            % search for attribute
-            index = obj.lookupAttribute(attribute);
-            if (index == 0) % if record for attribute doesn't exist
-                % get parameters for record instantiation
-                height = size(values, 1);
-                type = obj.getAttributeType(attribute);
-                
-                % add record to session
-                obj = obj.addRecord(attribute, type, height);
-                index = length(obj.records);
-            end
-            
+        function obj = push(obj, code, times, values)
             % push values
-            obj.records(index) = obj.records(index).push(times, values);
+            obj.records(code) = obj.records(code).push(times, values);
         end
         
         % store
@@ -64,14 +50,15 @@ classdef TftpSession < Tftp
         function session = store(obj, segments)
             % process all segments
             for i = 1:length(segments)
-                % get segment and lookup module
+                % get segment
                 segment = segments(i);
-                index = obj.lookupCode(segment.code);
-                
-                % decode value and push to session
-                attribute = obj.modules{index}.attribute;
-                value = obj.modules{index}.decode(segment.value);
-                session = obj.push(attribute, segment.time, value);
+               
+                % push data to record
+                session = obj.push(...
+                    segment.code,...
+                    segment.time,...
+                    segment.value...
+                );
             end
         end
     end
