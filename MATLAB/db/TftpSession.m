@@ -1,4 +1,4 @@
-classdef TftpSession
+classdef TftpSession < Tftp
     %TftpSession 
     %   
     
@@ -21,17 +21,17 @@ classdef TftpSession
         end
         
         % lookup
-        function index = lookup(obj, attribute)
+        function index = lookupAttribute(obj, attribute)
             % search list of records for attribute
             index = strmatch(attribute, obj.attributes, 'exact');
             if ( isempty(index) ) index = 0; end;
         end
         
         % addRecord
-        function obj = addRecord(obj, attribute)
+        function obj = addRecord(obj, attribute, type, height)
+            % instantiate record
             obj.attributes = [obj.attributes, attribute];
-            obj.records(length(obj.attributes)) = TftpRecord(attribute);
-            
+            obj.records(length(obj.attributes)) = TftpRecord(attribute, type, height);
         end
         
         % push()
@@ -42,9 +42,14 @@ classdef TftpSession
             end
             
             % search for attribute
-            index = obj.lookup(attribute);
+            index = obj.lookupAttribute(attribute);
             if (index == 0) % if record for attribute doesn't exist
-                obj = obj.addRecord(attribute);
+                % get parameters for record instantiation
+                height = size(1, values);
+                type = obj.getAttributeType(attribute);
+                
+                % add record to session
+                obj = obj.addRecord(attribute, type, height);
                 index = length(obj.records);
             end
             

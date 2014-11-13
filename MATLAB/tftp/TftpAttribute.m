@@ -18,7 +18,7 @@ classdef TftpAttribute
             
             % parse input
             p = inputParser();
-            addRequired(p, 'code', isuint8);
+            addRequired(p, 'code', @ischar);
             addRequired(p, 'attribute', @ischar);
             addRequired(p, 'fsize', isuint16);
             addRequired(p, 'ctype', @ischar);
@@ -26,7 +26,7 @@ classdef TftpAttribute
             
             
             % set properties
-            obj.code        = cast(code, 'uint8');
+            obj.code        = cast(hex2dec(code), 'uint8');
             obj.attribute   = cast(attribute, 'char');
             obj.fsize       = cast(fsize, 'uint16');
             obj.ctype       = cast(ctype, 'char');

@@ -3,9 +3,9 @@ classdef TftpRecord
     %
     
     properties
-        attribute = char([]);
-        times = single([]);
-        size;
+        attribute   = cast([], 'char');
+        times       = cast([], 'single');
+        size        = cast([], 'uint32');
         values;
     end
     
@@ -21,12 +21,14 @@ classdef TftpRecord
             p = inputParser;
             addRequired(p, 'attribute', @ischar);
             addOptional(p, 'type', 'single', @ischar);
+            addOptional(p, 'height', 1, @isnumeric);
             parse(p, attribute, varargin{:});
             
             % set properties
             obj.attribute = p.Results.attribute;
             obj.type = p.Results.type;
-            obj.values = eval([obj.type, '([])']);
+            obj.times = zeros(1, 512, 'single');
+            obj.values = zeros(p.Results.height, 512, obj.type);
         end
         
         % get.size
@@ -46,22 +48,22 @@ classdef TftpRecord
         
         % push()
         function obj = push(obj, times, values)
-            % validate input
-            if ( length(times) ~= length(values) )
+            % validate input lengths
+            if ( length(times) ~= size(values, 2) )
                 error('Times and values vectors must be the same length');
             end
             
             % extend arrays if necessary
             if ( length(obj.times) < obj.size + length(times) )
                 obj.times = [obj.times, zeros(1, 512, 'single')];
-                obj.values = [obj.values, zeros(1, 512, obj.type)];
+                obj.values = [obj.values, zeros(size(values, 1), 512, obj.type)];
             end
             
             % push values
             start = obj.size + 1;
             finish = obj.size + length(times);
-            obj.times(start:finish) = single(times);
-            obj.values(start:finish) = cast(values, obj.type);
+            obj.times(:,start:finish) = single(times);
+            obj.values(:,start:finish) = cast(values, obj.type);
         end
     end
     

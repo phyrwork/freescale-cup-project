@@ -7,7 +7,7 @@ classdef LinescanAttribute < TftpAttribute
  
     methods
         % LinescanAttribute constructor
-        function obj = LinescanAttribute(attribute, code)
+        function obj = LinescanAttribute(code, attribute)
             % set default properties used in superclass constructor
             fsize = 256;
             ctype = 'uint16';
@@ -24,16 +24,17 @@ classdef LinescanAttribute < TftpAttribute
             % normalise
             value = cast(value, obj.mtype);
             value = value/65535;
+            value = transpose(value); % rotate to fit in TftpRecord properly
         end
         
         % encode
         function value = encode(obj, value)
             % denormalise
+            value = transpose(value); % derotate
             value = value*65535;
             value = cast(value, obj.ctype);  
             % cast to byte stream
             value = encode@TftpAttribute(obj, value);
         end
-    end
-    
+    end   
 end
