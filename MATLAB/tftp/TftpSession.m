@@ -45,7 +45,7 @@ classdef TftpSession < Tftp
             index = obj.lookupAttribute(attribute);
             if (index == 0) % if record for attribute doesn't exist
                 % get parameters for record instantiation
-                height = size(1, values);
+                height = size(values, 1);
                 type = obj.getAttributeType(attribute);
                 
                 % add record to session
@@ -55,6 +55,24 @@ classdef TftpSession < Tftp
             
             % push values
             obj.records(index) = obj.records(index).push(times, values);
+        end
+        
+        % store
+        % -----
+        % save segment data to session
+        %
+        function session = store(obj, segments)
+            % process all segments
+            for i = 1:length(segments)
+                % get segment and lookup module
+                segment = segments(i);
+                index = obj.lookupCode(segment.code);
+                
+                % decode value and push to session
+                attribute = obj.modules{index}.attribute;
+                value = obj.modules{index}.decode(segment.value);
+                session = obj.push(attribute, segment.time, value);
+            end
         end
     end
     

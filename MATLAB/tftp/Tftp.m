@@ -5,7 +5,7 @@ classdef Tftp
         sizeof_time = 4;
     end
     
-    properties (Access = private)
+    properties (Access = protected)
         codes   = cast([], 'uint8');
         modules = {};
     end
@@ -25,7 +25,7 @@ classdef Tftp
         end
     end
     
-    % data handling methods
+    % data handling methods (SetAccess = protected) later on...
     methods
         % unpack
         % ------
@@ -58,24 +58,6 @@ classdef Tftp
         function frame = pack(obj, segments)
             % TODO - this can wait until implementation of commands
         end
-            
-        % store
-        % -----
-        % save segment data to session
-        %
-        function session = store(obj, session, segments)
-            % process all segments
-            for i = 1:length(segments)
-                % get segment and lookup module
-                segment = segments{i};
-                index = obj.lookupCode(segment.code);
-                
-                % decode value and push to session
-                attribute = obj.modules{index}.attribute;
-                value = obj.modules{index}.decode(segment.value);
-                session = session.push(attribute, segment.time, value);
-            end
-        end
         
         % getAttributeType
         function type = getAttributeType(obj, attribute)
@@ -89,7 +71,7 @@ classdef Tftp
         end
     end
     
-    methods (Access = private)
+    methods (Access = protected)
         % add modules
         function obj = addModules(obj, modules)
             for i = 1:length(modules)
@@ -123,6 +105,7 @@ classdef Tftp
         function time = formatTime(obj, time)
             time = flip(time);
             time = typecast(time, 'uint32');
+            time = cast(time, 'single');
         end
     end
 end
