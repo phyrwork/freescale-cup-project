@@ -37,28 +37,19 @@ classdef TftpSession < Tftp
             );
         end
         
-        % push()
-        function obj = push(obj, code, times, values)
-            % push values
-            obj.records(code) = obj.records(code).push(times, values);
-        end
-        
         % store
         % -----
         % save segment data to session
         %
-        function session = store(obj, segments)
+        function obj = store(obj, segments)
             % process all segments
             for i = 1:length(segments)
-                % get segment
-                segment = segments(i);
-               
                 % push data to record
-                session = obj.push(...
-                    segment.code,...
-                    segment.time,...
-                    segment.value...
-                );
+                obj.records(segments(i).code) = ...
+                    obj.records(segments(i).code).push(...
+                        segments(i).time,...
+                        segments(i).value...
+                    );
             end
         end
     end

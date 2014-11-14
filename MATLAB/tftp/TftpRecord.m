@@ -1,6 +1,9 @@
 classdef TftpRecord
     %TftpRecord 
     %
+    properties (Constant)
+        prealloc_size = 1024;
+    end
     
     properties
         attribute = cast([], 'char');
@@ -27,26 +30,27 @@ classdef TftpRecord
             % set properties
             obj.attribute = p.Results.attribute;
             obj.type = p.Results.type;
-            obj.times = zeros(1, 512, 'single');
-            obj.values = zeros(p.Results.ssize, 512, obj.type);
+            obj.times = zeros(1, obj.prealloc_size, 'single');
+            obj.values = zeros(p.Results.ssize, obj.prealloc_size, obj.type);
         end
         
         % push()
         function obj = push(obj, time, value)
-            % validate input lengths
-            if ( length(time) ~= size(value, 2) )
-                error('Times and values vectors must be the same length');
-            end
+            % validate input lengths - unnessary now only pushing one value
+            % at a time
+            %if ( length(time) ~= size(value, 2) )
+                %error('Times and values vectors must be the same length');
+            %end
             
             % extend arrays if necessary - preallocate for speed
             if ( length(obj.times) == obj.rsize )
-                obj.times = [obj.times, zeros(1, 512, 'single')];
-                obj.values = [obj.values, zeros(size(value, 1), 512, obj.type)];
+                obj.times = [obj.times, zeros(1, obj.prealloc_size, 'single')];
+                obj.values = [obj.values, zeros(size(value, 1), obj.prealloc_size, obj.type)];
             end
             
             % push values
             obj.rsize = obj.rsize + 1;
-            obj.times(:, obj.rsize) = single(time);
+            obj.times(:, obj.rsize) = time;
             obj.values(:, obj.rsize) = value;
         end
     end

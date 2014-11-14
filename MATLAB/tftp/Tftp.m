@@ -33,33 +33,41 @@ classdef Tftp
     
     % data handling methods (SetAccess = protected) later on...
     methods
-        % unpack
+        % parse
         % ------
         % break frame into segments for further handling
         %
-        function segments = unpack(obj, frame)
+        function segments = parse(obj, frame)
             % extract time code
             time = frame(1:obj.sizeof_time);
-            time = obj.formatTime(time);
+            % time = obj.formatTime(time);
+            time = flip(time);
+            time = typecast(time, 'uint32');
+            time = cast(time, 'single');
+            
             index = obj.sizeof_time + 1; % advance frame read index
             
             % parse rest of frame into segments
-            segments = TftpSegment.empty;
+            s = 0;
             while ( index <= length(frame) )
                 % parse code and get module parameters
                 code = frame(index);
-                fsize = obj.modules{code}.fsize;
+                %fsize = obj.modules{code}.fsize;
                 
                 % parse value and decode
-                value = frame(index + 1:index + fsize);
+                value = frame(index + 1:index + obj.modules{code}.fsize);
                 value = obj.modules{code}.decode(value);
                 
                 % create segment
-                segment = TftpSegment(code, time, value);
-                segments = [segments, segment];
+                s = s + 1;
+                segment.code = code;
+                segment.time = time;
+                segment.value = value;
+                segments(s) = segment;
+                %segments(s) = TftpSegment(code, time, value);
                 
                 % update frame read index
-                index = index + fsize + 1;
+                index = index + obj.modules{code}.fsize + 1;
             end
         end
         
@@ -96,13 +104,6 @@ classdef Tftp
                 % add module
                 obj.modules{module.code} = module;
             end
-        end
-        
-        % format time
-        function time = formatTime(obj, time)
-            time = flip(time);
-            time = typecast(time, 'uint32');
-            time = cast(time, 'single');
         end
     end
 end

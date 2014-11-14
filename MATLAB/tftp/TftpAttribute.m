@@ -39,7 +39,9 @@ classdef TftpAttribute < TftpModule
             value = flip(value); % little to big endian
             
             % cast to mtype[]
-            value = cast(value, obj.mtype);
+            if ( ~strcmp(obj.ctype, obj.mtype) )
+                value = cast(value, obj.mtype);
+            end
         end
         
         % convert from ctype to bytes
