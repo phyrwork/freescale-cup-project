@@ -23,4 +23,18 @@
 #define SDA_SERIAL_OUTGOING_QUEUE_SIZE	2048
 #define SDA_SERIAL_INCOMING_QUEUE_SIZE	128
 
+/* Terminal defines from depreciated Terminal.h */
+#define TERMINAL_OUT_QUEUE			
+#define TERMINAL_IN_QUEUE			
+#define TERMINAL_PRINTF(...)   		
+#define TERMINAL_PUTC(c)        	
+#define TERMINAL_READABLE       	
+#define TERMINAL_GETC           	
+
+/* SERIAL IO */
+#define SERIAL_MAX_MSG_SIZE 512
+#define RB_RX_SIZE 2048
+#define RB_TX_SIZE 256
+#define RB_MAX_DMA_SIZE 256
+
 #endif /* TFC_CONFIG_H_ */

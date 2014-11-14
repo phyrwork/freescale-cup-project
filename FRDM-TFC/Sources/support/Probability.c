@@ -2,7 +2,7 @@
 #include "support/Probability.h"
 #include <math.h>
 #include <stdlib.h>
-#include "support/Terminal.h"
+#include "config.h"
 
 
 struct probabilityTables_s probabilityTables = {.filledEntries = 0};

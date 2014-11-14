@@ -3,24 +3,24 @@
 #include "devices/arm_cm0.h"
 #include "devices/CrystalClock.h"
 #include "config.h"
-#include "support/Queue.h"
+#include "io/RingBuffer.h"
+#include "io/Frame.h"
 
 void uart0_init (int sysclk, int baud);
 
-ByteQueue SDA_SERIAL_OUTGOING_QUEUE;
-ByteQueue SDA_SERIAL_INCOMING_QUEUE;
+/* RingBuffer storage and structures */
+uint8_t RxBufferData[RB_RX_SIZE];
+uint8_t TxBufferData[RB_TX_SIZE];
+RingBuffer RxBuffer;
+RingBuffer TxBuffer;
 
-
-uint8_t SDA_SERIAL_OUTGOING_QUEUE_Storage[SDA_SERIAL_OUTGOING_QUEUE_SIZE];
-uint8_t SDA_SERIAL_INCOMING_QUEUE_Storage[SDA_SERIAL_INCOMING_QUEUE_SIZE];
-
-
-void TFC_InitUARTs()
+void UART0_Init()
 {
 	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
-
-	InitByteQueue(&SDA_SERIAL_OUTGOING_QUEUE,SDA_SERIAL_OUTGOING_QUEUE_SIZE,SDA_SERIAL_OUTGOING_QUEUE_Storage);
-	InitByteQueue(&SDA_SERIAL_INCOMING_QUEUE,SDA_SERIAL_INCOMING_QUEUE_SIZE,SDA_SERIAL_INCOMING_QUEUE_Storage);
+	
+	/* Initialise ring buffers */
+	rbInit(&RxBuffer, RxBufferData, sizeof RxBufferData);
+	rbInit(&TxBuffer, TxBufferData, sizeof TxBufferData);
 	
 	PORTA_PCR1 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;   
 	PORTA_PCR2 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;  
@@ -31,37 +31,61 @@ void TFC_InitUARTs()
 	SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;
 	
 	//We have to feed this function the clock in KHz!
-     uart0_init (CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
-	 //Enable recieve interrupts
+    uart0_init (CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
      
-     UART0_C2 |= UART_C2_RIE_MASK;
-     enable_irq(INT_UART0-16);
-	
+	//Enable recieve interrupts
+    UART0_C2 |= UART_C2_RIE_MASK;
+    enable_irq(INT_UART0-16);
 }
 
-
-void TFC_UART_Process()
+/*	To do - move this into a periodic routine
+	if main loop too slow OR make sure to call
+	this from the telemetry data collection
+	routines */
+void UART0_Process()
 {
-	if(BytesInQueue(&SDA_SERIAL_OUTGOING_QUEUE)>0 && (UART0_S1 & UART_S1_TDRE_MASK))
-			UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
+	/* If data in transmitter buffer */ 
+	if(rbUsed(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
+		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
 
+/* Encapsulate message and add to transmit buffer */
+uint8_t UART0_Send(uint8_t * msg, uint16_t size) {
+	uint8_t buffer[FR_MAX_ENC_SIZE]; //This is redundant data! See note below:
+	size = SerialEncode(msg, size, buffer);
+	return rbPushFrame(&TxBuffer, buffer, size);
+	
+	/* Consider modifying SerialEncode/SerialDecode to pass
+	 * pointers to internal buffer(s) to reduce write overhead
+	 * if it seems like is an issue. */
+}
+
+/* Pull messages out of the RxBuffer */
+uint16_t UART0_Receive(uint8_t * msg) {
+	/* TO DO! */
+}
 
 void UART0_IRQHandler()
 {
 	uint8_t Temp;
-		
+	
+	/* If receive register full flag is set */
 	if(UART0_S1 & UART_S1_RDRF_MASK)
 	{
-		ByteEnqueue(&SDA_SERIAL_INCOMING_QUEUE,UART0_D);
+		/* Push data from UART onto receive buffer */
+		rbPush(&RxBuffer, UART0_D);
 	}
+	/* If transmitter data register empty flag set */
 	if(UART0_S1 & UART_S1_TDRE_MASK)
 	{
-		if(BytesInQueue(&SDA_SERIAL_OUTGOING_QUEUE)>0)
+		/* If there is data in transmitter buffer */
+		if(rbUsed(&TxBuffer))
 		{
-			ByteDequeue(&SDA_SERIAL_OUTGOING_QUEUE,&Temp);
-			UART0_D = Temp;
+			/* Pop value from transmitter buffer */
+			rbPop(&TxBuffer, &Temp);
+			UART0_D = Temp; //Write TX data to UART data register.
 		}
+		/* Otherwise... */
 		else
 		{
 			//if there is nothing left in the queue then disable interrupts
@@ -83,6 +107,7 @@ void uart0_init (int sysclk, int baud)
     uint32_t reg_temp = 0;
     uint32_t temp = 0;
     
+    /* Enable clock gate to UART0 */
     SIM_SCGC4 |= SIM_SCGC4_UART0_MASK;
     
     // Disable UART0 before changing registers

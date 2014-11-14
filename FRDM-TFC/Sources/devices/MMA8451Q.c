@@ -8,7 +8,7 @@
 #include "devices/MMA8451Q.h"
 #include "support/Types.h"
 #include "support/ARM_SysTick.h"
-#include "support/Terminal.h"
+#include "config.h"
 
 #define MMA8451_ADDRESS 0x1d
 

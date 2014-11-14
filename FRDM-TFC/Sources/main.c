@@ -1,6 +1,5 @@
 #include "main.h"
 
-
 #define TARGET_TOTAL_INTENSITY 300000//300000
 #define CHANNEL_0 0
 #define CHANNEL_1 1
@@ -14,8 +13,7 @@ void TFC_Init(carState_s* carState)
 	TFC_InitMotorPWM();
 	TFC_InitADCs(carState);
 	TFC_InitLineScanCamera();
-	TFC_InitTerminal();
-	TFC_InitUARTs();
+	UART0_Init();
 	TFC_HBRIDGE_DISABLE;
 	TFC_SetMotorPWM(0, 0);
 	TFC_InitSpeedSensor();
@@ -27,9 +25,8 @@ void TFC_Init(carState_s* carState)
 void TFC_Task()
 {
 #if defined(TERMINAL_USE_SDA_SERIAL)
-	TFC_UART_Process();
+	UART0_Process();
 #endif
-	TFC_ProcessTerminal();
 }
 
 int main(void)
