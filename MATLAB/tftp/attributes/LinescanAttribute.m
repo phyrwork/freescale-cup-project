@@ -1,9 +1,5 @@
 classdef LinescanAttribute < TftpAttribute
     %LinescanAttribute 
-    
-    properties (Constant)
-
-    end
  
     methods
         % LinescanAttribute constructor

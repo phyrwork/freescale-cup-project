@@ -1,9 +1,9 @@
-classdef AngularVelocityAttribute < TftpAttribute
-    %AngularVelocityAttribute 
-
+classdef MotorCurrentAttribute < TftpAttribute
+    %AngularVelocityAttribute
+ 
     methods
-        % AngularVelocityAttribute constructor
-        function obj = AngularVelocityAttribute(code, attribute)
+        % MotorCurrentAttribute constructor
+        function obj = MotorCurrentAttribute(code, attribute)
             % set default properties used in superclass constructor
             fsize = 4;
             ssize = 1;

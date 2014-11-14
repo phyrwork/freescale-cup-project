@@ -1,9 +1,9 @@
-classdef AngularVelocityAttribute < TftpAttribute
+classdef SlipAttribute < TftpAttribute
     %AngularVelocityAttribute 
-
+ 
     methods
-        % AngularVelocityAttribute constructor
-        function obj = AngularVelocityAttribute(code, attribute)
+        % SlipAttribute constructor
+        function obj = SlipAttribute(code, attribute)
             % set default properties used in superclass constructor
             fsize = 4;
             ssize = 1;

@@ -3,9 +3,9 @@ classdef TftpRecord
     %
     
     properties
-        attribute   = cast([], 'char');
-        times       = cast([], 'single');
-        rsize        = cast([], 'uint32');
+        attribute = cast([], 'char');
+        times     = cast([], 'single');
+        rsize     = cast(0, 'uint32');
         values;
     end
     
@@ -31,39 +31,23 @@ classdef TftpRecord
             obj.values = zeros(p.Results.ssize, 512, obj.type);
         end
         
-        % get.size
-        % ----------
-        % Class preallocates when vectors are full for faster writes
-        % so need to call this method to get real length of record
-        function rsize = get.rsize(obj)
-            % times and values operated on in parallel so should be the
-            % same as long as nothing else modifies them:
-            % if there is a way to set public:read-only that would be
-            % useful
-            rsize = find(obj.times ~= 0, 1, 'last');
-            if ( isempty(rsize) )
-                rsize = 0;
-            end
-        end
-        
         % push()
-        function obj = push(obj, times, values)
+        function obj = push(obj, time, value)
             % validate input lengths
-            if ( length(times) ~= size(values, 2) )
+            if ( length(time) ~= size(value, 2) )
                 error('Times and values vectors must be the same length');
             end
             
-            % extend arrays if necessary
-            if ( length(obj.times) < obj.rsize + length(times) )
+            % extend arrays if necessary - preallocate for speed
+            if ( length(obj.times) == obj.rsize )
                 obj.times = [obj.times, zeros(1, 512, 'single')];
-                obj.values = [obj.values, zeros(size(values, 1), 512, obj.type)];
+                obj.values = [obj.values, zeros(size(value, 1), 512, obj.type)];
             end
             
             % push values
-            start = obj.rsize + 1;
-            finish = obj.rsize + length(times);
-            obj.times(:,start:finish) = single(times);
-            obj.values(:,start:finish) = cast(values, obj.type);
+            obj.rsize = obj.rsize + 1;
+            obj.times(:, obj.rsize) = single(time);
+            obj.values(:, obj.rsize) = value;
         end
     end
     
