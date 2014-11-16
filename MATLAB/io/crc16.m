@@ -2,7 +2,7 @@ function [ crc ] = crc16( crc_in, input )
 %crc 16-bit cyclic redundancy check
 %   
     % Ported from the C version used on the FRDM-KL25Z
-    poly = uint16(hex2dec('8408'));
+    poly = uint16(33800);
     crc = uint32(crc_in);
     len = length(input);
     
@@ -13,11 +13,11 @@ function [ crc ] = crc16( crc_in, input )
         while (true)
             
             % for (i=0, data=(uint32_t)0xff & *data_p++;
-            data = bitand(uint32(hex2dec('FF')), uint32(uint8(input(length(input)-len+1))));
+            data = bitand(uint32(255), uint32(uint8(input(length(input)-len+1))));
             %      i < 8; i++
             for i = 0:1:7
                 % if ((crc & 0x0001) ^ (data & 0x0001))
-                if (bitxor(bitand(crc, uint32(hex2dec('0001'))), bitand(data, uint32(hex2dec('0001')))));
+                if (bitxor(bitand(crc, uint32(1)), bitand(data, uint32(1))));
                     % crc = (crc >> 1) ^ POLY;
                     crc = bitxor(bitshift(crc, -1), uint32(poly));
                 else
@@ -37,7 +37,7 @@ function [ crc ] = crc16( crc_in, input )
         
         crc = bitcmp(crc);
         data = crc;
-        crc = bitor(bitshift(crc, 8), bitand(bitshift(data, -8), uint32(hex2dec('FF'))));
+        crc = bitor(bitshift(crc, 8), bitand(bitshift(data, -8), uint32(255)));
         crc = typecast(crc, 'uint16');
         crc = crc(1);
     end  

@@ -21,7 +21,7 @@ function [ output ] = SerialEncode( input )
     
     
     % Calculate and add checksum to output
-    crc = uint16(crc16(hex2dec('FFFF'), output));
+    crc = uint16(crc16(65535, output));
     crc = typecast(crc, 'uint8');
     crc = flip(crc);
     

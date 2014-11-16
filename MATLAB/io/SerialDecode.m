@@ -14,7 +14,7 @@ function [ output ] = SerialDecode( input )
     crc_i = input(length(input) - 1:length(input));
     crc_i = flip(crc_i);
     crc_i = typecast(crc_i, 'uint16');
-    crc_a = uint16(crc16(hex2dec('FFFF'), input(1:length(input) - 2)));
+    crc_a = uint16(crc16(65535, input(1:length(input) - 2)));
     
     % Verify checksums
     if (crc_i ~= crc_a)
