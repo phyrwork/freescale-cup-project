@@ -13,20 +13,25 @@ static struct detectedLines_s detectedLines = { .numberOfLines = 0 };
 
 void findLine(volatile uint16_t* lineScanImage, carState_s* carState, uint16_t derivativeThreshold)
 {
+	/* Setup */
 	static int16_t imageDifferential[128];
 	struct detectedLine_s bestLine = { .certainty = 0 };
 	static struct detectedLine_s previousLine;
 	lineTransitions.numberOfTransitions = 0;
 	detectedLines.numberOfLines = 0;
 
+	/* Process linescan image buffer */
 	getFirstDerivative(lineScanImage, imageDifferential, 128);
-	findTransitions(&lineTransitions, imageDifferential, derivativeThreshold);
-	transitionsToLines(&detectedLines, &lineTransitions);
+	findTransitions(&lineTransitions, imageDifferential, derivativeThreshold); //Finds edges; directions of edges.
+	transitionsToLines(&detectedLines, &lineTransitions); //Pairs 
 
+	/* If no lines detected - decide what to do. */
 	if (detectedLines.numberOfLines == 0)
 	{
+		/* If stop line already detected, don't change anything! */
 		if (carState->lineDetectionState != STOPLINE_DETECTED)
 		{
+			/* Decide if the line has been lost or if the car is traversing a cross-over */
 			if(TFC_Ticker[3] < LOST_LINE_RESET_DURATION)
 			{
 				carState->lineDetectionState = LINE_TEMPORARILY_LOST;
@@ -39,10 +44,8 @@ void findLine(volatile uint16_t* lineScanImage, carState_s* carState, uint16_t d
 		return;
 	}
 
-	//Populate line certainty values
+	/* Populate line certainty values; select line with highest probablity */
 	weightLines(&previousLine, &detectedLines);
-
-	//Select line with highest certainty
 	for (uint8_t k = 0; k < detectedLines.numberOfLines; k++)
 	{
 		if (bestLine.certainty < detectedLines.line[k].certainty)
@@ -53,19 +56,24 @@ void findLine(volatile uint16_t* lineScanImage, carState_s* carState, uint16_t d
 
 //	TERMINAL_PRINTF("Found line at %i with width %i,\t width certainty %i,\t relative position difference %i and certainty %i,\t relative width difference %i and certainty %i,\t total certainty %i\n", bestLine.center, bestLine.width, (int16_t)(1000.0f*bestLine.widthCertainty), previousLine.center - bestLine.center, (int16_t)(1000.0f*bestLine.relativePositionCertainty), previousLine.width - bestLine.width, (int16_t)(1000.0f*bestLine.relativeWidthCertainty), (int16_t)(1000.0f*bestLine.certainty));
 
-	
-
+	/* If most probable line is probable enough */
 	if (bestLine.certainty > MIN_CERTAINTY)
 	{
-		previousLine = bestLine;
-		carState->lineCenter = bestLine.center;
+
+		previousLine = bestLine; //Store this pass' best line for use on next pass
+		carState->lineCenter = bestLine.center; //Store new position of line for steering use
+
 		if (carState->lineDetectionState != STOPLINE_DETECTED)
 		{
+			/* Line is successfully being tracked */
 			carState->lineDetectionState = LINE_FOUND;
 		}
+
+		/* Reset "line lost" timer; return */
 		TFC_Ticker[3] = 0;
 		return;
 	}
+	/* Otherwise, if best line isn't high enough probability */
 	else
 	{
 		if (TFC_Ticker[3] < LOST_LINE_RESET_DURATION)
@@ -79,7 +87,7 @@ void findLine(volatile uint16_t* lineScanImage, carState_s* carState, uint16_t d
 
 		bestLine.widthCertainty = 0;
 
-		//Select line with highest certainty based on just width
+		/* Select line with highest certainty based on just width */
 		for (uint8_t k = 0; k < detectedLines.numberOfLines; k++)
 		{
 			if (bestLine.widthCertainty < detectedLines.line[k].widthCertainty)
@@ -87,8 +95,11 @@ void findLine(volatile uint16_t* lineScanImage, carState_s* carState, uint16_t d
 				bestLine = detectedLines.line[k];
 			}
 		}
+
+		/* If a good enough line found based on width only */
 		if (bestLine.widthCertainty > MIN_CERTAINTY)
 		{
+			/* Use this line instead; carry on as normal */
 			previousLine = bestLine;
 			TFC_Ticker[3] = 0;
 			carState->lineCenter = bestLine.center;
@@ -99,7 +110,7 @@ void findLine(volatile uint16_t* lineScanImage, carState_s* carState, uint16_t d
 			return;
 		}
 
-		// No line found
+		/* No line found */
 		if (carState->lineDetectionState != STOPLINE_DETECTED && TFC_Ticker[3] > MAX_LOST_LINE_DURATION)
 		{
 			carState->lineDetectionState = LINE_LOST;
@@ -110,9 +121,10 @@ void findLine(volatile uint16_t* lineScanImage, carState_s* carState, uint16_t d
 
 int8_t findTransitions(struct detectedTransitions_s* detectedTransitions, int16_t* derivative, uint16_t derivativeThreshold)
 {
-	//Find and log positions of all transitions and their directions
+	/* Find and log positions of all transitions and their directions */
 	for (uint8_t k = 0; k < 128 && detectedTransitions->numberOfTransitions < MAX_NUMBER_OF_TRANSITIONS; k++)
 	{
+		/* If large, +ve derivative: black->white edge */
 		if (derivative[k] >= derivativeThreshold)
 		{
 			detectedTransitions->transition[detectedTransitions->numberOfTransitions].position = k;
@@ -120,6 +132,7 @@ int8_t findTransitions(struct detectedTransitions_s* detectedTransitions, int16_
 //			TERMINAL_PRINTF("end at %i, ", detectedTransitions->transition[detectedTransitions->numberOfTransitions].position);
 			detectedTransitions->numberOfTransitions++;
 		}
+		/* If large, -ve derivative: white->black edge */
 		else if (derivative[k] <= -derivativeThreshold)
 		{
 			detectedTransitions->transition[detectedTransitions->numberOfTransitions].position = k;
@@ -134,29 +147,34 @@ int8_t findTransitions(struct detectedTransitions_s* detectedTransitions, int16_
 
 int8_t transitionsToLines(struct detectedLines_s* detectedLines, struct detectedTransitions_s* detectedTransitions)
 {
-	//Start from first white to black transition and look for pairs, store starts and ends
+	/* Search for white->black, black->white pairs */
 	for (uint8_t k = 0; k < detectedTransitions->numberOfTransitions && detectedLines->numberOfLines < MAX_NUMBER_OF_LINES; k++)
 	{
+		/* Find next white->black edge */
 		if (detectedTransitions->transition[k].direction == whiteToBlack)
 		{
+			/* Record position of edge, advance transition index */
 			detectedLines->line[detectedLines->numberOfLines].start = detectedTransitions->transition[k].position;
 			k++;
+
+			/* If the next transition is complimenting edge (i.e. black->white) */
 			if (detectedTransitions->transition[k].direction == blackToWhite && k < detectedTransitions->numberOfTransitions)
 			{
+				/* Record position; calculate width, center of possible line */
 				detectedLines->line[detectedLines->numberOfLines].end = detectedTransitions->transition[k].position;
 				detectedLines->line[detectedLines->numberOfLines].width = detectedLines->line[detectedLines->numberOfLines].end
 						- detectedLines->line[detectedLines->numberOfLines].start;
 				detectedLines->line[detectedLines->numberOfLines].center = detectedLines->line[detectedLines->numberOfLines].start
 						+ ((detectedLines->line[detectedLines->numberOfLines].width) / 2) - 64;
-				//Successfully found a line
+				
+				/* Successfully found a line */
 //				TERMINAL_PRINTF("Start: %i, end: %i ", detectedLines->line[detectedLines->numberOfLines].start, detectedLines->line[detectedLines->numberOfLines].end);
+				
+				/* Advance lines index (i.e. next time around start a new 'line') */
 				detectedLines->numberOfLines++;
 			}
-			else
-			{
-				//Found a second line start
-				k--;
-			}
+			/* Otherwise another white->black edge found */
+			else k--;
 		}
 	}
 //	TERMINAL_PRINTF("\n");
