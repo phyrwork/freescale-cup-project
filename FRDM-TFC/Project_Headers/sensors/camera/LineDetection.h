@@ -12,30 +12,30 @@
 #include "support/carState_s.h"
 
 //findLines
-#define DIFFERENTIAL_THRESHOLD 300
-#define MAX_LOST_LINE_DURATION 10000
-#define LOST_LINE_RESET_DURATION 10000
+#define DIFFERENTIAL_THRESHOLD    300
+#define MAX_LOST_LINE_DURATION    10000
+#define LOST_LINE_RESET_DURATION  10000
 #define MAX_NUMBER_OF_TRANSITIONS 64
-#define MAX_NUMBER_OF_STOP_LINES 32
-#define MIN_CERTAINTY 0.2f
+#define MAX_NUMBER_OF_STOP_LINES  32
+#define MIN_CERTAINTY             0.2f
 
 //weightEdges
 #define EDGE_DPOS_SD   5
 #define EDGE_DPOS_MEAN 0
 
 //weightLines
-#define LINE_WIDTH_SD      5
-#define LINE_WIDTH_MEAN    6 //This will need updating to width of track
-#define LINE_DWIDTH_SD     5
-#define LINE_DWIDTH_MEAN   0
+#define LINE_WIDTH_SD    5
+#define LINE_WIDTH_MEAN  6 //This will need updating to width of track
+#define LINE_DWIDTH_SD   5
+#define LINE_DWIDTH_MEAN 0
 
 
 //findStopLine
-#define MIN_STOPLINE_CERTAINTY 0.3f
-#define STOPLINE_SIDE_WIDTH_SD 10
-#define STOPLINE_SIDE_WIDTH_MEAN 20
-#define STOPLINE_GAP_WIDTH_SD 4
-#define STOPLINE_GAP_WIDTH_MEAN 4
+#define STOP_MIN_CERTAINTY   0.3f
+#define STOP_LINE_WIDTH_SD   10
+#define STOP_LINE_WIDTH_MEAN 20
+#define STOP_GAP_WIDTH_SD    4
+#define STOP_GAP_WIDTH_MEAN  4
 
 typedef enum {
 	rising,
@@ -68,14 +68,14 @@ typedef enum {
 } TrackingState;
 
 struct StopLine {
-	Line line[3]; 	//Shouldn't actually need multiple copies of the lines, pointers to their existing 
-									//locations would suffice. Must however be careful to ensure that the new width
-									//probabilities don't start overwriting each other.
-	int8_t gap1;
-	int8_t gap2;
-	float gapWidthCertainty1;
-	float gapWidthCertainty2;
-	float certainty;
+	Line    lines[3];
+  //#define lineA lines[0]
+  //#define lineB lines[2]
+  //#define gap   lines[1]
+	float   P_lineA;
+	float   P_lineB;
+	float   P_gap;
+	float   P_stop;
 };
 
 void   InitTracking(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold);
@@ -83,8 +83,8 @@ void   findPosition(volatile uint16_t* linescan_in, carState_s* carState, uint16
 int8_t findEdges(int16_t* derivative, uint16_t threshold);
 int8_t findLines(Edge* edges, uint8_t numEdges);
 int8_t weightLines(uint16_t* linescan,Line* trackedLine, Line* lines, uint8_t numLines);
+void   findStop(Line* lines, uint8_t numLines);
 void   preloadProbabilityTables();
-void   findStop(carState_s* carState);
 void   derivative(volatile uint16_t* input, int16_t* output, uint8_t length);
 
 
