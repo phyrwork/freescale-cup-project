@@ -42,7 +42,7 @@ float getProbability(int8_t value, float standardDeviation, int8_t mean)
 void generateProbabilityTable(struct probabilityTable_s* probabilitiesTable, float standardDeviation){
 	for(uint8_t i = 0; i < 127; i++)
 	{
-		probabilitiesTable->probabilities[i] = (0.39894f*(1.0f/standardDeviation)*pow(e,(-pow((i),2.0f))/(2.0f*pow(standardDeviation,2.0f)))) / (0.39894f*(1.0f/standardDeviation)*pow(e,(-pow((0),2.0f))/(2.0f*pow(standardDeviation,2.0f))));
+		probabilitiesTable->probabilities[i] = (0.39894f*(1.0f/standardDeviation)*pow(nat,(-pow((i),2.0f))/(2.0f*pow(standardDeviation,2.0f)))) / (0.39894f*(1.0f/standardDeviation)*pow(nat,(-pow((0),2.0f))/(2.0f*pow(standardDeviation,2.0f))));
 		probabilitiesTable->standardDeviation = standardDeviation;
 	}
 }

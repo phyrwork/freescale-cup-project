@@ -203,7 +203,7 @@ void derivativeFocussingMode(carState_s* carState)
 
 		TFC_SetLineScanExposureTime(calculateNewExposure(getTotalIntensity(LineScanImage0), TARGET_TOTAL_INTENSITY));
 		int16_t temp[128];
-		getFirstDerivative(LineScanImage0, temp, 128);
+		derivative(LineScanImage0, temp, 128);
 		//						
 		for (uint8_t i = 0; i < 128; i++)
 		{
@@ -230,7 +230,10 @@ void lineFollowingMode(carState_s* carState)
 	if (carState->lineScanState == LINESCAN_IMAGE_READY)
 	{
 		steeringControlUpdate = LINESCAN_IMAGE_READY;
-		findLine(LineScanImage0, carState, 350);// ((uint32_t)350*TARGET_TOTAL_INTENSITY) / totalIntensity);
+		findPosition(LineScanImage0, carState, 350);// ((uint32_t)350*TARGET_TOTAL_INTENSITY) / totalIntensity);
+		totalIntensity = getTotalIntensity(LineScanImage0);
+		TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
+		carState->lineScanState = NO_NEW_LINESCAN_IMAGE;
 	}
 
 	if (TFC_Ticker[0] >= 200)
@@ -241,10 +244,7 @@ void lineFollowingMode(carState_s* carState)
 
 	if (carState->lineScanState == LINESCAN_IMAGE_READY) //Stopline detection and exposure control are performed after servo has been updated
 	{
-		carState->lineScanState = NO_NEW_LINESCAN_IMAGE;
-		findStop(carState);
-		totalIntensity = getTotalIntensity(LineScanImage0);
-		TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
+		
 	}
 
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)

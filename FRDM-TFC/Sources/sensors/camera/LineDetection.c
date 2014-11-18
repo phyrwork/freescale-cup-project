@@ -1,8 +1,18 @@
-/*
- * LineDetection.c
- *
- *  Created on: Nov 14, 2013
- *      Author: Matt
+/* LineDetection.c
+ * ===========================================
+ * This library contains the methods required
+ * to determine the position of the car 
+ * relative to the sides of the track.
+ * -------------------------------------------
+ * Adapted from the 2014 tracking algorithm by
+ * MW. Uses the same principle of probabilites
+ * to choose most likely target to follow, but
+ * is modified to follow the 2015 competition
+ * track with lines at both sides of the
+ * course.
+ * -------------------------------------------
+ * Author: Connor Newton
+ * Date:   November 17, 2014
  */
 
 #include "sensors/camera/LineDetection.h"
@@ -24,8 +34,9 @@ void InitTracking(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	
 	/* See findPosition() for details about what this lot does */
 	static int16_t dI[128]; derivative(linescan, dI, 128);
-	static uint8_t numFeatures = findEdges(dI, dI_threshold);
-	               numFeatures = findLines(&edgeBuffer, numFeatures);
+	static uint8_t numFeatures;
+	               numFeatures = findEdges(dI, dI_threshold);
+	               numFeatures = findLines(edgeBuffer, numFeatures);
 
 	weightLines(&targetLine, &lineBuffer, numFeatures);
 	uint8_t best = 0;
@@ -34,8 +45,8 @@ void InitTracking(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	/* Identify correct 'line' */
 	for (uint8_t k = 1; k < numFeatures; k++)
 		if (lineBuffer[k].P_width > bestLine.P_width &&
-			lineBuffer[k].edges[L] != flat &&
-			lineBuffer[k].edges[R] != flat )
+			lineBuffer[k].edges[L].type != flat &&
+			lineBuffer[k].edges[R].type != flat )
 				best = k;
 
 	targetLine = bestLine;
@@ -58,10 +69,10 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	numFeatures = findEdges(dI, dI_threshold);
 	
 	/* Generate possible lines for analysis */
-	numFeatures = findLines(&edgeBuffer, numFeatures);
+	numFeatures = findLines(edgeBuffer, numFeatures);
 
 	/* Find best match for target line */
-	weightLines(&targetLine, &lineBuffer, numFeatures);
+	weightLines(&targetLine, lineBuffer, numFeatures);
 	uint8_t best = 0;
 	#define bestLine lineBuffer[best]
 	
@@ -95,12 +106,12 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			if (bestLine.edges[L].type != flat) {
 				/* Edge at RHS; RHS partial */
 				trackingState = partial_R;
-				offset = bestLine.edges[L] - targetLine.edges[L].pos;
+				offset = bestLine.edges[L].pos - targetLine.edges[L].pos;
 			}
 			else if (bestLine.edges[R].type != flat) {
 				/* Edge at LHS; LHS partial */
 				trackingState = partial_L;
-				offset = bestLine.edges[R] - targetLine.edges[R].pos;
+				offset = bestLine.edges[R].pos - targetLine.edges[R].pos;
 			}
 			/* Apply offset to position */
 			carState->lineCenter += offset;
@@ -117,7 +128,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	}
 	else {
 		/* Look for stop line */
-		if ( findStop(&lineBuffer, numFeatures) ) {
+		if ( findStop(lineBuffer, numFeatures) ) {
 		 	carState->lineDetectionState = STOPLINE_DETECTED;
 		 	return;
 		}
@@ -165,52 +176,52 @@ uint8_t findEdges(int16_t* derivative, uint16_t threshold)
 uint8_t findLines(Edge* edges, uint8_t numEdges)
 {
 	uint8_t l = 0; //Number of pairs generated
-	uint8_t e = 0;
 
 	/* Start constructing first line */
 	lineBuffer[l].edges[L].pos = 0;
 	lineBuffer[l].edges[L].type = flat;
 
 	/* A line potentially exists between every pair of edges */
-	for (e = 0; e < numEdges; e++) {
+	for (uint8_t e = 0; e < numEdges; e++) {
 
 		/* Make sure we only capture the next edge of a different type */
 		EdgeType type = flat;
-		if (lineBuffer[l].type == type) continue;
-		type = lineBuffer[l].type;
+		if (lineBuffer[l].edges[e].type == type) continue;
+		type = lineBuffer[l].edges[e].type;
 
 		/* Finish constructing previous line */
-		lineBuffer[l].edges[R] = edges[edge];
+		lineBuffer[l].edges[R] = edges[e];
 		lineBuffer[l].width = //Calculate width of line
 			lineBuffer[l].finish - lineBuffer[l].start;
 
 		/* Start constructing next line */
-		lineBuffer[++lines].edges[L] = edges[edge];
+		lineBuffer[++l].edges[L] = edges[e];
 	}
 
 	/* Finish constructing final line */
-	lineBuffer[lines].edges[R].pos = 255;
-	lineBuffer[lines].edges[R].type = flat;
+	lineBuffer[l].edges[R].pos = 255;
+	lineBuffer[l].edges[R].type = flat;
 
-	return lines;
+	return l;
 }
 
-int8_t weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges) {
+void weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges) {
 	
 	/* Test each edge against both target edges */
 	for (uint8_t t = 0; t < 2; t++)
 		for (uint8_t e = 0; e < numEdges; e++) {
-
 			/* Calculate probability of edge being edge based on change in
 			 * position only
 			 */
 			int16_t dPos = edges[e].pos - targetEdges[t].pos;
 			edges[e].P_dPos[t] = getProbability(dPos, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-
+	
 			/* Calculate combined probability */
 			edges[e].P_edge[t]  = 1;
 			edges[e].P_edge[t] *= edges[e].P_dPos[t];
 		}
+	
+	return;
 }
 
 int8_t weightLines(Line* targetLine, Line* lines, uint8_t numLines)
@@ -227,7 +238,7 @@ int8_t weightLines(Line* targetLine, Line* lines, uint8_t numLines)
 								             LINE_DWIDTH_SD, LINE_DWIDTH_MEAN );
 
 		/* Factor likelihood of correct edges */
-		weightEdges(targetLine.edges, lines[k].edges, 2);
+		weightEdges(targetLine->edges, lines[k].edges, 2);
 
 		/* Calculate combined probability */
 		lines[k].P_line  = 1;
@@ -250,10 +261,10 @@ uint8_t findStop(Line* lines, uint8_t numLines)
 	 * [1] Gap    (White)
 	 * [2] Line B (Black)
 	 */
-	for (i = 0; i < numLines - 3; i++) {
+	for (uint8_t i = 0; i < numLines - 3; i++) {
 
 		/* Gather data */
-		for (l = 0; l < 3; l++) stop.lines[l] = lines[i + l];
+		for (uint8_t l = 0; l < 3; l++) stop.lines[l] = lines[i + l];
 
 		/* Calculate probabilities */
 		stop.P_lineA = getProbability(stop.lineA.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);

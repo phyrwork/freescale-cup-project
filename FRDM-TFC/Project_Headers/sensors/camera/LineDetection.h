@@ -1,8 +1,18 @@
-/*
- * LineDetection.h
- *
- *  Created on: Nov 14, 2013
- *      Author: Matt
+/* LineDetection.h
+ * ===========================================
+ * This library contains the methods required
+ * to determine the position of the car 
+ * relative to the sides of the track.
+ * -------------------------------------------
+ * Adapted from the 2014 tracking algorithm by
+ * MW. Uses the same principle of probabilites
+ * to choose most likely target to follow, but
+ * is modified to follow the 2015 competition
+ * track with lines at both sides of the
+ * course.
+ * -------------------------------------------
+ * Author: Connor Newton
+ * Date:   November 17, 2014
  */
 
 #ifndef LINEDETECTION_H_
@@ -67,7 +77,7 @@ typedef enum {
 	none
 } TrackingState;
 
-struct StopLine {
+typedef struct {
 	Line    lines[3];
   //#define lineA lines[0]
   //#define lineB lines[2]
@@ -76,16 +86,17 @@ struct StopLine {
 	float   P_lineB;
 	float   P_gap;
 	float   P_stop;
-};
+} StopLine;
 
-void   InitTracking(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold);
-void   findPosition(volatile uint16_t* linescan_in, carState_s* carState, uint16_t dI_threshold);
-int8_t findEdges(int16_t* derivative, uint16_t threshold);
-int8_t findLines(Edge* edges, uint8_t numEdges);
-int8_t weightLines(uint16_t* linescan,Line* trackedLine, Line* lines, uint8_t numLines);
-void   findStop(Line* lines, uint8_t numLines);
-void   preloadProbabilityTables();
-void   derivative(volatile uint16_t* input, int16_t* output, uint8_t length);
+void    InitTracking(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold);
+void    findPosition(volatile uint16_t* linescan_in, carState_s* carState, uint16_t dI_threshold);
+uint8_t findEdges(int16_t* derivative, uint16_t threshold);
+uint8_t findLines(Edge* edges, uint8_t numEdges);
+void    weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges);
+int8_t  weightLines(Line* trackedLine, Line* lines, uint8_t numLines);
+uint8_t findStop(Line* lines, uint8_t numLines);
+void    preloadProbabilityTables();
+void    derivative(volatile uint16_t* input, int16_t* output, uint8_t length);
 
 
 

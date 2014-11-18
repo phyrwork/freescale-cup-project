@@ -13,7 +13,7 @@
 #define MAX_NUMBER_OF_PROBABILITY_TABLES 8
 
 #define pi 3.14159f
-#define e 2.71828f
+#define nat 2.71828f
 
 struct probabilityTable_s{
 	float standardDeviation;
