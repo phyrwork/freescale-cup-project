@@ -6,11 +6,11 @@
 
 #define PCB_REV					A
 
-//A TFC Ticker is a variable that will increment every 1mS in the Systick interrupt routine
+//A TFC Ticker is a variable that will increment every 100uS in the Systick interrupt routine
 //you can use it to for general purpose timing, scheduling events, etc.  The TFC_Ticker variable
 //is just an array of 32-bit integers, use the Macro below to set how many tickers you need
-
-#define NUM_TFC_TICKERS			4
+#define NUM_TFC_TICKERS 5
+#define TFTP_TICKER 4
 
 //This is what the exposure time for the Linescan will be set to out of bootup
 #define TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS	10000 //50000
