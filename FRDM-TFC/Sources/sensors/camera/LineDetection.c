@@ -26,11 +26,11 @@ static StopLine stop;
 static TrackingState trackingState;
 
 #define L 0
-#define R 0
+#define R 1
 #define start  edges[0].pos //Macros for easy/readable access to line...
 #define finish edges[1].pos //...start/finish.
 
-void InitTracking(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold) {
+void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
 	
 	/* See findPosition() for details about what this lot does */
 	static int16_t dI[128]; derivative(linescan, dI, 128);
@@ -38,7 +38,7 @@ void InitTracking(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	               numFeatures = findEdges(dI, dI_threshold);
 	               numFeatures = findLines(edgeBuffer, numFeatures);
 
-	weightLines(&targetLine, &lineBuffer, numFeatures);
+	weightLines(&targetLine, lineBuffer, numFeatures);
 	uint8_t best = 0;
     #define bestLine lineBuffer[best]
 	
@@ -90,7 +90,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			trackingState = full;
 
 			/* Calculate car's road position */
-			uint8_t center = (bestLine.start + bestLine.finish)/2;
+			int8_t center = ((bestLine.start + bestLine.finish)/2) - 64;
 			carState->lineCenter = center;
 			//This is the offset of the center of the track from the car's
 			//perspective, -not- the offset of the car (i.e. the track position)
@@ -100,7 +100,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			 * the absolute center of the track without edges at both sides:
 			 * instead must estimate new position of car using change in edge
 			 * positions */
-			uint8_t offset;
+			int8_t offset = 0;
 
 			/* Choose non-'flat' edge to use to calculate offset */
 			if (bestLine.edges[L].type != flat) {
@@ -180,14 +180,13 @@ uint8_t findLines(Edge* edges, uint8_t numEdges)
 	/* Start constructing first line */
 	lineBuffer[l].edges[L].pos = 0;
 	lineBuffer[l].edges[L].type = flat;
-
+	
 	/* A line potentially exists between every pair of edges */
 	for (uint8_t e = 0; e < numEdges; e++) {
 
 		/* Make sure we only capture the next edge of a different type */
-		EdgeType type = flat;
-		if (lineBuffer[l].edges[e].type == type) continue;
-		type = lineBuffer[l].edges[e].type;
+		
+		if (edges[e].type == lineBuffer[l].edges[L].type) continue;
 
 		/* Finish constructing previous line */
 		lineBuffer[l].edges[R] = edges[e];
@@ -199,10 +198,12 @@ uint8_t findLines(Edge* edges, uint8_t numEdges)
 	}
 
 	/* Finish constructing final line */
-	lineBuffer[l].edges[R].pos = 255;
+	lineBuffer[l].edges[R].pos = 127;
 	lineBuffer[l].edges[R].type = flat;
+	lineBuffer[l].width = //Calculate width of line
+				lineBuffer[l].finish - lineBuffer[l].start;
 
-	return l;
+	return ++l;
 }
 
 void weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges) {
@@ -281,6 +282,7 @@ uint8_t findStop(Line* lines, uint8_t numLines)
 		if (stop.P_stop > STOP_MIN_CERTAINTY) return 1; //Return true; STOP THE CAR!
 		else return 0;
 	}
+	return 1;
 }
 
 void preloadProbabilityTables()

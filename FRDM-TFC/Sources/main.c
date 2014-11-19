@@ -34,9 +34,15 @@ int main(void)
 	static carState_s carState =
 	{ .motorState = FORCED_DISABLED, .UARTSpeedState = UNDEFINED, .lineDetectionState = LINE_LOST, .lineScanState = NO_NEW_LINESCAN_IMAGE };
 	TFC_Init(&carState);
+	
+	while (carState.lineScanState != LINESCAN_IMAGE_READY){};
+	InitTracking(LineScanImage0, 350);
+	TFC_SetLED(0);
 
 	while (1)
 	{
+		heartbeat();
+		
 		TFC_Task();
 		evaluateUARTorSpeed(&carState);
 		evaluateMotorState(&carState);
@@ -49,19 +55,23 @@ int main(void)
 		default:
 		case 0:
 			rawFocussingMode(&carState);
+			TFC_ClearLED(3);
 			break;
 
 		case 1:
 			servoAlignment();
+			TFC_ClearLED(3);
 			//speedTestMode(&carState);
 			break;
 
 		case 2:
 			derivativeFocussingMode(&carState);
+			TFC_ClearLED(3);
 			break;
 
 		case 3:
 			lineFollowingMode(&carState);
+			TFC_SetLED(3);
 			break;
 		}
 	}
@@ -240,11 +250,6 @@ void lineFollowingMode(carState_s* carState)
 	{
 		TFC_Ticker[0] = 0;
 		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
-	}
-
-	if (carState->lineScanState == LINESCAN_IMAGE_READY) //Stopline detection and exposure control are performed after servo has been updated
-	{
-		
 	}
 
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)

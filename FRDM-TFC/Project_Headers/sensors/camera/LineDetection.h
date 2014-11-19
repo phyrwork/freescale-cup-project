@@ -30,15 +30,14 @@
 #define MIN_CERTAINTY             0.2f
 
 //weightEdges
-#define EDGE_DPOS_SD   5
+#define EDGE_DPOS_SD  30
 #define EDGE_DPOS_MEAN 0
 
 //weightLines
 #define LINE_WIDTH_SD    5
-#define LINE_WIDTH_MEAN  6 //This will need updating to width of track
+#define LINE_WIDTH_MEAN  80 //This will need updating to width of track
 #define LINE_DWIDTH_SD   5
 #define LINE_DWIDTH_MEAN 0
-
 
 //findStopLine
 #define STOP_MIN_CERTAINTY   0.3f
@@ -88,7 +87,7 @@ typedef struct {
 	float   P_stop;
 } StopLine;
 
-void    InitTracking(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold);
+void    InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold);
 void    findPosition(volatile uint16_t* linescan_in, carState_s* carState, uint16_t dI_threshold);
 uint8_t findEdges(int16_t* derivative, uint16_t threshold);
 uint8_t findLines(Edge* edges, uint8_t numEdges);
