@@ -30,17 +30,17 @@
 #define MIN_CERTAINTY             0.2f
 
 //weightEdges
-#define EDGE_DPOS_SD  30
+#define EDGE_DPOS_SD  20
 #define EDGE_DPOS_MEAN 0
 
 //weightLines
-#define LINE_WIDTH_SD    5
+#define LINE_WIDTH_SD    10
 #define LINE_WIDTH_MEAN  80 //This will need updating to width of track
-#define LINE_DWIDTH_SD   5
+#define LINE_DWIDTH_SD   15
 #define LINE_DWIDTH_MEAN 0
 
 //findStopLine
-#define STOP_MIN_CERTAINTY   0.3f
+#define STOP_MIN_CERTAINTY   0.6f
 #define STOP_LINE_WIDTH_SD   10
 #define STOP_LINE_WIDTH_MEAN 20
 #define STOP_GAP_WIDTH_SD    4

@@ -17,6 +17,7 @@
 
 #include "sensors/camera/LineDetection.h"
 #include "support/ARM_SysTick.h"
+#include "devices/TFC_SHIELD.h"
 #include <math.h>
 
 static Edge     edgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
@@ -88,6 +89,9 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			bestLine.edges[R].type != flat) {
 
 			trackingState = full;
+			TFC_ClearLED(2);
+			TFC_ClearLED(3);
+			TFC_SetLED(1);
 
 			/* Calculate car's road position */
 			int8_t center = ((bestLine.start + bestLine.finish)/2) - 64;
@@ -106,11 +110,19 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			if (bestLine.edges[L].type != flat) {
 				/* Edge at RHS; RHS partial */
 				trackingState = partial_R;
+				TFC_SetLED(1);
+				TFC_ClearLED(2);
+				TFC_ClearLED(3);
+				
 				offset = bestLine.edges[L].pos - targetLine.edges[L].pos;
 			}
 			else if (bestLine.edges[R].type != flat) {
 				/* Edge at LHS; LHS partial */
 				trackingState = partial_L;
+				TFC_SetLED(1);
+				TFC_ClearLED(2);
+				TFC_ClearLED(3);
+				
 				offset = bestLine.edges[R].pos - targetLine.edges[R].pos;
 			}
 			/* Apply offset to position */
@@ -127,20 +139,37 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 		TFC_Ticker[3] = 0;
 	}
 	else {
+		
 		/* Look for stop line */
+		/*
 		if ( findStop(lineBuffer, numFeatures) ) {
 		 	carState->lineDetectionState = STOPLINE_DETECTED;
+		 	TFC_ClearLED(1);
+		 	TFC_SetLED(2);
+		 	TFC_SetLED(3);
 		 	return;
 		}
+		*/
+		
 		
 		/* And if not this then probably just noise or car
 		 * is traversing a cross-over section
-		 */ 
-		else if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION)
+		 */
+		if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION) {
 			 carState->lineDetectionState = LINE_LOST;
-	 	else carState->lineDetectionState = LINE_TEMPORARILY_LOST;
+			 TFC_ClearLED(1);
+			 TFC_ClearLED(2);
+			 TFC_SetLED(3);
+		}
+	 	else {
+	 		carState->lineDetectionState = LINE_TEMPORARILY_LOST;
+	 		TFC_ClearLED(1);
+	 		TFC_SetLED(2);
+	 		TFC_ClearLED(3);
+	 	}
 	}
 
+	
 	return;
 
 	#undef bestLine

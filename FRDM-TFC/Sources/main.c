@@ -40,9 +40,7 @@ int main(void)
 	TFC_SetLED(0);
 
 	while (1)
-	{
-		heartbeat();
-		
+	{	
 		TFC_Task();
 		evaluateUARTorSpeed(&carState);
 		evaluateMotorState(&carState);
@@ -55,23 +53,23 @@ int main(void)
 		default:
 		case 0:
 			rawFocussingMode(&carState);
-			TFC_ClearLED(3);
+			//TFC_ClearLED(3);
 			break;
 
 		case 1:
 			servoAlignment();
-			TFC_ClearLED(3);
+			//TFC_ClearLED(3);
 			//speedTestMode(&carState);
 			break;
 
 		case 2:
 			derivativeFocussingMode(&carState);
-			TFC_ClearLED(3);
+			//TFC_ClearLED(3);
 			break;
 
 		case 3:
 			lineFollowingMode(&carState);
-			TFC_SetLED(3);
+			TFC_SetLED(0);
 			break;
 		}
 	}
@@ -261,7 +259,12 @@ void lineFollowingMode(carState_s* carState)
 
 		if (carState->UARTSpeedState == SINGLE_SPEED_SINGLE_UART)
 		{
-
+			/*
+			TFC_SetMotorPWM(
+					getDesiredMotorPWM(targetSpeed, speedMeasurement[0], isANewmeasurementAvailable(CHANNEL_0), CHANNEL_0),
+					getDesiredMotorPWM(targetSpeed, speedMeasurement[1], isANewmeasurementAvailable(CHANNEL_1), CHANNEL_1));
+			*/
+			TFC_SetMotorPWM(0.2,0.2);
 		}
 		else if (carState->UARTSpeedState == DUAL_SPEED_NO_UART)
 		{
@@ -292,7 +295,7 @@ void lineFollowingMode(carState_s* carState)
 
 		if (speedMeasurement[0] > 2.0f || speedMeasurement[1] > 2.0f)
 		{
-			TFC_SetMotorPWM(-0.5f, -0.5f);
+			//TFC_SetMotorPWM(-0.5f, -0.5f);
 		}
 		else
 		{
