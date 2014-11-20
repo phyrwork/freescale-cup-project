@@ -89,6 +89,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			bestLine.edges[R].type != flat) {
 
 			trackingState = full;
+			TFC_ClearLED(0);
 			TFC_ClearLED(2);
 			TFC_ClearLED(3);
 			TFC_SetLED(1);
@@ -110,6 +111,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			if (bestLine.edges[L].type != flat) {
 				/* Edge at RHS; RHS partial */
 				trackingState = partial_R;
+				TFC_SetLED(0);
 				TFC_SetLED(1);
 				TFC_ClearLED(2);
 				TFC_ClearLED(3);
@@ -119,6 +121,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			else if (bestLine.edges[R].type != flat) {
 				/* Edge at LHS; LHS partial */
 				trackingState = partial_L;
+				TFC_SetLED(0);
 				TFC_SetLED(1);
 				TFC_ClearLED(2);
 				TFC_ClearLED(3);
