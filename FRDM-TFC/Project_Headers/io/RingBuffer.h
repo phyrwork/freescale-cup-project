@@ -34,6 +34,7 @@ typedef struct {
   uint16_t      size;
 } Vector8u;
 
+void rbClear(RingBuffer * rb);
 void rbInit(RingBuffer * rb, uint8_t * ptr, uint16_t size);
 uint16_t rbAvailable(RingBuffer * rb);
 uint16_t rbUsed(RingBuffer * rb);

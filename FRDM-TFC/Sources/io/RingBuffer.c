@@ -34,11 +34,12 @@ inline uint16_t rbFrames(RingBuffer * rb);
  *                          array.
  *  void return           - nothing.
  */
+inline void rbClear(RingBuffer * rb) { rb->head = 0; rb->tail = 0; return; }
 inline void rbInit(RingBuffer * rb, uint8_t * ptr, uint16_t size) {
   rb->size  = size;
-  rb->head  = 0;
-  rb->tail  = 0;
+  rbClear(rb);
   rb->elems = ptr;
+  return;
 }
 
 /*  rbAvailable()

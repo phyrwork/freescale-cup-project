@@ -16,26 +16,65 @@ RingBuffer TxBuffer;
 
 void UART0_Init()
 {
+	/* Enable clock to GPIO A */
 	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
 	
-	/* Initialise ring buffers */
+	/* Initialise transmit/receive buffers */
 	rbInit(&RxBuffer, RxBufferData, sizeof RxBufferData);
 	rbInit(&TxBuffer, TxBufferData, sizeof TxBufferData);
 	
+	/* Mux PTA2:1 to the UART0 peripheral */
 	PORTA_PCR1 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;   
 	PORTA_PCR2 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;  
 	
-	//Select PLL/2 Clock
+	/* Select PLL/2 Clock */
 	SIM_SOPT2 &= ~(3<<26);
 	SIM_SOPT2 |= SIM_SOPT2_UART0SRC(1); 
 	SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;
 	
-	//We have to feed this function the clock in KHz!
-    uart0_init (CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
+	/* Configure for either USB or Bluetooth link */
+	#ifdef BLUETOOTH_ENABLED
+		#define UART0_BLUETOOTH_CONFIG
+		uart0_init(CORE_CLOCK/2/1000, BLUETOOTH_SERIAL_BAUD_DEFAULT); //Set baud to HC-05 default
+	#else
+    	uart0_init(CORE_CLOCK/2/1000, USB_SERIAL_BAUD); //Set baud to value specified in configuration file.
+	#endif
      
-	//Enable recieve interrupts
+	/* Enable receive interrupts */
     UART0_C2 |= UART_C2_RIE_MASK;
     enable_irq(INT_UART0-16);
+    
+    /////////////////////////////////
+    // USB SERIAL CONFIG ENDS HERE //
+    /////////////////////////////////
+    
+	#ifdef UART0_BLUETOOTH_CONFIG
+    	/* Configure HC-05
+    	 * --------------- */
+		#define S(x) #x				/* These two preprocessor definitions allow stringification */
+		#define pp_string(x) S(x)   /* of other definitions - example below                     */
+		
+    	uint8_t hc05setBaud115200_cmd[] = "AT+UART=" pp_string(BLUETOOTH_SERIAL_BAUD) ",1,0\r\n";
+    	uint8_t hc05setBaud115200_res[] = "OK\r\n";
+    	
+    	/* Send set baud command */
+    	for (uint8_t i = 0; i < sizeof hc05setBaud115200_cmd; i++) rbPush(&TxBuffer, hc05setBaud115200_cmd[i]);
+    	UART0_C2 |= UART_C2_TIE_MASK;
+    	
+    	/* Wait for response and check */
+    	while(rbUsed(&TxBuffer) < sizeof hc05setBaud115200_res) {}
+    	for (uint8_t i = 0; i < sizeof hc05setBaud115200_res; i++) {
+    		/* Check response against expected response */
+    		uint8_t tmp;
+    		rbPop(&RxBuffer, &tmp);
+    		if (tmp != hc05setBaud115200_res[i])
+    			while(1) {} //If incorrect then just get stuck in a loop - not bothered about error handling here
+    	}
+	#endif
+    	
+	///////////////////////////////////////
+	// BLUETOOTH SERIAL CONFIG ENDS HERE //
+	///////////////////////////////////////
 }
 
 /*	To do - move this into a periodic routine
