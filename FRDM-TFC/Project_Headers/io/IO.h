@@ -25,6 +25,8 @@ typedef struct {
 	IO_Mux mux;
 } IO_Config;
 
+extern PORT_MemMapPtr PTx[];
+
 IO_Pin IO_InitPin(IO_Config* config);
 void   IO_EnableClock(IO_Pin* io);
 void   IO_SetMux(IO_Pin* io, IO_Mux mux);
