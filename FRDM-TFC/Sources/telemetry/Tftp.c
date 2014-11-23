@@ -7,12 +7,7 @@
  * the collection of various data from the
  * FRDM-TFC system.
  *
- * The basic frame format is simple:
- * 3:0B - System Time Stamp
- *   4B - Attribute/Command Code
- * ?:5B - Attribute/Command Data
- * ------------------------------------------
- * v0.1 Author: Connor Newton
+ *      Author: Connor Newton
  *        Date: November 19, 2014
  *
  * Planned features:
@@ -36,16 +31,10 @@
 #define TICKER (TFC_Ticker[TFTP_TICKER])
 #define ms float(1000/SYSTICK_FREQUENCY)
 
-/* Frame Buffer                                  
- * ============================================== 
- * Internal storage for constructing TFTP frames  
- */
+/* Storage for constructing frames */
 uint8_t buffer[SERIAL_MAX_MSG_SIZE];
 
-/* cast_uint8()
- * ===================================
- * Get constituent bytes of a variable
- */
+/* Get constituent bytes of a variable */
 inline void cast_uint8(uint8_t* out, void* var, size_t size) {
 	
 	/* Cast var as uint8_t and copy bytes to *out */
@@ -54,19 +43,24 @@ inline void cast_uint8(uint8_t* out, void* var, size_t size) {
 	return;
 }
 
-/* TftpPush()
- * ====================================================
- * Generate a TFTP frame containing a single code/value
- * pair and push directly to the link layer service.
- */
-int8_t TftpPush(uint8_t key, void* value, size_t size) {
 
-	uint8_t w; //Write index.
+/* Return 4 byte (single) time stamp to *time */
+inline void getTimeStamp(uint8_t * time) {
+	
+	float t = TICKER * ms;
+	cast_uint8(time, t, sizeof t);
+	return;
+}
+
+/* Generate a TFTP frame containing a single code/value
+ * pair and push directly to the link layer service. */
+int8_t TftpSend(uint8_t key, void* value, size_t size) {
+
+	uint8_t w = 0; //Write index.
 
 	/* Generate time stamp to nearest ms */
-	float time = TICKER * ms;
-	cast_uint8(w, time, sizeof time);
-	w += sizeof time;
+	getTimeStamp(buffer);
+	w = 4;
 
 	/* Add key and value to frame */
 	buffer[w] = key;
@@ -75,6 +69,8 @@ int8_t TftpPush(uint8_t key, void* value, size_t size) {
 
 	/* Push value to link layer service */
 	SEND(buffer, w);
+
+	return 0;
 }
 
 
