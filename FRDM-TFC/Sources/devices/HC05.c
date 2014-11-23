@@ -5,7 +5,10 @@
 
 /* Import UART controls; set macros to use them */
 #include "io/UART.h"
-#define  TX(msg,size)   UART0_SendRaw( (msg) , (size) ); UART0_Process(); while (rbUsed(&TxBuffer) > 0) {}; for (uint8_t i = 0; i < 5*CORE_CLOCK/BLUETOOTH_CMD_BAUD; i++) {}
+#define  TX(msg,size)   UART0_SendRaw( (msg) , (size) ); \
+                        UART0_Process(); \
+                        while (rbUsed(&TxBuffer) > 0) {}; \
+                        for (uint8_t i = 0; i < 5*CORE_CLOCK/BLUETOOTH_CMD_BAUD; i++) {}
 #define  SET_BAUD(baud) uart0_init(CORE_CLOCK/2/1000, (baud) )
 
 /* Import GPIO controls; configure GPIO pins; set macros */
@@ -18,7 +21,7 @@ GPIO_Config pwr_conf = {
             /* .port = */ E,
             /* .pin = */  0
         },
-        /* .mux = */ 2
+        /* .mux = */ MUX_ALT1
     },
     /* .dir = */ GPIO_OUT
 };
@@ -32,7 +35,7 @@ GPIO_Config cmd_conf = {
         },
         /* .mux = */ 2
     },
-    /* .dir = */ GPIO_OUT
+    /* .dir = */ MUX_ALT1
 };
 
 #define  PWR_ON  GPIO_Set(&pwr)
@@ -41,19 +44,29 @@ GPIO_Config cmd_conf = {
 #define  CLR_KEY GPIO_Clear(&cmd)
 //
 
+/* HC05 configuration */
+#include "config.h"
+#define  HC05_CMD_BAUD 38400
+
+/* Initialisation from struct like this a bit more involved than usual */
+// HC05_Config config = {
+//     /* .baud = */    BLUETOOTH_SERIAL_BAUD,
+//     /* .stop = */    1,
+//     /* .partity = */ 0
+// }
+
 /* Macro definitions to facilitate concatenation
    of string literals with #defines */
 #define S(x) #x           
-#define pp_string(x) S(x)
+#define Str(x) S(x)
 
-void HC05_Init() {
-    /* Initialise IO */
+int8_t HC05_Init(/*HC05_Config* config*/)
+{
+    /* Configure IO */
     pwr = GPIO_InitPin(&pwr_conf);
     cmd = GPIO_InitPin(&cmd_conf);
-}
+    SET_BAUD(HC05_CMD_BAUD); // Set serial symbol rate
 
-int8_t HC05_Config(BT_Config* config)
-{
     /* Power down HC05 */
     PWR_OFF;
 
@@ -62,18 +75,11 @@ int8_t HC05_Config(BT_Config* config)
     PWR_ON;
     
     /* Do configuration */
-
-    /////////////////
-    // CONFIG HERE //
-    /////////////////
+    uint8_t msg[] = "AT+UART=" Str(BLUETOOTH_SERIAL_BAUD) ",1,0\r\n"; //Baud,stop bits,parity bits
+    TX(msg, sizeof msg);
     
     /* Unassert KEY */
     CLR_KEY;
 
     return 0; //Configuration successful, resume;
 }
-
-/*
-uint8_t hc05setBaud115200_cmd[] = "AT+UART=" pp_string(BLUETOOTH_SERIAL_BAUD) ",1,0\r\n";
-uint8_t hc05setBaud115200_res[] = "OK\r\n";
-*/

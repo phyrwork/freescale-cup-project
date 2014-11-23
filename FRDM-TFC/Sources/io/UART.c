@@ -69,6 +69,13 @@ uint8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	 * if it seems like is an issue. */
 }
 
+/* Add message to transmit buffer without encapsualtion */
+int8_t UART0_SendRaw(uint8_t * msg, uint16_t size) {
+    for (uint16_t i = 0; i < size; i++)
+        if ( rbPush(&TxBuffer, msg[i]) ) continue;
+        else return -1;
+}
+
 /* Pull messages out of the RxBuffer */
 uint16_t UART0_Receive(uint8_t * msg) {
 	/* TO DO! */
