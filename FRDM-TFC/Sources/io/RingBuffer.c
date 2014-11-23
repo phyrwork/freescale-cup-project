@@ -16,9 +16,9 @@
 inline void rbInit(RingBuffer * rb, uint8_t * ptr, uint16_t size);
 inline uint16_t rbAvailable(RingBuffer * rb);
 inline uint16_t rbUsed(RingBuffer * rb);
-uint8_t rbPush(RingBuffer * rb, uint8_t datum);
-uint8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size);
-uint8_t rbPop(RingBuffer * rb, uint8_t * datum);
+int8_t rbPush(RingBuffer * rb, uint8_t datum);
+int8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size);
+int8_t rbPop(RingBuffer * rb, uint8_t * datum);
 uint16_t rbPopFrame(RingBuffer * rb, uint8_t * array);
 Vector8u rbPopDma(RingBuffer * rb);
 inline uint16_t rbFrames(RingBuffer * rb);
@@ -67,7 +67,7 @@ inline uint16_t rbUsed(RingBuffer * rb) { return rb->write - rb->read; }
  *  uint8_t datum   - byte value to push onto buffer.
  *  uint8_t return  - storage success true/false.
  */
-uint8_t rbPush(RingBuffer * rb, uint8_t datum) {
+int8_t rbPush(RingBuffer * rb, uint8_t datum) {
 
   /* Check if buffer space available */
   if ( rbAvailable(rb) ) {
@@ -88,8 +88,8 @@ uint8_t rbPush(RingBuffer * rb, uint8_t datum) {
        data cannot be read prematurely by an ISR     */
     rb->write++;
 
-    return 1; //Return true.
-  } else return 0; //Return false.
+    return 0;
+  } else return -1; //Return false.
 }
 
 /*  rbPushFrame()
@@ -101,7 +101,7 @@ uint8_t rbPush(RingBuffer * rb, uint8_t datum) {
  *  uint16_t size   - size of frame in bytes.
  *  uint8_t return  - storage success true/false.
  */
-uint8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size) {
+int8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size) {
 
   uint16_t i = 0;   /* Read position of incoming array */
   uint16_t contig;  /* Size of first contiguous free space in buffer */
@@ -131,8 +131,8 @@ uint8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size) {
     }
 
     rb->frame++; //Count frame.
-    return 1; //Return true.  
-  } else return 0; //Return false.
+    return 0;
+  } else return -1;
 }
 
 /*  rbPop()
@@ -149,7 +149,7 @@ uint8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size) {
  *  uint16_t size   - size of frame in bytes.
  *  uint8_t return  - storage success true/false.
  */
-uint8_t rbPop(RingBuffer * rb, uint8_t * datum) {
+int8_t rbPop(RingBuffer * rb, uint8_t * datum) {
 
 	if ( rbUsed(rb) ){
 	  /* Pop data from buffer */
@@ -165,8 +165,8 @@ uint8_t rbPop(RingBuffer * rb, uint8_t * datum) {
 		 data cannot be written prematurely by an ISR */
 	  rb->read++;
 	
-	  return 1;
-	} else return 0;
+	  return 0;
+	} else return -1;
 }
 
 /*  rbPopFrame()

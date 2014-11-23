@@ -37,9 +37,9 @@ typedef struct {
 void rbInit(RingBuffer * rb, uint8_t * ptr, uint16_t size);
 uint16_t rbAvailable(RingBuffer * rb);
 uint16_t rbUsed(RingBuffer * rb);
-uint8_t rbPush(RingBuffer * rb, uint8_t datum);
-uint8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size);
-uint8_t rbPop(RingBuffer * rb, uint8_t * datum);
+int8_t rbPush(RingBuffer * rb, uint8_t datum);
+int8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size);
+int8_t rbPop(RingBuffer * rb, uint8_t * datum);
 uint16_t rbPopFrame(RingBuffer * rb, uint8_t * array);
 Vector8u rbPopDma(RingBuffer * rb);
 uint16_t rbFrames(RingBuffer * rb);

@@ -25,6 +25,7 @@
 #define TFTP_S_RL      0x0B;
 #define TFTP_S_RR      0x0C;
 
-int8_t TftpSend(uint8_t key, void* value, size_t size);
+int8_t Tftp_Send(uint8_t code, void* value, uint16_t size);
+int8_t Tftp_Push(uint8_t code, void* value, uint16_t size);
 
 #endif

@@ -16,6 +16,8 @@
  *    a definable time tolerance (e.g. 1ms)
  */
 
+#include "config.h"
+
 /* Import link layer service and add #defines
  * for more portable use */
 #include "io/UART.h"
@@ -31,9 +33,6 @@
 #define TICKER (TFC_Ticker[TFTP_TICKER])
 #define ms float(1000/SYSTICK_FREQUENCY)
 
-/* Storage for constructing frames */
-uint8_t buffer[SERIAL_MAX_MSG_SIZE];
-
 /* Get constituent bytes of a variable */
 inline void cast_uint8(uint8_t* out, void* var, size_t size) {
 	
@@ -45,17 +44,19 @@ inline void cast_uint8(uint8_t* out, void* var, size_t size) {
 
 
 /* Return 4 byte (single) time stamp to *time */
+inline float getTime() { return TICKER * ms; }
 inline void getTimeStamp(uint8_t * time) {
 	
-	float t = TICKER * ms;
+	float t = getTime();
 	cast_uint8(time, t, sizeof t);
 	return;
 }
 
 /* Generate a TFTP frame containing a single code/value
  * pair and push directly to the link layer service. */
-int8_t TftpSend(uint8_t key, void* value, size_t size) {
-
+int8_t Tftp_Send(uint8_t code, void* value, uint16_t size)
+{
+	uint8_t buffer[SERIAL_MAX_MSG_SIZE];
 	uint8_t w = 0; //Write index.
 
 	/* Generate time stamp to nearest ms */
@@ -63,12 +64,46 @@ int8_t TftpSend(uint8_t key, void* value, size_t size) {
 	w = 4;
 
 	/* Add key and value to frame */
-	buffer[w] = key;
+	buffer[w] = code;
 	cast_uint8(++w, value, size);
 	w += size;
 
 	/* Push value to link layer service */
 	SEND(buffer, w);
+
+	return 0;
+}
+
+int8_t Tftp_Push(uint_t code, void* value, uint16_t size)
+{
+	/* Static frame storage */
+	static uint8_t buffer[SERIAL_MAX_MSG_SIZE];
+	uint8_t w = 0;
+
+	/* Time data */
+	static float frameTime = getTime();
+	       float  thisTime = getTime();
+
+	if ( /* Check time difference; if too large */
+		 thisTime - frameTime > TFTP_TIMESTAMP_TOLERANCE ||
+		 /* Check there is enough space left in the buffer */
+		 sizeof buffer - w < size
+	   ) {
+		
+		/* Send previous frame */
+		if (uint8_t error = SEND(buffer, w))
+			return error;
+
+		/* Start a new one */
+		frameTime = thisTime;  // Save new timestamp...
+		getTimeStamp(&buffer); // ...write to frame.
+		w = 4;                 // Set write index.
+	}
+
+	/* Copy sample to frame */
+	buffer[w] = code;
+	cast_uint8(++w, value, size); 
+	w += size;
 
 	return 0;
 }

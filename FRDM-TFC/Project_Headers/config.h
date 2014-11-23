@@ -37,4 +37,7 @@
 #define RB_TX_SIZE 256
 #define RB_MAX_DMA_SIZE 256
 
+/* TFTP configuration */
+#define TFTP_TIMESTAMP_TOLERANCE 0.05
+
 #endif /* TFC_CONFIG_H_ */
