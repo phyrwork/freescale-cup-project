@@ -17,9 +17,6 @@
 
 #define TFC_MOTOR_SWITCHING_FREQUENCY	((float)(4000.0))
 
-
-#define SDA_SERIAL_BAUD		9600	
-
 /* Terminal defines from depreciated Terminal.h */
 #define TERMINAL_OUT_QUEUE			
 #define TERMINAL_IN_QUEUE			
@@ -37,6 +34,7 @@
 /* Data rate configuration */
 #define USB_SERIAL_BAUD 115200
 #define BLUETOOTH_SERIAL_BAUD_DEFAULT 9600
+#define BLUETOOTH_CMD_BAUD 38400
 #define BLUETOOTH_SERIAL_BAUD 115200
 #define BLUETOOTH_SERIAL_BAUD_Q "115200" //This needed for Bluetooth module command string.
 

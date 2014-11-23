@@ -2,17 +2,30 @@
 #include "devices/MKL25Z4.h"
 #include "devices/arm_cm0.h"
 #include "devices/CrystalClock.h"
+#include "support/ARM_SysTick.h"
 #include "config.h"
 #include "io/RingBuffer.h"
 #include "io/Frame.h"
+#include "io/GPIO.h"
 
 void uart0_init (int sysclk, int baud);
 
 /* RingBuffer storage and structures */
-uint8_t RxBufferData[RB_RX_SIZE];
-uint8_t TxBufferData[RB_TX_SIZE];
+uint8_t    RxBufferData[RB_RX_SIZE];
+uint8_t    TxBufferData[RB_TX_SIZE];
 RingBuffer RxBuffer;
 RingBuffer TxBuffer;
+
+/*	To do - move this into a periodic routine
+	if main loop too slow OR make sure to call
+	this from the telemetry data collection
+	routines */
+void UART0_Process()
+{
+	/* If data in transmitter buffer */ 
+	if(rbUsed(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
+		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
+}
 
 void UART0_Init()
 {
@@ -25,7 +38,7 @@ void UART0_Init()
 	
 	/* Mux PTA2:1 to the UART0 peripheral */
 	PORTA_PCR1 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;   
-	PORTA_PCR2 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;  
+	PORTA_PCR2 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;
 	
 	/* Select PLL/2 Clock */
 	SIM_SOPT2 &= ~(3<<26);
@@ -38,54 +51,11 @@ void UART0_Init()
 		uart0_init(CORE_CLOCK/2/1000, BLUETOOTH_SERIAL_BAUD_DEFAULT); //Set baud to HC-05 default
 	#else
     	uart0_init(CORE_CLOCK/2/1000, USB_SERIAL_BAUD); //Set baud to value specified in configuration file.
-	#endif
+    #endif
      
 	/* Enable receive interrupts */
     UART0_C2 |= UART_C2_RIE_MASK;
     enable_irq(INT_UART0-16);
-    
-    /////////////////////////////////
-    // USB SERIAL CONFIG ENDS HERE //
-    /////////////////////////////////
-    
-	#ifdef UART0_BLUETOOTH_CONFIG
-    	/* Configure HC-05
-    	 * --------------- */
-		#define S(x) #x				/* These two preprocessor definitions allow stringification */
-		#define pp_string(x) S(x)   /* of other definitions - example below                     */
-		
-    	uint8_t hc05setBaud115200_cmd[] = "AT+UART=" pp_string(BLUETOOTH_SERIAL_BAUD) ",1,0\r\n";
-    	uint8_t hc05setBaud115200_res[] = "OK\r\n";
-    	
-    	/* Send set baud command */
-    	for (uint8_t i = 0; i < sizeof hc05setBaud115200_cmd; i++) rbPush(&TxBuffer, hc05setBaud115200_cmd[i]);
-    	UART0_C2 |= UART_C2_TIE_MASK;
-    	
-    	/* Wait for response and check */
-    	while(rbUsed(&TxBuffer) < sizeof hc05setBaud115200_res) {}
-    	for (uint8_t i = 0; i < sizeof hc05setBaud115200_res; i++) {
-    		/* Check response against expected response */
-    		uint8_t tmp;
-    		rbPop(&RxBuffer, &tmp);
-    		if (tmp != hc05setBaud115200_res[i])
-    			while(1) {} //If incorrect then just get stuck in a loop - not bothered about error handling here
-    	}
-	#endif
-    	
-	///////////////////////////////////////
-	// BLUETOOTH SERIAL CONFIG ENDS HERE //
-	///////////////////////////////////////
-}
-
-/*	To do - move this into a periodic routine
-	if main loop too slow OR make sure to call
-	this from the telemetry data collection
-	routines */
-void UART0_Process()
-{
-	/* If data in transmitter buffer */ 
-	if(rbUsed(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
-		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
 
 /* Encapsulate message and add to transmit buffer */
