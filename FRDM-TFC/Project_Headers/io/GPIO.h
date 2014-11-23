@@ -19,7 +19,7 @@ typedef struct {
 	GPIO_Dir  dir;
 } GPIO_Config;
 
-extern GPIO_MemMapPtr GPIO[]
+extern GPIO_MemMapPtr GPIO[];
 
 GPIO_Pin GPIO_InitPin(GPIO_Config* config);
 void     GPIO_SetDir(GPIO_Pin* gpio, GPIO_Dir dir);
