@@ -1,8 +1,18 @@
-/*
- * LineDetection.h
- *
- *  Created on: Nov 14, 2013
- *      Author: Matt
+/* LineDetection.h
+ * ===========================================
+ * This library contains the methods required
+ * to determine the position of the car 
+ * relative to the sides of the track.
+ * -------------------------------------------
+ * Adapted from the 2014 tracking algorithm by
+ * MW. Uses the same principle of probabilites
+ * to choose most likely target to follow, but
+ * is modified to follow the 2015 competition
+ * track with lines at both sides of the
+ * course.
+ * -------------------------------------------
+ * Author: Connor Newton
+ * Date:   November 17, 2014
  */
 
 #ifndef LINEDETECTION_H_
@@ -11,79 +21,81 @@
 #include "support/Probability.h"
 #include "support/carState_s.h"
 
-//findLine
-#define DIFFERENTIAL_THRESHOLD 300
-#define LINE_CENTER_DIFFERENCE_SD 10
-#define LINE_CENTER_DIFFERENCE_MEAN 0
-#define LINE_WIDTH_DIFFERENCE_SD 5
-#define LINE_WIDTH_DIFFERENCE_MEAN 0
-#define LINE_WIDTH_SD 5
-#define LINE_WIDTH_MEAN 6
-#define MIN_CERTAINTY 0.2f
-#define MAX_LOST_LINE_DURATION 10000
-#define LOST_LINE_RESET_DURATION 10000
+//findLines
+#define DIFFERENTIAL_THRESHOLD    300
+#define MAX_LOST_LINE_DURATION    10000
+#define LOST_LINE_RESET_DURATION  10000
 #define MAX_NUMBER_OF_TRANSITIONS 64
-#define MAX_NUMBER_OF_LINES 32
-#define MAX_NUMBER_OF_STOP_LINES 32
+#define MAX_NUMBER_OF_STOP_LINES  32
+#define MIN_CERTAINTY             0.2f
+
+//weightEdges
+#define EDGE_DPOS_SD   10
+#define EDGE_DPOS_MEAN 0
+
+//weightLines
+#define LINE_WIDTH_SD    10
+#define LINE_WIDTH_MEAN  80 //This will need updating to width of track
+#define LINE_DWIDTH_SD   15
+#define LINE_DWIDTH_MEAN 0
 
 //findStopLine
-#define MIN_STOPLINE_CERTAINTY 0.3f
-#define STOPLINE_SIDE_WIDTH_SD 10
-#define STOPLINE_SIDE_WIDTH_MEAN 20
-#define STOPLINE_GAP_WIDTH_SD 4
-#define STOPLINE_GAP_WIDTH_MEAN 4
+#define STOP_MIN_CERTAINTY   0.6f
+#define STOP_LINE_WIDTH_SD   10
+#define STOP_LINE_WIDTH_MEAN 20
+#define STOP_GAP_WIDTH_SD    4
+#define STOP_GAP_WIDTH_MEAN  4
 
-typedef enum {blackToWhite, whiteToBlack} transitionDirection_t;
+typedef enum {
+	rising,
+	falling,
+	flat
+} EdgeType;
 
-struct detectedTransition_s{
-	uint8_t position;
-	transitionDirection_t direction;
-};
+typedef struct {
+	EdgeType type; //Type of edge (i.e. rising/falling)
+	uint8_t  pos;  //Location of edge
+	float    P_dPos[2];
+	float    P_edge[2];
+} Edge;
 
-struct detectedTransitions_s{
-	struct detectedTransition_s transition[MAX_NUMBER_OF_TRANSITIONS];
-	uint8_t numberOfTransitions;
-};
-
-struct detectedLine_s{
-	uint8_t start;
-	uint8_t end;
+typedef struct {
+	Edge    edges[2];
+  //#define start  edges[0].pos
+  //#define finish edges[1].pos
 	uint8_t width;
-	int8_t center;
-	float certainty;
-	float widthCertainty;
-	float relativePositionCertainty;
-	float relativeWidthCertainty;
-};
+	float   P_width;
+	float   P_dWidth;
+	float   P_line;
+} Line;
 
-struct detectedLines_s{
-	struct detectedLine_s line[MAX_NUMBER_OF_LINES];
-	uint8_t numberOfLines;
-};
+typedef enum {
+	full,
+	partial_L,
+	partial_R,
+	none
+} TrackingState;
 
-struct stopLine_s{
-	struct detectedLine_s line[3]; 	//Shouldn't actually need multiple copies of the lines, pointers to their existing 
-									//locations would suffice. Must however be careful to ensure that the new width
-									//probabilities don't start overwriting each other.
-	int8_t gap1;
-	int8_t gap2;
-	float gapWidthCertainty1;
-	float gapWidthCertainty2;
-	float certainty;
-};
+typedef struct {
+	Line    lines[3];
+  //#define lineA lines[0]
+  //#define lineB lines[2]
+  //#define gap   lines[1]
+	float   P_lineA;
+	float   P_lineB;
+	float   P_gap;
+	float   P_stop;
+} StopLine;
 
-struct stopLines_s{
-	struct stopLine_s stopLine[MAX_NUMBER_OF_STOP_LINES];
-	uint8_t numberOfStopLines;
-};
-
-void findLine(volatile uint16_t* lineScanImage, carState_s* carState, uint16_t derivativeThreshold);
-int8_t findTransitions(struct detectedTransitions_s* detectedTransitions, int16_t* derivative, uint16_t derivativeThreshold);
-int8_t transitionsToLines(struct detectedLines_s* detectedLines, struct detectedTransitions_s* detectedTransitions);
-int8_t weightLines(struct detectedLine_s* previousLine, struct detectedLines_s* detectedLines);
-void preloadProbabilityTables();
-void findStop(carState_s* carState);
-void getFirstDerivative(volatile uint16_t* input, int16_t* output, uint8_t length);
+void    InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold);
+void    findPosition(volatile uint16_t* linescan_in, carState_s* carState, uint16_t dI_threshold);
+uint8_t findEdges(int16_t* derivative, uint16_t threshold);
+uint8_t findLines(Edge* edges, uint8_t numEdges);
+void    weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges);
+int8_t  weightLines(Line* trackedLine, Line* lines, uint8_t numLines);
+uint8_t findStop(Line* lines, uint8_t numLines);
+void    preloadProbabilityTables();
+void    derivative(volatile uint16_t* input, int16_t* output, uint8_t length);
 
 
 

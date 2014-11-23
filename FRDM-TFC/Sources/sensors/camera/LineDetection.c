@@ -1,260 +1,332 @@
-/*
- * LineDetection.c
- *
- *  Created on: Nov 14, 2013
- *      Author: Matt
+/* LineDetection.c
+ * ===========================================
+ * This library contains the methods required
+ * to determine the position of the car 
+ * relative to the sides of the track.
+ * -------------------------------------------
+ * Adapted from the 2014 tracking algorithm by
+ * MW. Uses the same principle of probabilites
+ * to choose most likely target to follow, but
+ * is modified to follow the 2015 competition
+ * track with lines at both sides of the
+ * course.
+ * -------------------------------------------
+ * Author: Connor Newton
+ * Date:   November 17, 2014
  */
 
 #include "sensors/camera/LineDetection.h"
 #include "support/ARM_SysTick.h"
+#include "devices/TFC_SHIELD.h"
+#include <math.h>
 
-static struct detectedTransitions_s lineTransitions = { .numberOfTransitions = 0 };
-static struct detectedLines_s detectedLines = { .numberOfLines = 0 };
+static Edge     edgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
+static Line     lineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
+static Line     targetLine;
+static StopLine stop;
+static TrackingState trackingState;
 
-void findLine(volatile uint16_t* lineScanImage, carState_s* carState, uint16_t derivativeThreshold)
+#define L 0
+#define R 1
+#define start  edges[0].pos //Macros for easy/readable access to line...
+#define finish edges[1].pos //...start/finish.
+
+void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
+	
+	/* See findPosition() for details about what this lot does */
+	static int16_t dI[128]; derivative(linescan, dI, 128);
+	static uint8_t numFeatures;
+	               numFeatures = findEdges(dI, dI_threshold);
+	               numFeatures = findLines(edgeBuffer, numFeatures);
+
+	weightLines(&targetLine, lineBuffer, numFeatures);
+	uint8_t best = 0;
+    #define bestLine lineBuffer[best]
+	
+	/* Identify correct 'line' */
+	for (uint8_t k = 1; k < numFeatures; k++)
+		if (lineBuffer[k].P_width > bestLine.P_width &&
+			lineBuffer[k].edges[L].type != flat &&
+			lineBuffer[k].edges[R].type != flat )
+				best = k;
+
+	targetLine = bestLine;
+	return;
+
+    #undef bestLine	
+}
+
+void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold)
 {
-	static int16_t imageDifferential[128];
-	struct detectedLine_s bestLine = { .certainty = 0 };
-	static struct detectedLine_s previousLine;
-	lineTransitions.numberOfTransitions = 0;
-	detectedLines.numberOfLines = 0;
+	/* If car has 'stopped', nothing to do; return */
+	if (carState->lineDetectionState == STOPLINE_DETECTED) return;
 
-	getFirstDerivative(lineScanImage, imageDifferential, 128);
-	findTransitions(&lineTransitions, imageDifferential, derivativeThreshold);
-	transitionsToLines(&detectedLines, &lineTransitions);
+	/* Get derivative of linescan image */
+	static int16_t dI[128];
+	derivative(linescan, dI, 128);
 
-	if (detectedLines.numberOfLines == 0)
-	{
-		if (carState->lineDetectionState != STOPLINE_DETECTED)
-		{
-			if(TFC_Ticker[3] < LOST_LINE_RESET_DURATION)
-			{
-				carState->lineDetectionState = LINE_TEMPORARILY_LOST;
-			}
-			else if(TFC_Ticker[3] > MAX_LOST_LINE_DURATION)
-			{
-				carState->lineDetectionState = LINE_LOST;
-			}
+	/* Look for edges and classify */
+	static uint8_t numFeatures = 0;
+	numFeatures = findEdges(dI, dI_threshold);
+	
+	/* Generate possible lines for analysis */
+	numFeatures = findLines(edgeBuffer, numFeatures);
+
+	/* Find best match for target line */
+	weightLines(&targetLine, lineBuffer, numFeatures);
+	uint8_t best = 0;
+	#define bestLine lineBuffer[best]
+	
+	for (uint8_t k = 1; k < numFeatures; k++)
+		if (lineBuffer[k].P_line > bestLine.P_line) best = k;
+
+	/* Decide what to do with the result */
+	if (bestLine.P_line > MIN_CERTAINTY) {
+
+		/* Determine if detected line spans the whole track:
+		 * if neither of the edges are flat then yes */
+		if (bestLine.edges[L].type != flat &&
+			bestLine.edges[R].type != flat) {
+
+			trackingState = full;
+			TFC_ClearLED(0);
+			TFC_ClearLED(2);
+			TFC_ClearLED(3);
+			TFC_SetLED(1);
+
+			/* Calculate car's road position */
+			int8_t center = ((bestLine.start + bestLine.finish)/2) - 64;
+			carState->lineCenter = center;
+			//This is the offset of the center of the track from the car's
+			//perspective, -not- the offset of the car (i.e. the track position)
 		}
-		return;
-	}
+		else {
+			/* We have detected a track partial - we cannot calculate
+			 * the absolute center of the track without edges at both sides:
+			 * instead must estimate new position of car using change in edge
+			 * positions */
+			int8_t offset = 0;
 
-	//Populate line certainty values
-	weightLines(&previousLine, &detectedLines);
-
-	//Select line with highest certainty
-	for (uint8_t k = 0; k < detectedLines.numberOfLines; k++)
-	{
-		if (bestLine.certainty < detectedLines.line[k].certainty)
-		{
-			bestLine = detectedLines.line[k];
+			/* Choose non-'flat' edge to use to calculate offset */
+			if (bestLine.edges[L].type != flat) {
+				/* Edge at RHS; RHS partial */
+				trackingState = partial_R;
+				TFC_SetLED(0);
+				TFC_SetLED(1);
+				TFC_ClearLED(2);
+				TFC_ClearLED(3);
+				
+				offset = bestLine.edges[L].pos - targetLine.edges[L].pos;
+			}
+			else if (bestLine.edges[R].type != flat) {
+				/* Edge at LHS; LHS partial */
+				trackingState = partial_L;
+				TFC_SetLED(0);
+				TFC_SetLED(1);
+				TFC_ClearLED(2);
+				TFC_ClearLED(3);
+				
+				offset = bestLine.edges[R].pos - targetLine.edges[R].pos;
+			}
+			/* Apply offset to position */
+			carState->lineCenter += offset;
+			//This is the offset of the center of the track from the car's
+			//perspective, -not- the offset of the car (i.e. the track position)
 		}
-	}
 
-//	TERMINAL_PRINTF("Found line at %i with width %i,\t width certainty %i,\t relative position difference %i and certainty %i,\t relative width difference %i and certainty %i,\t total certainty %i\n", bestLine.center, bestLine.width, (int16_t)(1000.0f*bestLine.widthCertainty), previousLine.center - bestLine.center, (int16_t)(1000.0f*bestLine.relativePositionCertainty), previousLine.width - bestLine.width, (int16_t)(1000.0f*bestLine.relativeWidthCertainty), (int16_t)(1000.0f*bestLine.certainty));
+		/* Store best line as the new target line */
+		targetLine = bestLine;
+
+		/* Update car status; reset timeout counter */
+		carState->lineDetectionState = LINE_FOUND;
+		TFC_Ticker[3] = 0;
+	}
+	else {
+		
+		/* Look for stop line */
+		/*
+		if ( findStop(lineBuffer, numFeatures) ) {
+		 	carState->lineDetectionState = STOPLINE_DETECTED;
+		 	TFC_ClearLED(1);
+		 	TFC_SetLED(2);
+		 	TFC_SetLED(3);
+		 	return;
+		}
+		*/
+		
+		
+		/* And if not this then probably just noise or car
+		 * is traversing a cross-over section
+		 */
+		if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION) {
+			 carState->lineDetectionState = LINE_LOST;
+			 TFC_ClearLED(1);
+			 TFC_ClearLED(2);
+			 TFC_SetLED(3);
+		}
+	 	else {
+	 		carState->lineDetectionState = LINE_TEMPORARILY_LOST;
+	 		TFC_ClearLED(1);
+	 		TFC_SetLED(2);
+	 		TFC_ClearLED(3);
+	 	}
+	}
 
 	
+	return;
 
-	if (bestLine.certainty > MIN_CERTAINTY)
-	{
-		previousLine = bestLine;
-		carState->lineCenter = bestLine.center;
-		if (carState->lineDetectionState != STOPLINE_DETECTED)
-		{
-			carState->lineDetectionState = LINE_FOUND;
-		}
-		TFC_Ticker[3] = 0;
-		return;
-	}
-	else
-	{
-		if (TFC_Ticker[3] < LOST_LINE_RESET_DURATION)
-		{
-			if (carState->lineDetectionState != STOPLINE_DETECTED)
-			{
-				carState->lineDetectionState = LINE_TEMPORARILY_LOST;
-			}
-			return;
-		}
-
-		bestLine.widthCertainty = 0;
-
-		//Select line with highest certainty based on just width
-		for (uint8_t k = 0; k < detectedLines.numberOfLines; k++)
-		{
-			if (bestLine.widthCertainty < detectedLines.line[k].widthCertainty)
-			{
-				bestLine = detectedLines.line[k];
-			}
-		}
-		if (bestLine.widthCertainty > MIN_CERTAINTY)
-		{
-			previousLine = bestLine;
-			TFC_Ticker[3] = 0;
-			carState->lineCenter = bestLine.center;
-			if (carState->lineDetectionState != STOPLINE_DETECTED)
-			{
-				carState->lineDetectionState = LINE_FOUND;
-			}
-			return;
-		}
-
-		// No line found
-		if (carState->lineDetectionState != STOPLINE_DETECTED && TFC_Ticker[3] > MAX_LOST_LINE_DURATION)
-		{
-			carState->lineDetectionState = LINE_LOST;
-		}
-		return;
-	}
+	#undef bestLine
 }
 
-int8_t findTransitions(struct detectedTransitions_s* detectedTransitions, int16_t* derivative, uint16_t derivativeThreshold)
+uint8_t findEdges(int16_t* derivative, uint16_t threshold)
 {
-	//Find and log positions of all transitions and their directions
-	for (uint8_t k = 0; k < 128 && detectedTransitions->numberOfTransitions < MAX_NUMBER_OF_TRANSITIONS; k++)
-	{
-		if (derivative[k] >= derivativeThreshold)
-		{
-			detectedTransitions->transition[detectedTransitions->numberOfTransitions].position = k;
-			detectedTransitions->transition[detectedTransitions->numberOfTransitions].direction = blackToWhite;
-//			TERMINAL_PRINTF("end at %i, ", detectedTransitions->transition[detectedTransitions->numberOfTransitions].position);
-			detectedTransitions->numberOfTransitions++;
-		}
-		else if (derivative[k] <= -derivativeThreshold)
-		{
-			detectedTransitions->transition[detectedTransitions->numberOfTransitions].position = k;
-			detectedTransitions->transition[detectedTransitions->numberOfTransitions].direction = whiteToBlack;
-//			TERMINAL_PRINTF("start at %i, ", detectedTransitions->transition[detectedTransitions->numberOfTransitions].position);
-			detectedTransitions->numberOfTransitions++;
-		}
-	}
-//	TERMINAL_PRINTF("/n");
-	return 0;
-}
+	uint8_t numEdges = 0; //Number of edges found.
 
-int8_t transitionsToLines(struct detectedLines_s* detectedLines, struct detectedTransitions_s* detectedTransitions)
-{
-	//Start from first white to black transition and look for pairs, store starts and ends
-	for (uint8_t k = 0; k < detectedTransitions->numberOfTransitions && detectedLines->numberOfLines < MAX_NUMBER_OF_LINES; k++)
-	{
-		if (detectedTransitions->transition[k].direction == whiteToBlack)
+	/* Find and log positions of all transitions and their directions */
+	for (uint8_t k = 0;
+		 k < 128 && numEdges < MAX_NUMBER_OF_TRANSITIONS;
+		 k++) {
+
+		/* If large, +ve derivative: rising edge */
+		if (derivative[k] >= threshold)
 		{
-			detectedLines->line[detectedLines->numberOfLines].start = detectedTransitions->transition[k].position;
-			k++;
-			if (detectedTransitions->transition[k].direction == blackToWhite && k < detectedTransitions->numberOfTransitions)
-			{
-				detectedLines->line[detectedLines->numberOfLines].end = detectedTransitions->transition[k].position;
-				detectedLines->line[detectedLines->numberOfLines].width = detectedLines->line[detectedLines->numberOfLines].end
-						- detectedLines->line[detectedLines->numberOfLines].start;
-				detectedLines->line[detectedLines->numberOfLines].center = detectedLines->line[detectedLines->numberOfLines].start
-						+ ((detectedLines->line[detectedLines->numberOfLines].width) / 2) - 64;
-				//Successfully found a line
-//				TERMINAL_PRINTF("Start: %i, end: %i ", detectedLines->line[detectedLines->numberOfLines].start, detectedLines->line[detectedLines->numberOfLines].end);
-				detectedLines->numberOfLines++;
-			}
-			else
-			{
-				//Found a second line start
-				k--;
-			}
+			edgeBuffer[numEdges].pos = k;
+			edgeBuffer[numEdges].type = rising;
+			numEdges++;
+		}
+		/* If large, -ve derivative: white->black edge */
+		else if (derivative[k] <= -threshold)
+		{
+			edgeBuffer[numEdges].pos = k;
+			edgeBuffer[numEdges].type = falling;
+			numEdges++;
 		}
 	}
-//	TERMINAL_PRINTF("\n");
-	return 0;
+	return numEdges;
 }
 
-int8_t weightLines(struct detectedLine_s* previousLine, struct detectedLines_s* detectedLines)
+uint8_t findLines(Edge* edges, uint8_t numEdges)
 {
-	for (uint8_t k = 0; k < detectedLines->numberOfLines; k++)
-	{
-		detectedLines->line[k].widthCertainty = getProbability(detectedLines->line[k].width, LINE_WIDTH_SD, LINE_WIDTH_MEAN);
+	uint8_t l = 0; //Number of pairs generated
 
-		detectedLines->line[k].relativePositionCertainty = getProbability(previousLine->center - detectedLines->line[k].center, LINE_CENTER_DIFFERENCE_SD,
-				LINE_CENTER_DIFFERENCE_MEAN);
+	/* Start constructing first line */
+	lineBuffer[l].edges[L].pos = 0;
+	lineBuffer[l].edges[L].type = flat;
+	
+	/* A line potentially exists between every pair of edges */
+	for (uint8_t e = 0; e < numEdges; e++) {
 
-		detectedLines->line[k].relativeWidthCertainty = getProbability(previousLine->width - detectedLines->line[k].width, LINE_WIDTH_DIFFERENCE_SD,
-				LINE_WIDTH_DIFFERENCE_MEAN);
+		/* Make sure we only capture the next edge of a different type */
+		
+		if (edges[e].type == lineBuffer[l].edges[L].type) continue;
 
-		detectedLines->line[k].certainty = detectedLines->line[k].widthCertainty * detectedLines->line[k].relativePositionCertainty
-				* detectedLines->line[k].relativeWidthCertainty;
+		/* Finish constructing previous line */
+		lineBuffer[l].edges[R] = edges[e];
+		lineBuffer[l].width = //Calculate width of line
+			lineBuffer[l].finish - lineBuffer[l].start;
+
+		/* Start constructing next line */
+		lineBuffer[++l].edges[L] = edges[e];
+	}
+
+	/* Finish constructing final line */
+	lineBuffer[l].edges[R].pos = 127;
+	lineBuffer[l].edges[R].type = flat;
+	lineBuffer[l].width = //Calculate width of line
+				lineBuffer[l].finish - lineBuffer[l].start;
+
+	return ++l;
+}
+
+void weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges) {
+	
+	/* Test each edge against both target edges */
+	for (uint8_t t = 0; t < 2; t++)
+		for (uint8_t e = 0; e < numEdges; e++) {
+			/* Calculate probability of edge being edge based on change in
+			 * position only
+			 */
+			int16_t dPos = edges[e].pos - targetEdges[t].pos;
+			edges[e].P_dPos[t] = getProbability(dPos, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+	
+			/* Calculate combined probability */
+			edges[e].P_edge[t]  = 1;
+			edges[e].P_edge[t] *= edges[e].P_dPos[t];
+		}
+	
+	return;
+}
+
+int8_t weightLines(Line* targetLine, Line* lines, uint8_t numLines)
+{
+	for (uint8_t k = 0; k < numLines; k++) {
+
+		/* Calculate probability line is line based on width */
+		lines[k].P_width = getProbability( lines[k].width,
+								             LINE_WIDTH_SD, LINE_WIDTH_MEAN );
+
+		/* Calculate probabilty line is line based on change in width */
+		uint8_t dWidth = lines[k].width - targetLine->width;
+		lines[k].P_dWidth = getProbability( dWidth,
+								             LINE_DWIDTH_SD, LINE_DWIDTH_MEAN );
+
+		/* Factor likelihood of correct edges */
+		weightEdges(targetLine->edges, lines[k].edges, 2);
+
+		/* Calculate combined probability */
+		lines[k].P_line  = 1;
+		//lines[k].P_line *= lines[k].P_dWidth
+		lines[k].P_line *= lines[k].edges[L].P_edge[L];
+		lines[k].P_line *= lines[k].edges[R].P_edge[R];
 	}
 	return 0;
 }
 
+ #define lineA lines[0]
+ #define lineB lines[2]
+ #define gap   lines[1]
 
-
-int8_t weightStopLines(struct stopLines_s* stopLines)
+uint8_t findStop(Line* lines, uint8_t numLines)
 {
-	for (uint8_t i = 0; i < stopLines->numberOfStopLines; i++)
-	{
-		stopLines->stopLine[i].line[0].widthCertainty = getProbability(stopLines->stopLine[i].line[0].width, STOPLINE_SIDE_WIDTH_SD, STOPLINE_SIDE_WIDTH_MEAN);
-		stopLines->stopLine[i].line[2].widthCertainty = getProbability(stopLines->stopLine[i].line[2].width, STOPLINE_SIDE_WIDTH_SD, STOPLINE_SIDE_WIDTH_MEAN);
-		stopLines->stopLine[i].gap1 = (stopLines->stopLine[i].line[1].center + 64) - stopLines->stopLine[i].line[0].end;
-		stopLines->stopLine[i].gap2 = stopLines->stopLine[i].line[2].start - (stopLines->stopLine[i].line[1].center + 64);
-		stopLines->stopLine[i].gapWidthCertainty1 = getProbability(stopLines->stopLine[i].gap1, STOPLINE_GAP_WIDTH_SD, STOPLINE_GAP_WIDTH_MEAN);
-		stopLines->stopLine[i].gapWidthCertainty2 = getProbability(stopLines->stopLine[i].gap2, STOPLINE_GAP_WIDTH_SD, STOPLINE_GAP_WIDTH_MEAN);
+	/* Iterate though groups of 3 consecutive lines
+	 * --------------------------------------------
+	 * [0] Line A (Black)
+	 * [1] Gap    (White)
+	 * [2] Line B (Black)
+	 */
+	for (uint8_t i = 0; i < numLines - 3; i++) {
 
-		stopLines->stopLine[i].certainty = stopLines->stopLine[i].line[0].widthCertainty * stopLines->stopLine[i].line[1].widthCertainty
-				* stopLines->stopLine[i].line[2].widthCertainty * stopLines->stopLine[i].gapWidthCertainty1 * stopLines->stopLine[i].gapWidthCertainty2;
+		/* Gather data */
+		for (uint8_t l = 0; l < 3; l++) stop.lines[l] = lines[i + l];
+
+		/* Calculate probabilities */
+		stop.P_lineA = getProbability(stop.lineA.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
+		stop.P_lineB = getProbability(stop.lineB.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
+		stop.P_gap   = getProbability(stop.gap.width, STOP_GAP_WIDTH_SD, STOP_GAP_WIDTH_MEAN);
+
+		/* Combine probabilities */
+		stop.P_stop  = 1;
+		stop.P_stop *= stop.P_lineA;
+		stop.P_stop *= stop.P_lineB;
+		stop.P_stop *= stop.P_gap;
+
+		/* Compare to trust threshold */
+		if (stop.P_stop > STOP_MIN_CERTAINTY) return 1; //Return true; STOP THE CAR!
+		else return 0;
 	}
-	return 0;
+	return 1;
 }
 
 void preloadProbabilityTables()
 {
-	getProbability(0, STOPLINE_SIDE_WIDTH_SD, STOPLINE_SIDE_WIDTH_MEAN);
-	getProbability(0, STOPLINE_GAP_WIDTH_SD, STOPLINE_GAP_WIDTH_MEAN);
-}
+	getProbability(0, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
+	getProbability(0, STOP_GAP_WIDTH_SD, STOP_GAP_WIDTH_MEAN);
+}	
 
-void findStop(carState_s* carState)
+void derivative(volatile uint16_t* input, int16_t* output, uint8_t length)
 {
-	if (detectedLines.numberOfLines < 3)
-		return;
-
-	struct stopLines_s stopLines =
-	{ .numberOfStopLines = 0 };
-
-	for (int8_t i = 0; i <= detectedLines.numberOfLines - 3; i++)
-	{
-		for (int8_t j = i + 1; j <= detectedLines.numberOfLines - 2; j++)
-		{
-			for (int8_t k = j + 1; k <= detectedLines.numberOfLines - 1 && stopLines.numberOfStopLines < MAX_NUMBER_OF_STOP_LINES; k++)
-			{
-				stopLines.stopLine[stopLines.numberOfStopLines].line[0] = detectedLines.line[i];
-				stopLines.stopLine[stopLines.numberOfStopLines].line[1] = detectedLines.line[j];
-				stopLines.stopLine[stopLines.numberOfStopLines].line[2] = detectedLines.line[k];
-				stopLines.numberOfStopLines++;
-			}
-		}
-	}
-
-	weightStopLines(&stopLines);
-
-//	for (uint8_t i = 0; i < stopLines.numberOfStopLines; i++)
-//	{
-//		TERMINAL_PRINTF("Found stop line %i with certainty %i, gap certainties %i and %i, side width certainties of %i and %i, center width certainty of %i.\t\t", i, (int16_t)(stopLines.stopLine[i].certainty*1000.0f), (int16_t)(stopLines.stopLine[i].gapWidthCertainty1*1000.0f), (int16_t)(stopLines.stopLine[i].gapWidthCertainty2*1000.0f), (int16_t)(stopLines.stopLine[i].line[0].widthCertainty*1000.0f), (int16_t)(stopLines.stopLine[i].line[2].widthCertainty*1000.0f), (int16_t)(stopLines.stopLine[i].line[1].widthCertainty*1000.0f));
-//	}
-//	TERMINAL_PRINTF("\r\n");	
-
-	for (uint8_t i = 0; i < stopLines.numberOfStopLines; i++)
-	{
-		if (stopLines.stopLine[i].certainty > MIN_STOPLINE_CERTAINTY)
-		{
-			carState->lineDetectionState = STOPLINE_DETECTED;
-		}
-	}
-
-	return;
-}
-
-void getFirstDerivative(volatile uint16_t* input, int16_t* output, uint8_t length)
-{
-
 	output[0] = 0;
 
 	for (uint8_t i = 1; i < length; i++)
-	{
 		output[i] = input[i] - input[i - 1];
-	}
 }
-

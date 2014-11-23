@@ -455,9 +455,9 @@ void InitADC0()
 
 void TFC_InitADCs(carState_s* carStateInputPointer)
 {
-	 InitADC0();
+	InitADC0();
 	 
-	 carState = carStateInputPointer;
+	carState = carStateInputPointer;
 
 	
 	//All Adc processing of the Pots and linescan will be done in the ADC0 IRQ!
@@ -465,25 +465,22 @@ void TFC_InitADCs(carState_s* carStateInputPointer)
 	//This is done to automate the linescan capture on Channel 0 to ensure that timing is very even
 	CurrentADC_State =	ADC_STATE_INIT;	
 
-    //The pump will be primed with the PIT interrupt.  upon timeout/interrupt it will set the SI signal high
+  //The pump will be primed with the PIT interrupt.  upon timeout/interrupt it will set the SI signal high
 	//for the camera and then start the conversions for the pots.
 	
-	//Enable clock to the PIT
-	SIM_SCGC6 |= SIM_SCGC6_PIT_MASK;
-	
-	//We will use PIT0
-	TFC_SetLineScanExposureTime(TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS);
-	//enable PIT0 and its interrupt
-	PIT_TCTRL0 = PIT_TCTRL_TEN_MASK | PIT_TCTRL_TIE_MASK;
+  /* (PIT - Periodic Interrupt Timer)
+   * Configure PIT0
+   */
+	SIM_SCGC6 |= SIM_SCGC6_PIT_MASK; //Enable clock to the PIT module.
+	PIT_TCTRL0 = PIT_TCTRL_TEN_MASK | PIT_TCTRL_TIE_MASK; //Enable PIT channel 0; enable interrupts.
+	PIT_MCR |= PIT_MCR_FRZ_MASK; //Pause PIT0 when in debug mode.
+	PIT_MCR &= ~PIT_MCR_MDIS_MASK; //Enable PIT module (Reset = 1 - disabled).
 
-	PIT_MCR |= PIT_MCR_FRZ_MASK; // stop the pit when in debug mode
-	//Enable the PIT module
-	PIT_MCR &= ~PIT_MCR_MDIS_MASK;
+  TFC_SetLineScanExposureTime(TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS);
 	
-
+  /* Configure and enable interrupts */
 	set_irq_priority (INT_PIT - 16, 0); //Set to highest priority
 	set_irq_priority (INT_ADC0 - 16, 1); //Set to second highest priority
-	
 	enable_irq(INT_PIT-16);
 	enable_irq(INT_ADC0-16);
 }

@@ -34,9 +34,13 @@ int main(void)
 	static carState_s carState =
 	{ .motorState = FORCED_DISABLED, .UARTSpeedState = UNDEFINED, .lineDetectionState = LINE_LOST, .lineScanState = NO_NEW_LINESCAN_IMAGE };
 	TFC_Init(&carState);
+	
+	while (carState.lineScanState != LINESCAN_IMAGE_READY){};
+	InitTracking(LineScanImage0, 350);
+	TFC_SetLED(0);
 
 	while (1)
-	{
+	{	
 		TFC_Task();
 		evaluateUARTorSpeed(&carState);
 		evaluateMotorState(&carState);
@@ -49,19 +53,23 @@ int main(void)
 		default:
 		case 0:
 			rawFocussingMode(&carState);
+			//TFC_ClearLED(3);
 			break;
 
 		case 1:
 			servoAlignment();
+			//TFC_ClearLED(3);
 			//speedTestMode(&carState);
 			break;
 
 		case 2:
 			derivativeFocussingMode(&carState);
+			//TFC_ClearLED(3);
 			break;
 
 		case 3:
 			lineFollowingMode(&carState);
+			TFC_SetLED(0);
 			break;
 		}
 	}
@@ -203,7 +211,7 @@ void derivativeFocussingMode(carState_s* carState)
 
 		TFC_SetLineScanExposureTime(calculateNewExposure(getTotalIntensity(LineScanImage0), TARGET_TOTAL_INTENSITY));
 		int16_t temp[128];
-		getFirstDerivative(LineScanImage0, temp, 128);
+		derivative(LineScanImage0, temp, 128);
 		//						
 		for (uint8_t i = 0; i < 128; i++)
 		{
@@ -230,21 +238,16 @@ void lineFollowingMode(carState_s* carState)
 	if (carState->lineScanState == LINESCAN_IMAGE_READY)
 	{
 		steeringControlUpdate = LINESCAN_IMAGE_READY;
-		findLine(LineScanImage0, carState, 350);// ((uint32_t)350*TARGET_TOTAL_INTENSITY) / totalIntensity);
+		findPosition(LineScanImage0, carState, 350);// ((uint32_t)350*TARGET_TOTAL_INTENSITY) / totalIntensity);
+		totalIntensity = getTotalIntensity(LineScanImage0);
+		TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
+		carState->lineScanState = NO_NEW_LINESCAN_IMAGE;
 	}
 
 	if (TFC_Ticker[0] >= 200)
 	{
 		TFC_Ticker[0] = 0;
 		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
-	}
-
-	if (carState->lineScanState == LINESCAN_IMAGE_READY) //Stopline detection and exposure control are performed after servo has been updated
-	{
-		carState->lineScanState = NO_NEW_LINESCAN_IMAGE;
-		findStop(carState);
-		totalIntensity = getTotalIntensity(LineScanImage0);
-		TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
 	}
 
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
@@ -256,7 +259,12 @@ void lineFollowingMode(carState_s* carState)
 
 		if (carState->UARTSpeedState == SINGLE_SPEED_SINGLE_UART)
 		{
-
+			/*
+			TFC_SetMotorPWM(
+					getDesiredMotorPWM(targetSpeed, speedMeasurement[0], isANewmeasurementAvailable(CHANNEL_0), CHANNEL_0),
+					getDesiredMotorPWM(targetSpeed, speedMeasurement[1], isANewmeasurementAvailable(CHANNEL_1), CHANNEL_1));
+			*/
+			TFC_SetMotorPWM(0.2,0.2);
 		}
 		else if (carState->UARTSpeedState == DUAL_SPEED_NO_UART)
 		{
@@ -287,7 +295,7 @@ void lineFollowingMode(carState_s* carState)
 
 		if (speedMeasurement[0] > 2.0f || speedMeasurement[1] > 2.0f)
 		{
-			TFC_SetMotorPWM(-0.5f, -0.5f);
+			//TFC_SetMotorPWM(-0.5f, -0.5f);
 		}
 		else
 		{
