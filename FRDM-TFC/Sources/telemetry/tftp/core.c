@@ -10,12 +10,14 @@
  *      Author: Connor Newton
  *        Date: November 19, 2014
  *
- * Planned features:
+ * Features:
  *  - Data compression by grouping code/value
  *    pairs with similar time stamps within
  *    a definable time tolerance (e.g. 1ms)
+ *       Added: November 24, 2014
  */
 
+#include "telemetry/tftp/core.h"
 #include "config.h"
 
 /* Import link layer service and add #defines
@@ -41,7 +43,6 @@ void cast_uint8(uint8_t* out, void* var, uint16_t size) {
 		*out = ((uint8_t *)var)[size - 1];
 	return;
 }
-
 
 /* Return 4 byte (single) time stamp to *time */
 void getTimeStamp(uint8_t * time) {
