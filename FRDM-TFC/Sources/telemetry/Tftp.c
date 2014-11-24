@@ -21,7 +21,7 @@
 /* Import link layer service and add #defines
  * for more portable use */
 #include "io/UART.h"
-#define SEND(str, len) UART0_Send((str), (len)
+#define SEND(str, len) UART0_Send((str), (len))
 
 /* Import data storage service and add
  * #defines for more portable use */
@@ -31,13 +31,13 @@
 /* #include SysTick module */
 #include "support/ARM_SysTick.h"
 #define TICKER (TFC_Ticker[TFTP_TICKER])
-#define ms float(1000/SYSTICK_FREQUENCY)
+#define ms ( (float) 1000/SYSTICK_FREQUENCY )
 
 /* Get constituent bytes of a variable */
-inline void cast_uint8(uint8_t* out, void* var, size_t size) {
+inline void cast_uint8(uint8_t* out, void* var, uint16_t size) {
 	
 	/* Cast var as uint8_t and copy bytes to *out */
-	for (;size > 0; size--; ++out)
+	for ( ; size > 0; size--, ++out)
 		*out = ((uint8_t *)var)[size - 1];
 	return;
 }
@@ -48,7 +48,7 @@ inline float getTime() { return TICKER * ms; }
 inline void getTimeStamp(uint8_t * time) {
 	
 	float t = getTime();
-	cast_uint8(time, t, sizeof t);
+	cast_uint8(time, &t, sizeof t);
 	return;
 }
 
@@ -74,14 +74,14 @@ int8_t Tftp_Send(uint8_t code, void* value, uint16_t size)
 	return 0;
 }
 
-int8_t Tftp_Push(uint_t code, void* value, uint16_t size)
+int8_t Tftp_Push(uint8_t code, void* value, uint16_t size)
 {
 	/* Static frame storage */
 	static uint8_t buffer[SERIAL_MAX_MSG_SIZE];
 	uint8_t w = 0;
 
 	/* Time data */
-	static float frameTime = getTime();
+	static float frameTime = 0;
 	       float  thisTime = getTime();
 
 	if ( /* Check time difference; if too large */
@@ -91,7 +91,8 @@ int8_t Tftp_Push(uint_t code, void* value, uint16_t size)
 	   ) {
 		
 		/* Send previous frame */
-		if (uint8_t error = SEND(buffer, w))
+		uint8_t error;
+		if ( (error = SEND(buffer, w)) )
 			return error;
 
 		/* Start a new one */
