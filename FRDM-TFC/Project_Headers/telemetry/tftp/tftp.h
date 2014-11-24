@@ -4,4 +4,4 @@
 #include "telemetry/tftp/core.h"
 #include "telemetry/tftp/attributes.h"
 
-#endif TFTP
+#endif //TFTP

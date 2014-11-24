@@ -8,7 +8,8 @@
 
 #define TFTP_ENDPOINT_PUSH(ID, CODE, TYPE, SIZE)				\
 																\
-int8_t Tftp_ ## ID ## _Push(uint8_t CODE, void* data) {			\   
+int8_t Tftp_ ## ID ## _Push(void* data) {			\
 	/* Push */													\
 	return Tftp_Push(CODE, data, (sizeof ( TYPE ) * SIZE ));	\
 }																\
+

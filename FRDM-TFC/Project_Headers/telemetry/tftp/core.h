@@ -11,6 +11,7 @@
 #ifndef TFTP_PROTOCOL_H_
 #define TFTP_PROTOCOL_H_
 
+#include <stdint.h>
 #include "telemetry/tftp/attributes.h"
 
 int8_t Tftp_Send(uint8_t code, void* value, uint16_t size);
