@@ -4,6 +4,9 @@
  *   Date: November 24, 2014
  */
 
+#ifndef FRDM_COLLECTOR
+#define FRDM_COLLECTOR
+
 #include <stdint.h>
 
 /* Define endpoint pointer */
@@ -27,6 +30,7 @@ typedef struct {
 #define COLLECTOR_ENDPOINT_OK    0
 #define COLLECTOR_ENDPOINT_ERROR 1
 
-void             PIT1_IRQHandler();
 void             Collector_Init();
 CollectorStatus* Collector();
+
+#endif //FRDM_COLLECTOR

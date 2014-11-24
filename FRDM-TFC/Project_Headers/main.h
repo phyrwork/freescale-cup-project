@@ -28,9 +28,8 @@
 #include "control/ActiveDifferential.h"
 #include "support/ARM_SysTick.h"
 #include "support/carState_s.h"
+#include "telemetry/Collector.h"
 #include "config.h"
-
-
 
 void TFC_Init(carState_s* carState);
 void TFC_Task();
