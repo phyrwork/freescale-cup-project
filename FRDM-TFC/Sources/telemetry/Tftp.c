@@ -65,7 +65,7 @@ int8_t Tftp_Send(uint8_t code, void* value, uint16_t size)
 
 	/* Add key and value to frame */
 	buffer[w] = code;
-	cast_uint8(++w, value, size);
+	cast_uint8(buffer + ++w, value, size);
 	w += size;
 
 	/* Push value to link layer service */
@@ -97,13 +97,13 @@ int8_t Tftp_Push(uint8_t code, void* value, uint16_t size)
 
 		/* Start a new one */
 		frameTime = thisTime;  // Save new timestamp...
-		getTimeStamp(&buffer); // ...write to frame.
+		getTimeStamp(buffer); // ...write to frame.
 		w = 4;                 // Set write index.
 	}
 
 	/* Copy sample to frame */
 	buffer[w] = code;
-	cast_uint8(++w, value, size); 
+	cast_uint8(buffer + ++w, value, size); 
 	w += size;
 
 	return 0;
