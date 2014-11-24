@@ -1,7 +1,6 @@
 /* Collector.c
  * =====================================================
- * Periodic Interrupt Timer (PIT) driven data collection
- * service.
+ * ARM_SysTick timer driven data collection service.
  * 
  * Written for use with TFTP for FRDM-TFC.
  * 
@@ -42,14 +41,6 @@ CollectorItem items[] = {
 };
 #define NUM_ITEMS ( (sizeof items) / (sizeof (CollectorItem)) )
 
-/* PIT1 (Periodic Interrupt Timer) Interrupt Routine */
-void PIT1_IRQHandler()
-{
-	/* Increment all counters */
-	for (uint32_t i = 0; i < NUM_ITEMS; i++)
-		items[i].counter++;
-}
-
 /* Collector initialization routine */
 void Collector_Init()
 {
@@ -77,10 +68,16 @@ CollectorStatus* Collector()
 	/* Handle CollectorItems */
 	for (uint32_t i = 0; i < NUM_ITEMS; i++)
 	{
+		/* Add number of ticks since last epoch to counter */
+		items[i].counter += TICKER;
+
 		/* If CollectorItem counter has reached 
 		   or exceeded period in ticks */
 		if (items[i].counter >= items[i].period)
 		{
+			/* Reset counter to zero */
+			items[i].counter = 0;
+
 			/* Push data onto endpoint */
 			errors[i] = (*(items[i].endpoint))(items[i].data);
 
@@ -88,6 +85,9 @@ CollectorStatus* Collector()
 			if (errors[i]) status.flag = COLLECTOR_ENDPOINT_ERROR;
 		}
 	}
+
+	/* Reset ticker to zero */
+	TICKER = 0;
 	
 	/* Finished; return pointer to endpoint results */
 	return &status;
