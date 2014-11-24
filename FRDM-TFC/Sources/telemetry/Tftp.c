@@ -31,10 +31,10 @@
 /* #include SysTick module */
 #include "support/ARM_SysTick.h"
 #define TICKER (TFC_Ticker[TFTP_TICKER])
-#define ms ( (float) 1000/SYSTICK_FREQUENCY )
+#define TIME   ((float) TICKER/ (float) SYSTICK_FREQUENCY)
 
 /* Get constituent bytes of a variable */
-inline void cast_uint8(uint8_t* out, void* var, uint16_t size) {
+void cast_uint8(uint8_t* out, void* var, uint16_t size) {
 	
 	/* Cast var as uint8_t and copy bytes to *out */
 	for ( ; size > 0; size--, ++out)
@@ -44,10 +44,9 @@ inline void cast_uint8(uint8_t* out, void* var, uint16_t size) {
 
 
 /* Return 4 byte (single) time stamp to *time */
-inline float getTime() { return TICKER * ms; }
-inline void getTimeStamp(uint8_t * time) {
+void getTimeStamp(uint8_t * time) {
 	
-	float t = getTime();
+	float t = TIME;
 	cast_uint8(time, &t, sizeof t);
 	return;
 }
@@ -78,22 +77,24 @@ int8_t Tftp_Push(uint8_t code, void* value, uint16_t size)
 {
 	/* Static frame storage */
 	static uint8_t buffer[SERIAL_MAX_MSG_SIZE];
-	uint8_t w = 0;
+	static uint8_t w = 0;
 
 	/* Time data */
 	static float frameTime = 0;
-	       float  thisTime = getTime();
+	       float  thisTime = TIME;
 
 	if ( /* Check time difference; if too large */
 		 thisTime - frameTime > TFTP_TIMESTAMP_TOLERANCE ||
 		 /* Check there is enough space left in the buffer */
-		 sizeof buffer - w < size
+		 (sizeof buffer) - w < size
 	   ) {
 		
 		/* Send previous frame */
-		uint8_t error;
-		if ( (error = SEND(buffer, w)) )
-			return error;
+		if (w > 0) { //Don't send a blank frame
+			uint8_t error;
+			if ( (error = SEND(buffer, w)) )
+				return error;
+		}
 
 		/* Start a new one */
 		frameTime = thisTime;  // Save new timestamp...

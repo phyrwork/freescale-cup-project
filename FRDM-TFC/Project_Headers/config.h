@@ -33,8 +33,8 @@
 
 /* SERIAL IO */
 #define SERIAL_MAX_MSG_SIZE 512
-#define RB_RX_SIZE 2048
-#define RB_TX_SIZE 256
+#define RB_RX_SIZE 256
+#define RB_TX_SIZE 2048
 #define RB_MAX_DMA_SIZE 256
 
 /* TFTP configuration */
