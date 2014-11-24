@@ -50,7 +50,7 @@ void UART0_Process()
 }
 
 /* Encapsulate message and add to transmit buffer */
-uint8_t UART0_Send(uint8_t * msg, uint16_t size) {
+int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	uint8_t buffer[FR_MAX_ENC_SIZE]; //This is redundant data! See note below:
 	size = SerialEncode(msg, size, buffer);
 	return rbPushFrame(&TxBuffer, buffer, size);
