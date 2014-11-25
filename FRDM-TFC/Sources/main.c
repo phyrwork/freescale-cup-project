@@ -18,6 +18,7 @@ void TFC_Init(carState_s* carState)
 	TFC_SetMotorPWM(0, 0);
 	TFC_InitSpeedSensor();
 	preloadProbabilityTables(); //Prevents probability tables for stop line evaluation from being created too late
+	Collector_Init(); // Initialise telemetry
 //	Init_I2C();
 //	Init_MMA8451Q();
 }
@@ -42,6 +43,9 @@ int main(void)
 	while (1)
 	{	
 		TFC_Task();
+		
+		Collector(); // Telemetry routine
+		
 		evaluateUARTorSpeed(&carState);
 		evaluateMotorState(&carState);
 		
