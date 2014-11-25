@@ -42,8 +42,7 @@ classdef Tftp
             time = frame(1:obj.sizeof_time);
             % time = obj.formatTime(time);
             time = flip(time);
-            time = typecast(time, 'uint32');
-            time = cast(time, 'single');
+            time = typecast(time, 'single');
             
             index = obj.sizeof_time + 1; % advance frame read index
             

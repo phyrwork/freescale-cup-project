@@ -4,20 +4,23 @@ classdef TftpSession < Tftp
     
     properties
         id = char([]);
+        device = serial.empty;
         records = TftpRecord.empty;
         attributes = {};
     end
     
     methods
         % TftpSession constructor
-        function obj = TftpSession(id)
+        function obj = TftpSession(id, device)
             % parse input
             p = inputParser;
             addRequired(p, 'id', @ischar);
-            parse(p, id);
+            addRequired(p, 'device');
+            parse(p, id, device);
             
             % set properties
             obj.id = p.Results.id;
+            obj.device = p.Results.device;
             
             % instantiate records
             for i = 1:length(obj.modules)
@@ -50,6 +53,38 @@ classdef TftpSession < Tftp
                         segments(i).time,...
                         segments(i).value...
                     );
+            end
+        end
+        
+        % receive
+        % -----
+        % fetch data from serial; parse; store
+        %
+        function obj = receive(obj)
+            % get frames from serial port
+            raw = SerialReceive(obj.device);
+            
+            % decode frames
+            numFrames = 1;
+            for i = 1:length(raw)
+                %try
+                    frames{numFrames} = SerialDecode(raw{i});
+                    numFrames = numFrames + 1;
+                %catch
+                %    disp('Frame discarded.');
+                %end
+            end
+            
+            % split into samples
+            for i = 1:length(frames)
+                groups{i} = obj.parse(frames{i});
+            end
+            
+            % store samples from groups
+            for i = 1:length(groups)
+                for j = 1:length(groups{i})
+                    obj = obj.store(groups{i}(j));
+                end
             end
         end
     end
