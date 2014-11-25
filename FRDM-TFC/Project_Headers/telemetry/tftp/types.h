@@ -6,6 +6,9 @@
  *   Date: November 24, 2014
  */
 
+#ifndef TFTP_TYPES
+#define TFTP_TYPES
+
 /* Linescan camera attribute */
 #define TFTP_LINESCAN_TYPE  (uint16_t)
 #define TFTP_LINESCAN_SIZE  128
@@ -25,5 +28,7 @@
 /* Slip attributes */
 #define TFTP_SLIP_TYPE (float)
 #define TFTP_SLIP_SIZE 1
+
+#endif //TFTP_TYPES
 
 

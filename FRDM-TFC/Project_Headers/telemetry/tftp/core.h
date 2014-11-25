@@ -8,13 +8,12 @@
  * FRDM-TFC system.
  */
 
-#ifndef TFTP_PROTOCOL_H_
-#define TFTP_PROTOCOL_H_
+#ifndef TFTP_CORE
+#define TFTP_CORE
 
 #include <stdint.h>
-#include "telemetry/tftp/attributes.h"
 
 int8_t Tftp_Send(uint8_t code, void* value, uint16_t size);
 int8_t Tftp_Push(uint8_t code, void* value, uint16_t size);
 
-#endif
+#endif //TFTP_CORE
