@@ -1,5 +1,4 @@
 #include "main.h"
-#include "telemetry/Collector.h"
 
 #define TARGET_TOTAL_INTENSITY 300000//300000
 #define CHANNEL_0 0
@@ -19,7 +18,7 @@ void TFC_Init(carState_s* carState)
 	TFC_SetMotorPWM(0, 0);
 	TFC_InitSpeedSensor();
 	preloadProbabilityTables(); //Prevents probability tables for stop line evaluation from being created too late
-	Collector_Init();
+	Collector_Init(); // Initialise telemetry
 //	Init_I2C();
 //	Init_MMA8451Q();
 }
@@ -36,11 +35,13 @@ int main(void)
 	static carState_s carState =
 	{ .motorState = FORCED_DISABLED, .UARTSpeedState = UNDEFINED, .lineDetectionState = LINE_LOST, .lineScanState = NO_NEW_LINESCAN_IMAGE };
 	TFC_Init(&carState);
-	Collector();
 
 	while (1)
 	{
 		TFC_Task();
+		
+		Collector(); // Telemetry routine
+		
 		evaluateUARTorSpeed(&carState);
 		evaluateMotorState(&carState);
 		

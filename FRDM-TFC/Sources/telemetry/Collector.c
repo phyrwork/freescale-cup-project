@@ -27,17 +27,11 @@
 #define TICKER TFC_Ticker[COLLECTOR_TICKER]
 
 /* Include headers to access shared data */
-//SOMETHING SOMETHING #INCLUDES
+#include "sensors/camera/LineScanCamera.h"
 
 /* Define CollectorItems */
 CollectorItem items[] = {
-	/* [0] = */ {
-		/* data = */      0,
-		/* endpoint = */  0,
-		/* frequency = */ 0,
-		/* period = */    0,
-		/* counter = */   0
-	}
+	/* [0] = */ { /* data = */ &LineScanImage0, /* deref = */ 1, /* endpoint = */ &TFTP_LINESCAN0_ENDPOINT, /* frequency = */ 1, /* misc...*/ 0,0 }
 };
 #define NUM_ITEMS ( (sizeof items) / (sizeof (CollectorItem)) )
 
@@ -77,9 +71,19 @@ CollectorStatus* Collector()
 		{
 			/* Reset counter to zero */
 			items[i].counter = 0;
+			
+			/* Get pointer to data - this step required because
+			 * location of some information (i.e. linescan images
+			 * changes during operation */
+			void* ptr = items[i].data;
+			uint8_t r = items[i].deref;
+			while(r) {
+				ptr = (void*)(*((int*) ptr)); // Get address behind pointer.
+				r--; // Decrement distance to data.
+			}
 
 			/* Push data onto endpoint */
-			errors[i] = (*(items[i].endpoint))(items[i].data);
+			errors[i] = (*(items[i].endpoint))(ptr);
 
 			/* Set CollectorStatus error flag if appropriate */
 			if (errors[i]) status.flag = COLLECTOR_ENDPOINT_ERROR;
