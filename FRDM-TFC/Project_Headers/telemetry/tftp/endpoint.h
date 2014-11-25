@@ -6,10 +6,20 @@
  *   Date: November 24, 2014
  */
 
-#define TFTP_ENDPOINT_PUSH(ID, CODE, TYPE, SIZE)				\
+#ifndef TFTP_ENDPOINT
+#define TFTP_ENDPOINT
+
+/* Endpoint symbol constructor */
+#define TFTP_ENDPOINT_SYM(ID) ID ## _ENDPOINT
+
+/* Endpoint method constructor */
+#define TFTP_ENDPOINT_PUSH(SYM, CODE, TYPE, SIZE)				\
 																\
-int8_t Tftp_ ## ID ## _Push(void* data) {			\
-	/* Push */													\
-	return Tftp_Push(CODE, data, (sizeof ( TYPE ) * SIZE ));	\
+int8_t SYM (void* data) {										\
+	return Tftp_Push( CODE , data , (sizeof ( TYPE )) * SIZE );	\
 }																\
+
+#endif //TFTP_ENDPOINT
+
+
 
