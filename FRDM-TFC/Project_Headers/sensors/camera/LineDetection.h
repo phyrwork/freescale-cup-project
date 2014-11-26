@@ -69,12 +69,11 @@ typedef struct {
 	float   P_line;
 } Line;
 
-typedef enum {
-	full,
-	partial_L,
-	partial_R,
-	none
-} TrackingState;
+typedef uint8_t PositioningState;
+#define POSITIONING_STATE_FULL 0
+#define POSITIONING_STATE_PARTIAL_LEFT 10
+#define POSITIONING_STATE_PARTIAL_RIGHT 20
+#define POSITIONING_STATE_PARTIAL_NONE 255
 
 typedef struct {
 	Line    lines[3];
@@ -97,6 +96,9 @@ uint8_t findStop(Line* lines, uint8_t numLines);
 void    preloadProbabilityTables();
 void    derivative(volatile uint16_t* input, int16_t* output, uint8_t length);
 
-
+/* Data sharing for telemetry */
+extern PositioningState positioningState; // Line tracking status
+extern Line             targetLine;	// Current model line
+extern int8_t           trackPosition;     // Current detected road position
 
 #endif /* LINEDETECTION_H_ */

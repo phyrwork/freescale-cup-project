@@ -20,11 +20,12 @@
 #include "devices/TFC_SHIELD.h"
 #include <math.h>
 
-static Edge     edgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
-static Line     lineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
-static Line     targetLine;
-static StopLine stop;
-static TrackingState trackingState;
+static Edge             edgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
+static Line             lineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
+       Line             targetLine;
+static StopLine         stop;
+       PositioningState positioningState;
+       int8_t           trackPosition;
 
 #define L 0
 #define R 1
@@ -88,7 +89,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 		if (bestLine.edges[L].type != flat &&
 			bestLine.edges[R].type != flat) {
 
-			trackingState = full;
+			positioningState = POSITIONING_STATE_FULL;
 			TFC_ClearLED(2);
 			TFC_ClearLED(3);
 			TFC_SetLED(1);
@@ -98,6 +99,8 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			carState->lineCenter = center;
 			//This is the offset of the center of the track from the car's
 			//perspective, -not- the offset of the car (i.e. the track position)
+			
+			trackPosition = carState->lineCenter; //Local copy of road position for telemetry.
 		}
 		else {
 			/* We have detected a track partial - we cannot calculate
@@ -109,7 +112,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			/* Choose non-'flat' edge to use to calculate offset */
 			if (bestLine.edges[L].type != flat) {
 				/* Edge at RHS; RHS partial */
-				trackingState = partial_R;
+				positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
 				TFC_SetLED(1);
 				TFC_ClearLED(2);
 				TFC_ClearLED(3);
@@ -118,7 +121,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			}
 			else if (bestLine.edges[R].type != flat) {
 				/* Edge at LHS; LHS partial */
-				trackingState = partial_L;
+				positioningState = POSITIONING_STATE_PARTIAL_LEFT;
 				TFC_SetLED(1);
 				TFC_ClearLED(2);
 				TFC_ClearLED(3);
@@ -129,6 +132,8 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			carState->lineCenter += offset;
 			//This is the offset of the center of the track from the car's
 			//perspective, -not- the offset of the car (i.e. the track position)
+			
+			trackPosition = carState->lineCenter; //Local copy of road position for telemetry.
 		}
 
 		/* Store best line as the new target line */
