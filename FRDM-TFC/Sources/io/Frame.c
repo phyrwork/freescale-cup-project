@@ -34,24 +34,17 @@ uint8_t buffer[FR_MAX_ENC_SIZE];
  */
 uint16_t SerialEncode(uint8_t * msg, uint16_t msgLen, uint8_t * rtnMsg) {
 
-	uint16_t r = 0; //read pos.
-	uint16_t w = 0; //write pos.
-	uint16_t c = 0; //checksum
-
-	/* Populate encapuslation buffer with control data and message */
-
-	buffer[w++] = ((uint8_t *)&msgLen)[1]; //Write byte-wise, MSB then LSB
-	buffer[w++] = ((uint8_t *)&msgLen)[0]; //(Casting to uint16_t incompatible with 32-bit alignment)
-
-	for(r = 0; r < msgLen; r++) buffer[w++] = msg[r]; //Copy message to buffer
-
-	c = CRC16(CRC16_FIRSTPASS, buffer, w); //Perform checksum on buffer up to this point
-	buffer[w++] = ((uint8_t *)&c)[1]; //and write byte-wise as before.
-	buffer[w++] = ((uint8_t *)&c)[0];
-
-
+	uint16_t w;
+	
+	/* Removed control information: (will add it back in when needed)
+	 * ---------------------------------------------------------------------------
+	 * Length field unnecessary - on FRDM side buffer can provide this information
+	 * CRC field maybe not that useful - no errors yet and MATLAB implementation
+	 * very slow.
+	 */
+	
 	/* Encode with COBS and return */
-	w = cobs_encode(buffer, w, rtnMsg);
+	w = cobs_encode(msg, msgLen, rtnMsg);
 	rtnMsg[w++] = '\0'; // Add delimiting zero.
 	return w;
 }

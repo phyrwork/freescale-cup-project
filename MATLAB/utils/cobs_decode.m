@@ -2,6 +2,7 @@ function [ output ] = cobs_decode( input )
 %cobs_decode Decode string with COBS
 
     % Unstuffs 'input' into 'output'
+    output = uint8([]);
     read_index = 0;
     write_index = 0;
 
@@ -25,7 +26,5 @@ function [ output ] = cobs_decode( input )
             write_index = write_index + 1;
         end
     end 
-    
-    output = uint8(output);
 end
 

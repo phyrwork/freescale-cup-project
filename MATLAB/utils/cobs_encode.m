@@ -2,6 +2,7 @@ function [ output ] = cobs_encode( input )
 %cobs_encode Encode string with COBS
     
     % Stuffs bytes of data 'input' to 'output'
+    output = uint8([]);
     read_index = 0;
     write_index = 1;
     code_index = 0;
@@ -35,6 +36,5 @@ function [ output ] = cobs_encode( input )
     end
 
     output(code_index+1) = code;
-    output = uint8(output);
 end
 
