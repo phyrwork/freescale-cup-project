@@ -1,5 +1,5 @@
 function [ frames ] = SerialReceive( device )
-%SerialReceive Extract COBS delimited frames 
+%SerialReceive
 
     % initialise return variable
     frames = {}; % array of cells to allow frames of varying width

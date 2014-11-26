@@ -68,12 +68,12 @@ classdef TftpSession < Tftp
             frames = {};
             numFrames = 1;
             for i = 1:length(raw)
-                %try
+                try
                     frames{numFrames} = SerialDecode(raw{i});
                     numFrames = numFrames + 1;
-                %catch
-                %    disp('Frame discarded.');
-                %end
+                catch
+                    disp('Frame discarded.');
+                end
             end
             
             % no frames, no data; return
