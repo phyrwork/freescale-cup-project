@@ -17,37 +17,15 @@ classdef PositioningStateAttribute < TftpAttribute
         % decode
         function value = decode(obj, value)
             % cast byte stream to
-            value = typecast(value, obj.ctype);
+            %value = typecast(value, obj.ctype);
             
             % fetch correct enumeration
-            switch (value)
-                case 0
-                    value = PositioningStateType.full;
-                case 10
-                    value = PositioningStateType.partial_left;
-                case 20
-                    value = PositioningStateType.partial_right;
-                case 255
-                    value = PositioningStateType.none;
-                otherwise
-            end
+            value = PositioningStateType(value);
         end
         
         % encode
         function value = encode(obj, value)
-            % fetch correct integer value
-            switch (value)
-                case PositioningStateType.full
-                    value = 0;
-                case PositioningStateType.partial_left
-                    value = 10;
-                case PositioningStateType.partial_right
-                    value = 20;
-                case PositioningStateType.none
-                    value = 255;
-                otherwise
-            end
-            
+
             % cast to ctype
             value = cast(value, obj.ctype);  
         end
