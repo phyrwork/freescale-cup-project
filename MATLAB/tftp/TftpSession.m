@@ -65,6 +65,7 @@ classdef TftpSession < Tftp
             raw = SerialReceive(obj.device);
             
             % decode frames
+            frames = {};
             numFrames = 1;
             for i = 1:length(raw)
                 %try
@@ -75,17 +76,28 @@ classdef TftpSession < Tftp
                 %end
             end
             
+            % no frames, no data; return
+            if (isempty(frames))
+                disp('No frames.');
+                return;
+            else
+                disp([num2str(length(frames)),' new frames...']);
+            end
+            
             % split into samples
             for i = 1:length(frames)
                 groups{i} = obj.parse(frames{i});
             end
             
             % store samples from groups
+            numSamples = 0;
             for i = 1:length(groups)
+                numSamples = numSamples + length(groups{i});
                 for j = 1:length(groups{i})
                     obj = obj.store(groups{i}(j));
                 end
             end
+            disp(['...', num2str(numSamples), ' new samples.']);
         end
     end
     

@@ -53,6 +53,21 @@ classdef TftpRecord
             obj.times(:, obj.rsize) = time;
             obj.values(:, obj.rsize) = value;
         end
+        
+        % last
+        function [time, value] = last(obj)
+            % return most recently pushed data
+            time = obj.times(obj.rsize);
+            value = obj.values(obj.rsize);
+        end
+        
+        % afterTime
+        function [times, values] = afterTime(obj, time)
+            % return values with a time value greater than time
+            ind = find(obj.times > time, 1, 'first');
+            times = obj.times(ind:obj.rsize);
+            values = obj.values(:,ind:obj.rsize);
+        end
     end
     
     % set.methods
