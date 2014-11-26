@@ -5,13 +5,14 @@ function [ frames ] = SerialReceive( device )
     frames = {}; % array of cells to allow frames of varying width
     
     % if no new data, no new frames
-    if (device.BytesAvailable == 0)
+    rsize = device.BytesAvailable;
+    if (rsize == 0)
         return;
     end
     
     % define persistent read buffer for function and read from serial
     persistent buffer;
-    buffer = [buffer; fread(device)];
+    buffer = [buffer; fread(device, rsize)];
     
     % do
     while (true)
