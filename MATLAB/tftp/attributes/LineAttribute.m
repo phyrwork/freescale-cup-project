@@ -1,32 +1,32 @@
-classdef EdgeAttribute < TftpAttribute
-    %EdgeAttribute
+classdef LineAttribute < TftpAttribute
+    %LineAttribute
  
     methods
-        % EdgeAttribute constructor
-        function obj = EdgeAttribute(code, attribute)
+        % LineAttribute constructor
+        function obj = LineAttribute(code, attribute)
             % set default properties used in superclass constructor
-            fsize = 18; % 1 + 1 + 2*4 + 2*4
+            fsize = 49; % 2*18 + 1 + 4 + 4 + 4
             ssize = 1;
             ctype = 'uint8';
-            mtype = 'EdgeType';
+            mtype = 'LineType';
             
             % call TftpAttribute constructor
             obj = obj@TftpAttribute(code, attribute, fsize, ssize, ctype, mtype);      
         end
         
         % decode
-        function edge = decode(stream)
+        function line = decode(stream)
             % cast byte stream
             %stream = typecast(stream, 'uint8');
             
             % initialise object
-            edge = EdgeType(stream);
+            line = LineType(stream);
         end
         
         % encode
-        function stream = encode(edge)
+        function stream = encode(line)
             % build stream from EdgeType properties
-            stream = edge.pack();
+            stream = line.pack();
             
             % cast to byte stream
             %stream = cast(stream, 'uint8');
