@@ -58,8 +58,6 @@ classdef Tftp
                 
                 % parse value and decode
                 value = frame(index + 1:index + obj.modules{code}.fsize);
-                
-                value
                 value = obj.modules{code}.decode(value);
                 
                 % create segment

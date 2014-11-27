@@ -10,8 +10,10 @@ if (~exist('frdm'))
 end
 
 % rename the most recent session
-evalStr = ['session_',strrep(session.id, '-', '_'),' = session;']; %replace hyphens with underscores
-eval(evalStr);
+if (exist('session'))
+    evalStr = ['session_',strrep(session.id, '-', '_'),' = session;']; %replace hyphens with underscores
+    eval(evalStr);
+end
 
 % set up the new session
 session = TftpSession(timestampStr(), frdm)
