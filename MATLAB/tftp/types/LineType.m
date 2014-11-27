@@ -18,22 +18,24 @@ classdef LineType
             end
             
             % Check input type
-            obj.edges    = EdgeType(stream(1:18));
-            obj.edges(2) = EdgeType(stream(19:36));
-            obj.width    = stream(37);
-            obj.P_width  = typecast(flip(stream(38:41)), 'single');
-            obj.P_dWidth = typecast(flip(stream(42:45)), 'single');
-            obj.P_line   = typecast(flip(stream(46:49)), 'single');
+            obj.edges    = EdgeType(stream(1:20));
+            obj.edges(2) = EdgeType(stream(21:40));
+            obj.width    = stream(41);
+            % (42:44) padding
+            obj.P_width  = typecast(flip(stream(45:48)), 'single');
+            obj.P_dWidth = typecast(flip(stream(49:52)), 'single');
+            obj.P_line   = typecast(flip(stream(53:56)), 'single');
         end
         
         function stream = pack(obj)
             % pack properties into stream
-            stream(1:18)  = obj.edges(1).pack();
-            stream(19:36) = obj.edges(2).pack();
-            stream(37)    = obj.width;
-            stream(7:10)  = flip(typecast(obj.P_width, 'uint8'));
-            stream(11:14) = flip(typecast(obj.P_dWidth, 'uint8'));
-            stream(15:18) = flip(typecast(obj.P_line, 'uint8'));
+            stream(1:20)  = obj.edges(1).pack();
+            stream(21:40) = obj.edges(2).pack();
+            stream(41)    = obj.width;
+            stream(42:44) = [0,0,0]; % padding
+            stream(45:48)  = flip(typecast(obj.P_width, 'uint8'));
+            stream(49:52) = flip(typecast(obj.P_dWidth, 'uint8'));
+            stream(53:56) = flip(typecast(obj.P_line, 'uint8'));
         end
     end
     
