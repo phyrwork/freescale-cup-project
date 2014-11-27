@@ -32,9 +32,15 @@ session = TftpSession(timestampStr(), frdm)
         timers(1) % print settings
     
     % set up the gui process timer
-    %timers(2) = timer;
+    timers(2) = timer;
+        % settings
+        timers(2).ExecutionMode = 'fixedRate';
+        timers(2).Period = 0.25;
+        timers(2).BusyMode = 'queue';
+        % callbacks
+        timers(2).TimerFcn = 'gui(session, 10);';
         %finish up
-        %timers(2) % print settings
+        timers(2) % print settings
  
  % start session
  for i = 1:length(timers)
