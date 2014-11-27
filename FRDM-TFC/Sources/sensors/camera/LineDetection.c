@@ -20,11 +20,12 @@
 #include "devices/TFC_SHIELD.h"
 #include <math.h>
 
-static Edge     edgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
-static Line     lineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
-static Line     targetLine;
-static StopLine stop;
-static TrackingState trackingState;
+static Edge             edgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
+static Line             lineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
+       Line             targetLine;
+static StopLine         stop;
+       PositioningState positioningState;
+       int8_t           trackPosition;
 
 #define L 0
 #define R 1
@@ -46,8 +47,8 @@ void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
 	/* Identify correct 'line' */
 	for (uint8_t k = 1; k < numFeatures; k++)
 		if (lineBuffer[k].P_width > bestLine.P_width &&
-			lineBuffer[k].edges[L].type != flat &&
-			lineBuffer[k].edges[R].type != flat )
+			lineBuffer[k].edges[L].type != EDGE_TYPE_VIRTUAL &&
+			lineBuffer[k].edges[R].type != EDGE_TYPE_VIRTUAL )
 				best = k;
 
 	targetLine = bestLine;
@@ -84,11 +85,11 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	if (bestLine.P_line > MIN_CERTAINTY) {
 
 		/* Determine if detected line spans the whole track:
-		 * if neither of the edges are flat then yes */
-		if (bestLine.edges[L].type != flat &&
-			bestLine.edges[R].type != flat) {
+		 * if neither of the edges are EDGE_TYPE_VIRTUAL then yes */
+		if (bestLine.edges[L].type != EDGE_TYPE_VIRTUAL &&
+			bestLine.edges[R].type != EDGE_TYPE_VIRTUAL) {
 
-			trackingState = full;
+			positioningState = POSITIONING_STATE_FULL;
 			TFC_ClearLED(2);
 			TFC_ClearLED(3);
 			TFC_SetLED(1);
@@ -98,6 +99,8 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			carState->lineCenter = center;
 			//This is the offset of the center of the track from the car's
 			//perspective, -not- the offset of the car (i.e. the track position)
+			
+			trackPosition = carState->lineCenter; //Local copy of road position for telemetry.
 		}
 		else {
 			/* We have detected a track partial - we cannot calculate
@@ -106,19 +109,19 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			 * positions */
 			int8_t offset = 0;
 
-			/* Choose non-'flat' edge to use to calculate offset */
-			if (bestLine.edges[L].type != flat) {
+			/* Choose non-'EDGE_TYPE_VIRTUAL' edge to use to calculate offset */
+			if (bestLine.edges[L].type != EDGE_TYPE_VIRTUAL) {
 				/* Edge at RHS; RHS partial */
-				trackingState = partial_R;
+				positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
 				TFC_SetLED(1);
 				TFC_ClearLED(2);
 				TFC_ClearLED(3);
 				
 				offset = bestLine.edges[L].pos - targetLine.edges[L].pos;
 			}
-			else if (bestLine.edges[R].type != flat) {
+			else if (bestLine.edges[R].type != EDGE_TYPE_VIRTUAL) {
 				/* Edge at LHS; LHS partial */
-				trackingState = partial_L;
+				positioningState = POSITIONING_STATE_PARTIAL_LEFT;
 				TFC_SetLED(1);
 				TFC_ClearLED(2);
 				TFC_ClearLED(3);
@@ -129,6 +132,8 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			carState->lineCenter += offset;
 			//This is the offset of the center of the track from the car's
 			//perspective, -not- the offset of the car (i.e. the track position)
+			
+			trackPosition = carState->lineCenter; //Local copy of road position for telemetry.
 		}
 
 		/* Store best line as the new target line */
@@ -184,18 +189,18 @@ uint8_t findEdges(int16_t* derivative, uint16_t threshold)
 		 k < 128 && numEdges < MAX_NUMBER_OF_TRANSITIONS;
 		 k++) {
 
-		/* If large, +ve derivative: rising edge */
+		/* If large, +ve derivative: EDGE_TYPE_RISING edge */
 		if (derivative[k] >= threshold)
 		{
 			edgeBuffer[numEdges].pos = k;
-			edgeBuffer[numEdges].type = rising;
+			edgeBuffer[numEdges].type = EDGE_TYPE_RISING;
 			numEdges++;
 		}
 		/* If large, -ve derivative: white->black edge */
 		else if (derivative[k] <= -threshold)
 		{
 			edgeBuffer[numEdges].pos = k;
-			edgeBuffer[numEdges].type = falling;
+			edgeBuffer[numEdges].type = EDGE_TYPE_FALLING;
 			numEdges++;
 		}
 	}
@@ -208,7 +213,7 @@ uint8_t findLines(Edge* edges, uint8_t numEdges)
 
 	/* Start constructing first line */
 	lineBuffer[l].edges[L].pos = 0;
-	lineBuffer[l].edges[L].type = flat;
+	lineBuffer[l].edges[L].type = EDGE_TYPE_VIRTUAL;
 	
 	/* A line potentially exists between every pair of edges */
 	for (uint8_t e = 0; e < numEdges; e++) {
@@ -228,7 +233,7 @@ uint8_t findLines(Edge* edges, uint8_t numEdges)
 
 	/* Finish constructing final line */
 	lineBuffer[l].edges[R].pos = 127;
-	lineBuffer[l].edges[R].type = flat;
+	lineBuffer[l].edges[R].type = EDGE_TYPE_VIRTUAL;
 	lineBuffer[l].width = //Calculate width of line
 				lineBuffer[l].finish - lineBuffer[l].start;
 

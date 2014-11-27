@@ -34,6 +34,20 @@
 #define TFTP_SLIP_TYPE float
 #define TFTP_SLIP_SIZE 1
 
+/* Tracking state attributes */
+#include "sensors/camera/LineDetection.h"
+#define TFTP_POSITIONING_STATE_TYPE PositioningState
+#define TFTP_POSITIONING_STATE_SIZE 1
+
+/* Line attributes */
+//#include "sensors/camera/LineDetection.h"
+#define TFTP_LINE_TYPE Line
+#define TFTP_LINE_SIZE 1
+
+/* Track position attributes */
+#define TFTP_TRACK_POSITION_TYPE int8_t
+#define TFTP_TRACK_POSITION_SIZE 1
+
 #endif //TFTP_TYPES
 
 
