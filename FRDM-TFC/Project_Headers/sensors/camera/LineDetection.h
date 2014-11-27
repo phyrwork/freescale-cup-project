@@ -46,11 +46,10 @@
 #define STOP_GAP_WIDTH_SD    4
 #define STOP_GAP_WIDTH_MEAN  4
 
-typedef enum {
-	rising,
-	falling,
-	flat
-} EdgeType;
+typedef uint8_t EdgeType;
+#define EDGE_TYPE_RISING  0
+#define EDGE_TYPE_FALLING 1
+#define EDGE_TYPE_VIRTUAL 255
 
 typedef struct {
 	EdgeType type; //Type of edge (i.e. rising/falling)

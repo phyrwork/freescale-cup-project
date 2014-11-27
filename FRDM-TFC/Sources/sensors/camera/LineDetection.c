@@ -47,8 +47,8 @@ void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
 	/* Identify correct 'line' */
 	for (uint8_t k = 1; k < numFeatures; k++)
 		if (lineBuffer[k].P_width > bestLine.P_width &&
-			lineBuffer[k].edges[L].type != flat &&
-			lineBuffer[k].edges[R].type != flat )
+			lineBuffer[k].edges[L].type != EDGE_TYPE_VIRTUAL &&
+			lineBuffer[k].edges[R].type != EDGE_TYPE_VIRTUAL )
 				best = k;
 
 	targetLine = bestLine;
@@ -85,9 +85,9 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	if (bestLine.P_line > MIN_CERTAINTY) {
 
 		/* Determine if detected line spans the whole track:
-		 * if neither of the edges are flat then yes */
-		if (bestLine.edges[L].type != flat &&
-			bestLine.edges[R].type != flat) {
+		 * if neither of the edges are EDGE_TYPE_VIRTUAL then yes */
+		if (bestLine.edges[L].type != EDGE_TYPE_VIRTUAL &&
+			bestLine.edges[R].type != EDGE_TYPE_VIRTUAL) {
 
 			positioningState = POSITIONING_STATE_FULL;
 			TFC_ClearLED(2);
@@ -109,8 +109,8 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			 * positions */
 			int8_t offset = 0;
 
-			/* Choose non-'flat' edge to use to calculate offset */
-			if (bestLine.edges[L].type != flat) {
+			/* Choose non-'EDGE_TYPE_VIRTUAL' edge to use to calculate offset */
+			if (bestLine.edges[L].type != EDGE_TYPE_VIRTUAL) {
 				/* Edge at RHS; RHS partial */
 				positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
 				TFC_SetLED(1);
@@ -119,7 +119,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 				
 				offset = bestLine.edges[L].pos - targetLine.edges[L].pos;
 			}
-			else if (bestLine.edges[R].type != flat) {
+			else if (bestLine.edges[R].type != EDGE_TYPE_VIRTUAL) {
 				/* Edge at LHS; LHS partial */
 				positioningState = POSITIONING_STATE_PARTIAL_LEFT;
 				TFC_SetLED(1);
@@ -189,18 +189,18 @@ uint8_t findEdges(int16_t* derivative, uint16_t threshold)
 		 k < 128 && numEdges < MAX_NUMBER_OF_TRANSITIONS;
 		 k++) {
 
-		/* If large, +ve derivative: rising edge */
+		/* If large, +ve derivative: EDGE_TYPE_RISING edge */
 		if (derivative[k] >= threshold)
 		{
 			edgeBuffer[numEdges].pos = k;
-			edgeBuffer[numEdges].type = rising;
+			edgeBuffer[numEdges].type = EDGE_TYPE_RISING;
 			numEdges++;
 		}
 		/* If large, -ve derivative: white->black edge */
 		else if (derivative[k] <= -threshold)
 		{
 			edgeBuffer[numEdges].pos = k;
-			edgeBuffer[numEdges].type = falling;
+			edgeBuffer[numEdges].type = EDGE_TYPE_FALLING;
 			numEdges++;
 		}
 	}
@@ -213,7 +213,7 @@ uint8_t findLines(Edge* edges, uint8_t numEdges)
 
 	/* Start constructing first line */
 	lineBuffer[l].edges[L].pos = 0;
-	lineBuffer[l].edges[L].type = flat;
+	lineBuffer[l].edges[L].type = EDGE_TYPE_VIRTUAL;
 	
 	/* A line potentially exists between every pair of edges */
 	for (uint8_t e = 0; e < numEdges; e++) {
@@ -233,7 +233,7 @@ uint8_t findLines(Edge* edges, uint8_t numEdges)
 
 	/* Finish constructing final line */
 	lineBuffer[l].edges[R].pos = 127;
-	lineBuffer[l].edges[R].type = flat;
+	lineBuffer[l].edges[R].type = EDGE_TYPE_VIRTUAL;
 	lineBuffer[l].width = //Calculate width of line
 				lineBuffer[l].finish - lineBuffer[l].start;
 
