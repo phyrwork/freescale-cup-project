@@ -12,8 +12,13 @@ classdef LineType
     methods
         % LineType constructor
         function obj = LineType(stream)
+            % Check no. args
+            if (nargin == 0)
+                return;
+            end
+            
             % Check input type
-            obj.edges(1) = EdgeType(stream(1:18));
+            obj.edges    = EdgeType(stream(1:18));
             obj.edges(2) = EdgeType(stream(19:36));
             obj.width    = stream(37);
             obj.P_width  = typecast(flip(stream(38:41)), 'single');
@@ -29,6 +34,23 @@ classdef LineType
             stream(7:10)  = flip(typecast(obj.P_width, 'uint8'));
             stream(11:14) = flip(typecast(obj.P_dWidth, 'uint8'));
             stream(15:18) = flip(typecast(obj.P_line, 'uint8'));
+        end
+    end
+    
+    methods (Static)
+        % zeros support
+        function z = zeros(varargin)
+            if (nargin == 0)
+                % For zeros('CLass')
+                z = LineType;
+            elseif any([varargin{:}] <= 0)
+                % For zeros with any dimension <= 0
+                z = LineType.empty(varargin{:});
+            else
+                % For zeros(m,n,...,'Class')
+                % Use property default values
+                z = repmat(LineType,varargin{:});
+            end
         end
     end
 end

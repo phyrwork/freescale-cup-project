@@ -15,7 +15,7 @@ classdef LineAttribute < TftpAttribute
         end
         
         % decode
-        function line = decode(stream)
+        function line = decode(obj, stream)
             % cast byte stream
             %stream = typecast(stream, 'uint8');
             
@@ -24,7 +24,7 @@ classdef LineAttribute < TftpAttribute
         end
         
         % encode
-        function stream = encode(line)
+        function stream = encode(obj, line)
             % build stream from EdgeType properties
             stream = line.pack();
             

@@ -11,12 +11,12 @@ classdef TftpSession < Tftp
     
     methods
         % TftpSession constructor
-        function obj = TftpSession(id, device)
+        function obj = TftpSession(id, varargin)
             % parse input
             p = inputParser;
             addRequired(p, 'id', @ischar);
-            addRequired(p, 'device');
-            parse(p, id, device);
+            addOptional(p, 'device', []);
+            parse(p, id, varargin{:});
             
             % set properties
             obj.id = p.Results.id;
