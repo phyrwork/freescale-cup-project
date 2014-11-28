@@ -68,6 +68,14 @@ classdef TftpRecord
             times = obj.times(ind:obj.rsize);
             values = obj.values(:,ind:obj.rsize);
         end
+        
+        % atTime
+        function [time, value] = atTime(obj, time)
+            % return first sample after given time
+            ind = find(obj.times > time, 1, 'first');
+            time = obj.times(ind);
+            value = obj.value(ind);
+        end
     end
     
     % set.methods
