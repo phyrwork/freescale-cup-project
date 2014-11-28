@@ -9,6 +9,9 @@ classdef TftpSession < Tftp
         attributes = {};
     end
     
+    %
+    % Initialization methods
+    %
     methods
         % TftpSession constructor
         function obj = TftpSession(id, varargin)
@@ -38,8 +41,15 @@ classdef TftpSession < Tftp
                 module.mtype,...
                 module.ssize...
             );
+            % add attribute ID to cell array
+            obj.attributes{length(obj.attributes) + 1} = module.attribute;
         end
-        
+    end
+    
+    %
+    % Methods for collecting data
+    %
+    methods  
         % store
         % -----
         % save segment data to session
@@ -101,5 +111,44 @@ classdef TftpSession < Tftp
         end
     end
     
+    %
+    % Methods for accessing data contained in child TftpRecords
+    %
+    methods
+        % afterTime
+        function [times, values] = afterTime(obj, attribute, time)
+            ind = obj.findAttribute(attribute);
+            if (isempty(ind))
+                error('Attribute not found in this session.');
+            end
+            [times, values] = obj.records(ind).afterTime(time);
+        end
+        
+        % atTime
+        function [time, value] = atTime(obj, attribute, time)
+            ind = obj.findAttribute(attribute);
+            if (isempty(ind))
+                error('Attribute not found in this session.');
+            end
+            [time, value] = obj.record(ind).atTime(time);
+        end
+    end
+   
+    
+    %
+    % Support methods
+    %
+    methods
+        function ind = findAttribute(obj, attribute)
+            % search through array of attribute strings to find index of
+            % attribute
+            for (ind = 1:length(obj.attributes))
+                if (strcmp(attribute, obj.attributes{ind}))
+                    return;
+                end
+            end
+            ind = [];
+        end
+    end
 end
 
