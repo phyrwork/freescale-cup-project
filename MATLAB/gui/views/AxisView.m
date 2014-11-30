@@ -63,36 +63,22 @@ classdef AxisView < GuiView
             addParameter(p, 'xlabel', char.empty, @ischar);
             addParameter(p, 'ylabel', char.empty, @ischar);
             parse(p, varargin{:});
-
-            % select axis
-            obj.select();
             
             % apply labels
             if (~isempty(p.Results.title)) % if label supplied
                 obj.atitle = p.Results.title;  % store new label
             end
-            title(obj.atitle); % apply stored label
+            title(obj.haxis, obj.atitle); % apply stored label
             
             if (~isempty(p.Results.xlabel))
                 obj.axlabel = p.Results.xlabel;
             end
-            xlabel(obj.axlabel);
+            xlabel(obj.haxis, obj.axlabel);
             
             if (~isempty(p.Results.ylabel))
                 obj.aylabel = p.Results.ylabel;
             end
-            ylabel(obj.aylabel);
-        end
-        
-        % draw axis
-        function obj = draw(obj)
-            
-            %
-            % other stuff from subclasses will happen first
-            %
-            
-            % apply labels
-            obj = obj.label();
+            ylabel(obj.haxis, obj.aylabel);
         end
     end
     

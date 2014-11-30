@@ -1,5 +1,9 @@
 classdef LineChartView < AxisView
     %LineChartView
+    
+    properties
+        hplot = []; % plot handle
+    end
 
     methods
         % LineChartView constructor
@@ -26,16 +30,15 @@ classdef LineChartView < AxisView
         end
         
         % draw chart
-        function obj = draw(obj, times, values)
-            % select axis
-            obj.select();
-            
-            % plot data
-            plot(times, values);
-
-            % apply superclass draw() components
-            obj = draw@AxisView(obj);
+        function obj = draw(obj, x, y)
+            if (isempty(obj.hplot)) % initialise plot
+                obj.hplot = plot(obj.haxis, x, y);
+                obj = label(obj);
+            else % replace plot data
+                set(obj.hplot, 'XData', x, 'YData', y);
+            end
         end
     end
+    
 end
 
