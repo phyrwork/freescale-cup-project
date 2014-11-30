@@ -38,7 +38,7 @@ session = TftpSession(timestampStr(), frdm)
         timers(2).Period = 0.25;
         timers(2).BusyMode = 'queue';
         % callbacks
-        timers(2).TimerFcn = 'gui(session, 10);';
+        timers(2).TimerFcn = 'QuickGui(session, 10);';
         %finish up
         timers(2) % print settings
  
