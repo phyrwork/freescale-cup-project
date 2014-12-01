@@ -41,12 +41,12 @@ classdef LineChartView < AxisView
             );
             obj.period = p.Results.period;
         end
-        
+    end
+    
+    % View update methods
+    methods
         % draw chart
-        function obj = draw(obj)
-            % fetch data from appropriate record
-            [x, y] = obj.record.latest(obj.period);
-            
+        function obj = draw(obj, x, y)
             % draw
             if (isempty(obj.hplot)) % initialise plot
                 obj.hplot = plot(obj.haxis, x, y);
@@ -54,6 +54,15 @@ classdef LineChartView < AxisView
             else % replace plot data
                 set(obj.hplot, 'XData', x, 'YData', y);
             end
+        end
+        
+        % update chart
+        function obj = update(obj)
+            % fetch data
+            [x,y] = obj.record.latest(obj.period);
+            
+            % draw chart
+            obj = obj.draw(x, y);
         end
     end
     

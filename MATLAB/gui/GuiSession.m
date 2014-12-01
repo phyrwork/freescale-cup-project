@@ -38,7 +38,7 @@ classdef GuiSession
             for i = 1:length(varargin)
                 % check is drawable
                 m = methods(varargin{i});
-                m = find(strcmp(m, 'draw'), 1, 'first');
+                m = find(strcmp(m, 'update'), 1, 'first');
                 if (isempty(m))
                     disp('This object is not drawable (i.e. its draw() method is missing.');
                     continue;

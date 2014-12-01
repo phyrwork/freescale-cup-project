@@ -39,22 +39,20 @@ classdef LinescanView < LineChartView
                 'ylabel', 'Intensity (%/100)'...
             );
         end
-        
-        % draw chart - overload draw@LineChartView
-        function obj = draw(obj)
+    end
+    
+    % View update methods
+    methods
+        % update chart - overload update@LineChartView
+        function obj = update(obj)
             % set up data
             [x,y] = obj.record.peek();
             if (~isempty(y))
                 x = 1:128;
             end
             
-            % draw
-            if (isempty(obj.hplot)) % initialise plot
-                obj.hplot = plot(obj.haxis, x, y);
-                obj = label(obj);
-            else % replace plot data
-                set(obj.hplot, 'XData', x, 'YData', y);
-            end
+            % draw chart
+            obj = obj.draw(x,y);
         end
     end
     

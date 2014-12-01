@@ -39,9 +39,6 @@ classdef MotorCurrentView < LineChartView
                 'ylabel', 'Current (A)'...
             );
         end
-        
-        % draw chart 
-        % function obj = draw@LineChartView(obj)
     end
     
 end
