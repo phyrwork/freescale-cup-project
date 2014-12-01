@@ -21,11 +21,11 @@ classdef GuiSession
             % );
         end
         
-        % draw
-        function obj = draw(obj)
+        % update
+        function obj = update(obj)
             % draw all views
             for i = 1:length(obj.views)
-                obj.views{i} = obj.views{i}.draw();
+                obj.views{i} = obj.views{i}.update();
             end
         end
     end
