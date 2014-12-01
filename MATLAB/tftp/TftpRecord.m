@@ -1,4 +1,4 @@
-classdef TftpRecord
+classdef TftpRecord < handle
     %TftpRecord 
     %
     properties (Constant)
@@ -7,8 +7,9 @@ classdef TftpRecord
     
     properties
         attribute = cast([], 'char');
-        times     = cast([], 'single');
         rsize     = cast(0, 'uint32');
+        time;
+        times     = cast([], 'single');
         values;
     end
     
@@ -55,22 +56,28 @@ classdef TftpRecord
         end
         
         % last
-        function [time, value] = last(obj)
+        function [time, value] = peek(obj)
             % return most recently pushed data
-            time = obj.times(obj.rsize);
-            value = obj.values(obj.rsize);
+            if (obj.rsize == 0)
+                time = [];
+                value = [];
+            else
+                time = obj.times(obj.rsize);
+                value = obj.values(:, obj.rsize);
+            end
         end
         
         % afterTime
-        function [times, values] = afterTime(obj, time)
+        function [times, values] = latest(obj, period)
             % return values with a time value greater than time
-            ind = find(obj.times > time, 1, 'first');
+            period = obj.time - period;
+            ind = find(obj.times > period, 1, 'first');
             times = obj.times(ind:obj.rsize);
             values = obj.values(:,ind:obj.rsize);
         end
         
         % atTime
-        function [time, value] = atTime(obj, time)
+        function [time, value] = at(obj, time)
             % return first sample after given time
             ind = find(obj.times > time, 1, 'first');
             time = obj.times(ind);
@@ -78,14 +85,15 @@ classdef TftpRecord
         end
     end
     
-    % set.methods
+    % get.methods
     methods
-        % set.attribute
-        function obj = set.attribute(obj, attribute)
-            if ( ~isa(attribute, 'char') )
-                error('Attribute name must be of type char()');
+        % get.time
+        function time = get.time(obj)
+            if (obj.rsize == 0)
+                time = 0;
+            else
+                time = obj.times(obj.rsize);
             end
-            obj.attribute = attribute;
         end
     end
 end

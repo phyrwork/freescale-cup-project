@@ -4,7 +4,9 @@ classdef AxisView < GuiView
     
     properties
         % attribute = char.empty; % attribute id
-        % fig       = []; % handle of figure (gui element) view belongs to
+        % session   = []; % handle of session view is attached to
+        % record    = []; % handle of record view is attached to
+        % hfig      = []; % handle of figure (layout) view belongs to
         haxis       = []; % handle of axis
         atitle      = char.empty; % axis title
         axlabel     = char.empty; % x-axis label
@@ -13,19 +15,21 @@ classdef AxisView < GuiView
     
     methods
         % AxisView constructor
-        function obj = AxisView(attribute, varargin)
+        function obj = AxisView(session, attribute, varargin)
             % parse input
             p = inputParser;
+            addRequired (p, 'session');
             addRequired (p, 'attribute', @ischar);
             addParameter(p, 'figure', double.empty);
             addParameter(p, 'position', double.empty, @isnumeric);
             addParameter(p, 'title', char.empty, @ischar);
             addParameter(p, 'xlabel', char.empty, @ischar);
             addParameter(p, 'ylabel', char.empty, @ischar);
-            parse(p, attribute, varargin{:});
+            parse(p, session, attribute, varargin{:});
             
             % initialise GuiView
             obj = obj@GuiView(...
+                p.Results.session,...
                 p.Results.attribute,...
                 'figure', p.Results.figure...
             );

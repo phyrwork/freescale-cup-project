@@ -117,20 +117,20 @@ classdef TftpSession < Tftp
     methods
         % afterTime
         function [times, values] = afterTime(obj, attribute, time)
-            ind = obj.findAttribute(attribute);
-            if (isempty(ind))
+            record = obj.findAttribute(attribute);
+            if (isempty(record))
                 error('Attribute not found in this session.');
             end
-            [times, values] = obj.records(ind).afterTime(time);
+            [times, values] = record.afterTime(time);
         end
         
         % atTime
         function [time, value] = atTime(obj, attribute, time)
-            ind = obj.findAttribute(attribute);
-            if (isempty(ind))
+            record = obj.findAttribute(attribute);
+            if (isempty(record))
                 error('Attribute not found in this session.');
             end
-            [time, value] = obj.record(ind).atTime(time);
+            [time, value] = record.atTime(time);
         end
     end
    
@@ -139,15 +139,16 @@ classdef TftpSession < Tftp
     % Support methods
     %
     methods
-        function ind = findAttribute(obj, attribute)
+        function record = findAttribute(obj, attribute)
             % search through array of attribute strings to find index of
             % attribute
             for (ind = 1:length(obj.attributes))
                 if (strcmp(attribute, obj.attributes{ind}))
+                    record = obj.records(ind);
                     return;
                 end
             end
-            ind = [];
+            record = [];
         end
     end
 end

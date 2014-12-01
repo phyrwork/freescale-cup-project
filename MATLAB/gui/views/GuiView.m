@@ -3,20 +3,29 @@ classdef GuiView
     
     properties
         attribute = char.empty; % attribute id
-        hfig      = []; % handle of figure (layout) view belongs to
+        session  = []; % handle of session view is attached to
+        record   = []; % handle of record view is attached to
+        hfig     = []; % handle of figure (layout) view belongs to
     end
     
     methods
         % GuiView constructor
-        function obj = GuiView(attribute, varargin)
+        function obj = GuiView(session, attribute, varargin)
             % parse input
             p = inputParser;
+            addRequired(p, 'session');
             addRequired(p, 'attribute', @ischar);
             addParameter(p, 'figure', double.empty);
-            parse(p, attribute, varargin{:});
+            parse(p, session, attribute, varargin{:});
             
             % initialise GuiView
             obj.attribute = p.Results.attribute; % attribute id
+            
+            obj.session = p.Results.session; % session handle
+            obj.record = obj.session.findAttribute(obj.attribute); % retrieve record handle
+            if (isempty(obj.record))
+                warning(['Attribute ''',obj.attribute,''' not found in session.']);
+            end
             
             obj.hfig = p.Results.figure;
             if(isempty(obj.hfig))
