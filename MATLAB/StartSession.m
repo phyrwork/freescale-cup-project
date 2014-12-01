@@ -17,6 +17,10 @@ end
 
 % set up the new session
 session = TftpSession(timestampStr(), frdm)
+gui = GuiSession(session);
+gui = gui.addViews(...
+        LinescanView(obj.session, 'linescan0', 'figure', 1, 'position', [3,1,1])...
+      )
 
 % set up the timers
 
@@ -38,7 +42,7 @@ session = TftpSession(timestampStr(), frdm)
         timers(2).Period = 0.25;
         timers(2).BusyMode = 'queue';
         % callbacks
-        timers(2).TimerFcn = 'QuickGui(session, 10);';
+        timers(2).TimerFcn = 'gui = gui.draw();';
         %finish up
         timers(2) % print settings
  
