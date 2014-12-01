@@ -1,4 +1,4 @@
-classdef Tftp
+classdef Tftp < handle
     %Tftp
     
     properties (Access = private, Constant)
