@@ -48,7 +48,8 @@ void DMA0_IRQHandler()
 		/* Write to DONE - this resets all flags in DSR */
 		DMA_DSR_BCR0 |= DMA_DSR_BCR_DONE_MASK;
 
-		/* To do: Check amount of data available in TxBuffer */
+		/* Update TxBuffer head and rearm UART0 DMA transfer */
+		TxBuffer.head = TxBuffer.dhead;
 		if ( rbUsed(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
 	}
 }
