@@ -50,19 +50,22 @@ void UART0_Init()
 	if main loop too slow OR make sure to call
 	this from the telemetry data collection
 	routines */
-void UART0_Process()
+void UART0_ArmIRQ()
 {
 	/* If data in transmitter buffer */ 
 	if(rbUsed(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
 		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
 
-void UART0_RearmDMA()
+void UART0_ArmDMA()
 {
+	/* Get pointer and transfer length from buffer */
+	Vector8u contig = rbPopDma(&TxBuffer);
+	
 	/* Configure DMATCD */
-	DMA_SAR0 = (uint32_t) dmaTestStr;
+	DMA_SAR0 = (uint32_t) contig.ptr;
 	DMA_DAR0 = (uint32_t) &UART0_D; //Set destination address
-	DMA_DSR_BCR0 |= ((uint32_t) 0x00FFFFFF) & (uint32_t) sizeof dmaTestStr;
+	DMA_DSR_BCR0 |= ((uint32_t) 0x00FFFFFF) & (uint32_t) contig.size;
 	DMA_DCR0 =  (DMA_DCR_EINT_MASK)    //Enable DMA interrupts
 			 |  (DMA_DCR_ERQ_MASK)     //Enable peripheral requests (this enabled by UART0_RearmDma)
 			 |  (DMA_DCR_CS_MASK)      //Enable cycle stealing - one transfer per request
@@ -83,13 +86,24 @@ void UART0_RearmDMA()
 
 /* Encapsulate message and add to transmit buffer */
 int8_t UART0_Send(uint8_t * msg, uint16_t size) {
-	uint8_t buffer[FR_MAX_ENC_SIZE]; //This is redundant data! See note below:
-	size = SerialEncode(msg, size, buffer);
-	return rbPushFrame(&TxBuffer, buffer, size);
 	
-	/* Consider modifying SerialEncode/SerialDecode to pass
-	 * pointers to internal buffer(s) to reduce write overhead
-	 * if it seems like is an issue. */
+	/* Encapsulate message */
+	uint8_t buffer[FR_MAX_ENC_SIZE];
+	size = SerialEncode(msg, size, buffer);
+	
+	/* Push message onto transmit buffer */
+	int8_t error = rbPushFrame(&TxBuffer, buffer, size);
+	
+	/* Enable UART transmission if not already enabled */
+    #ifdef SERIAL_TX_IRQ_ENABLED
+		UART0_ArmIRQ();
+    #endif
+    #ifdef SERIAL_TX_DMA_ENABLED
+		/* Only arm DMA if sufficient data ready for transmission */
+		if ( rbUsed(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
+	#endif
+		
+	return error;
 }
 
 void UART0_IRQHandler()

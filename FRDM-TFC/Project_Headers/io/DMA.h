@@ -10,5 +10,6 @@
 
 void DMAMUX0_Init();
 void DMA0_Init();
+void DMA0_IRQHandler();
 
 #endif //FRDM_DMA_H
