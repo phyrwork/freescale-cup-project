@@ -5,6 +5,7 @@
 #include "config.h"
 #include "io/RingBuffer.h"
 #include "io/Frame.h"
+#include "io/DMA.h"
 
 void uart0_init (int sysclk, int baud);
 
@@ -13,6 +14,9 @@ uint8_t RxBufferData[RB_RX_SIZE];
 uint8_t TxBufferData[RB_TX_SIZE];
 RingBuffer RxBuffer;
 RingBuffer TxBuffer;
+
+//DMA TEST
+uint8_t dmaTestStr[] = "This is the last time I'm going to type one of these stupid messages...";
 
 void UART0_Init()
 {
@@ -32,6 +36,9 @@ void UART0_Init()
 	
 	//We have to feed this function the clock in KHz!
     uart0_init (CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
+    
+    //Enable transmitter DMA requests
+    UART0_C5 |= UART0_C5_RDMAE_MASK;
      
 	//Enable recieve interrupts
     UART0_C2 |= UART_C2_RIE_MASK;
@@ -49,6 +56,14 @@ void UART0_Process()
 		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
 
+void UART0_RearmDMA()
+{
+	/* Configure DMATCD */
+	DMA_SAR0 = (uint32_t) dmaTestStr;
+	DMA_DSR_BCR0 |= ((uint32_t) 0x00FFFFFF) & (uint32_t) sizeof dmaTestStr;
+	DMA_DCR0 |= DMA_DCR_ERQ_MASK; //Enable peripheral requests
+}
+
 /* Encapsulate message and add to transmit buffer */
 int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	uint8_t buffer[FR_MAX_ENC_SIZE]; //This is redundant data! See note below:
@@ -58,11 +73,6 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	/* Consider modifying SerialEncode/SerialDecode to pass
 	 * pointers to internal buffer(s) to reduce write overhead
 	 * if it seems like is an issue. */
-}
-
-/* Pull messages out of the RxBuffer */
-uint16_t UART0_Receive(uint8_t * msg) {
-	/* TO DO! */
 }
 
 void UART0_IRQHandler()
