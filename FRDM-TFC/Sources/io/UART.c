@@ -38,7 +38,8 @@ void UART0_Init()
     uart0_init (CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
     
     //Enable transmitter DMA requests
-    UART0_C5 |= UART0_C5_RDMAE_MASK;
+    //UART0_C4 |= UART_C4_TDMAS_MASK;
+    UART0_C5 |= UART0_C5_TDMAE_MASK;
      
 	//Enable recieve interrupts
     UART0_C2 |= UART_C2_RIE_MASK;
@@ -60,8 +61,24 @@ void UART0_RearmDMA()
 {
 	/* Configure DMATCD */
 	DMA_SAR0 = (uint32_t) dmaTestStr;
+	DMA_DAR0 = (uint32_t) &UART0_D; //Set destination address
 	DMA_DSR_BCR0 |= ((uint32_t) 0x00FFFFFF) & (uint32_t) sizeof dmaTestStr;
-	DMA_DCR0 |= DMA_DCR_ERQ_MASK; //Enable peripheral requests
+	DMA_DCR0 =  (DMA_DCR_EINT_MASK)    //Enable DMA interrupts
+			 |  (DMA_DCR_ERQ_MASK)     //Enable peripheral requests (this enabled by UART0_RearmDma)
+			 |  (DMA_DCR_CS_MASK)      //Enable cycle stealing - one transfer per request
+			 &  (~DMA_DCR_AA_MASK)     //Disable auto-align - shouldn't make a difference when transfer is 1B>1B
+			 &  (~DMA_DCR_EADREQ_MASK) //Disable asychronous requests
+			 |  (DMA_DCR_SINC_MASK)    //SAR increments after each copy/write
+			 &  (~DMA_DCR_SSIZE_MASK) 
+			 |  (DMA_DCR_SSIZE(0b01))  //Set source data size to 8-bit
+			 &  (~DMA_DCR_DINC_MASK)   //No change to DAR after each copy/write
+			 &  (~DMA_DCR_DSIZE_MASK)
+			 |  (DMA_DCR_DSIZE(0b01))  //Set destination data size to 8-bit
+			 &  (~DMA_DCR_SMOD_MASK)
+			 &  (~DMA_DCR_DMOD_MASK) 
+			 |  (DMA_DCR_D_REQ_MASK)   //Clear ERQ bit when byte count register reaches zero
+			 &  (~DMA_DCR_LINKCC_MASK) //No channel linking
+	 	 	 |  (DMA_DCR_ERQ_MASK);    //Enable peripheral requests
 }
 
 /* Encapsulate message and add to transmit buffer */
