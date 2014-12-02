@@ -5,6 +5,7 @@
 #include "config.h"
 #include "io/RingBuffer.h"
 #include "io/Frame.h"
+#include "io/DMA.h"
 
 void uart0_init (int sysclk, int baud);
 
@@ -13,6 +14,9 @@ uint8_t RxBufferData[RB_RX_SIZE];
 uint8_t TxBufferData[RB_TX_SIZE];
 RingBuffer RxBuffer;
 RingBuffer TxBuffer;
+
+//DMA TEST
+uint8_t dmaTestStr[] = "This is the last time I'm going to type one of these stupid messages...";
 
 void UART0_Init()
 {
@@ -32,6 +36,10 @@ void UART0_Init()
 	
 	//We have to feed this function the clock in KHz!
     uart0_init (CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
+    
+    //Enable transmitter DMA requests
+    //UART0_C4 |= UART_C4_TDMAS_MASK;
+    UART0_C5 |= UART0_C5_TDMAE_MASK;
      
 	//Enable recieve interrupts
     UART0_C2 |= UART_C2_RIE_MASK;
@@ -42,27 +50,60 @@ void UART0_Init()
 	if main loop too slow OR make sure to call
 	this from the telemetry data collection
 	routines */
-void UART0_Process()
+void UART0_ArmIRQ()
 {
 	/* If data in transmitter buffer */ 
 	if(rbUsed(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
 		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
 
-/* Encapsulate message and add to transmit buffer */
-int8_t UART0_Send(uint8_t * msg, uint16_t size) {
-	uint8_t buffer[FR_MAX_ENC_SIZE]; //This is redundant data! See note below:
-	size = SerialEncode(msg, size, buffer);
-	return rbPushFrame(&TxBuffer, buffer, size);
+void UART0_ArmDMA()
+{
+	/* Get pointer and transfer length from buffer */
+	Vector8u contig = rbPopDma(&TxBuffer);
 	
-	/* Consider modifying SerialEncode/SerialDecode to pass
-	 * pointers to internal buffer(s) to reduce write overhead
-	 * if it seems like is an issue. */
+	/* Configure DMATCD */
+	DMA_SAR0 = (uint32_t) contig.ptr;
+	DMA_DAR0 = (uint32_t) &UART0_D; //Set destination address
+	DMA_DSR_BCR0 |= ((uint32_t) 0x00FFFFFF) & (uint32_t) contig.size;
+	DMA_DCR0 =  (DMA_DCR_EINT_MASK)    //Enable DMA interrupts
+			 |  (DMA_DCR_ERQ_MASK)     //Enable peripheral requests (this enabled by UART0_RearmDma)
+			 |  (DMA_DCR_CS_MASK)      //Enable cycle stealing - one transfer per request
+			 &  (~DMA_DCR_AA_MASK)     //Disable auto-align - shouldn't make a difference when transfer is 1B>1B
+			 &  (~DMA_DCR_EADREQ_MASK) //Disable asychronous requests
+			 |  (DMA_DCR_SINC_MASK)    //SAR increments after each copy/write
+			 &  (~DMA_DCR_SSIZE_MASK) 
+			 |  (DMA_DCR_SSIZE(0b01))  //Set source data size to 8-bit
+			 &  (~DMA_DCR_DINC_MASK)   //No change to DAR after each copy/write
+			 &  (~DMA_DCR_DSIZE_MASK)
+			 |  (DMA_DCR_DSIZE(0b01))  //Set destination data size to 8-bit
+			 &  (~DMA_DCR_SMOD_MASK)
+			 &  (~DMA_DCR_DMOD_MASK) 
+			 |  (DMA_DCR_D_REQ_MASK)   //Clear ERQ bit when byte count register reaches zero
+			 &  (~DMA_DCR_LINKCC_MASK) //No channel linking
+	 	 	 |  (DMA_DCR_ERQ_MASK);    //Enable peripheral requests
 }
 
-/* Pull messages out of the RxBuffer */
-uint16_t UART0_Receive(uint8_t * msg) {
-	/* TO DO! */
+/* Encapsulate message and add to transmit buffer */
+int8_t UART0_Send(uint8_t * msg, uint16_t size) {
+	
+	/* Encapsulate message */
+	uint8_t buffer[FR_MAX_ENC_SIZE];
+	size = SerialEncode(msg, size, buffer);
+	
+	/* Push message onto transmit buffer */
+	int8_t error = rbPushFrame(&TxBuffer, buffer, size);
+	
+	/* Enable UART transmission if not already enabled */
+    #ifdef SERIAL_TX_IRQ_ENABLED
+		UART0_ArmIRQ();
+    #endif
+    #ifdef SERIAL_TX_DMA_ENABLED
+		/* Only arm DMA if sufficient data ready for transmission */
+		if ( rbUsed(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
+	#endif
+		
+	return error;
 }
 
 void UART0_IRQHandler()

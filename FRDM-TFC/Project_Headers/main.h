@@ -15,6 +15,7 @@
 #include "devices/MMA8451Q.h"
 //#include "io/I2C.h"
 #include "io/UART.h"
+#include "io/DMA.h"
 #include "io/ADC.h"
 #include "sensors/camera/LineScanCamera.h"
 #include "sensors/camera/AutoExposure.h"
