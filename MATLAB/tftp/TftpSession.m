@@ -95,16 +95,25 @@ classdef TftpSession < Tftp
             end
             
             % split into samples
+            groups = [];
             for i = 1:length(frames)
-                groups{i} = obj.parse(frames{i});
+                try
+                    groups{i} = obj.parse(frames{i});
+                catch
+                    disp('Failed to parse frame.')
+                end
             end
             
             % store samples from groups
             numSamples = 0;
-            for i = 1:length(groups)
-                numSamples = numSamples + length(groups{i});
-                for j = 1:length(groups{i})
-                    obj = obj.store(groups{i}(j));
+            if (~isempty(groups))
+                for i = 1:length(groups)
+                    if (~isempty(groups{i}))
+                        numSamples = numSamples + length(groups{i});
+                        for j = 1:length(groups{i})
+                            obj = obj.store(groups{i}(j));
+                        end
+                    end
                 end
             end
             disp(['...', num2str(numSamples), ' new samples.']);
