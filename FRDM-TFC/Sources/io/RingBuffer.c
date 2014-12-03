@@ -16,6 +16,7 @@
 inline void rbInit(RingBuffer * rb, uint8_t * ptr, uint16_t size);
 inline uint16_t rbAvailable(RingBuffer * rb);
 inline uint16_t rbUsed(RingBuffer * rb);
+inline uint16_t rbContig(RingBuffer * rb);
 int8_t rbPush(RingBuffer * rb, uint8_t datum);
 int8_t rbPushFrame(RingBuffer * rb, uint8_t * array, uint16_t size);
 int8_t rbPop(RingBuffer * rb, uint8_t * datum);
@@ -37,6 +38,7 @@ inline uint16_t rbFrames(RingBuffer * rb);
 inline void rbInit(RingBuffer * rb, uint8_t * ptr, uint16_t size) {
   rb->size  = size;
   rb->head  = 0;
+  rb->dhead = 0;
   rb->tail  = 0;
   rb->elems = ptr;
 }
@@ -58,6 +60,20 @@ inline uint16_t rbAvailable(RingBuffer * rb) { return rb->size - rbUsed(rb); }
  *  uint16_t return - number of used elements.
  */
 inline uint16_t rbUsed(RingBuffer * rb) { return rb->write - rb->read; }
+
+/*  rbContig()
+ *  ==================================================
+ *  Query next contiguous used space in buffer.
+ *  --------------------------------------------------
+ *  RingBuffer * rb - pointer to RingBuffer structure.
+ *  uint16_t return - size of next contiguous space.
+ */
+inline uint16_t rbContig(RingBuffer * rb) {
+  /* If head > tail, contig from head to end */
+  if ( !(rb->head > rb->tail) ) return rb->size - rb->head;
+  /* Else contig from head to tail */
+  else return rb->tail - rb->head;
+}
 
 /*  rbPush()
  *  ==================================================
@@ -224,31 +240,17 @@ uint16_t rbPopFrame(RingBuffer * rb, uint8_t * array) {
 Vector8u rbPopDma(RingBuffer * rb) {
 
   Vector8u dma; /* Return struct */
-  uint16_t read;
+  
+  /* Calculate transfer size */
+  dma.size = rbContig(rb);
+  if (dma.size > RB_MAX_DMA_SIZE) dma.size = RB_MAX_DMA_SIZE;
 
-  /* This method should only be called when DMA complete so
-     restore head from previous request to make space
-     available again                                        */
-  rb->read += rb->dma.size;
-  rb->head = rb->dma.head;
-  
-  
-  /* Limit DMA request size -- limit transfer size to 'free'
-     space in buffer more frequently */
-  if ( ( read = rbUsed(rb) ) > RB_MAX_DMA_SIZE ) read = RB_MAX_DMA_SIZE;
+  /* Calculate head after transfer */
+  rb->dhead = rb->head + dma.size;
+  if (rb->dhead == rb->size) rb->dhead = 0; //Wrap head around if necessary
 
-  /* If used space greater than distance from head to
-     buffer limit, i.e. data wraps around             */
-  if( read > (dma.size = rb->size - rb->head) )
-    rb->dma.head = 0; /* When DMA complete new head will be at lower limit of buffer */
-  else {
-    rb->dma.head = rb->head + read; /* ...or rbUsed() elements ahead of current head. */
-    dma.size = read;
-  }
-  
-  rb->dma.size = dma.size; //Make record of DMA request size.
-  
-  dma.ptr = &rb->elems[rb->head]; //Set DMA source address.
+  /* Get pointer to data */
+  dma.ptr = &(rb->elems[rb->head]);
 
   return dma;
 }
