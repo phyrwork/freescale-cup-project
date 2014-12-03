@@ -99,8 +99,12 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 		UART0_ArmIRQ();
     #endif
     #ifdef SERIAL_TX_DMA_ENABLED
-		/* Only arm DMA if sufficient data ready for transmission */
-		if ( rbUsed(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
+		/* If DMA0 is not busy (i.e. there is no ongoing transfer */
+		if( !(DMA_DSR_BCR0 & DMA_DSR_BCR_BSY_MASK) )
+		{
+			/* And only arm DMA if sufficient data ready for transmission */
+			if ( rbUsed(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
+		}
 	#endif
 		
 	return error;
