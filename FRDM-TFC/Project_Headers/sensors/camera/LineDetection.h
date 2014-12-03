@@ -30,7 +30,7 @@
 #define MIN_CERTAINTY             0.2f
 
 //weightEdges
-#define EDGE_DPOS_SD  20
+#define EDGE_DPOS_SD   10
 #define EDGE_DPOS_MEAN 0
 
 //weightLines
