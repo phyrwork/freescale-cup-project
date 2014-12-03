@@ -508,6 +508,7 @@ void ADC0_IRQHandler()
 			Junk =  ADC0_RA;
 		break;
 		
+    /* Get POT0 value */
 		case ADC_STATE_CAPTURE_POT_0:
 				
 				PotADC_Value[0] = ADC0_RA;
@@ -517,36 +518,44 @@ void ADC0_IRQHandler()
 				
 			break;
 		
+    /* Get POT1 value */
 		case ADC_STATE_CAPTURE_POT_1:
 		
 				PotADC_Value[1] = ADC0_RA;
 				
-//				ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select the A side of the mux
+				ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select the A side of the mux
 				ADC0_SC1A = TFC_MOTOR_CURRENT_0_CHANNEL | ADC_SC1_AIEN_MASK;
 				CurrentADC_State = ADC_STATE_CAPTURE_BATTERY_LEVEL;
-//				CurrentADC_State = ADC_MOTOR_CURRENT_0;
+				CurrentADC_State = ADC_MOTOR_CURRENT_0;
 				
 			break;
-			
-//		case ADC_MOTOR_CURRENT_0:
-//			motorCurrent[0] = ADC0_RA;
-//			
-////			ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select the A side of the mux
-//			ADC0_SC1A = TFC_MOTOR_CURRENT_1_CHANNEL | ADC_SC1_AIEN_MASK;
-//			CurrentADC_State = ADC_MOTOR_CURRENT_1;
-//			break;
-//			
-//		case ADC_MOTOR_CURRENT_1:
-//			motorCurrent[1] = ADC0_RA;
-//
-//			ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK; //Select the B side of the mux
-//			ADC0_SC1A  =  TFC_BAT_SENSE_CHANNEL| ADC_SC1_AIEN_MASK;
-//			CurrentADC_State = ADC_STATE_CAPTURE_BATTERY_LEVEL;
-//			
-//			break;
 		
-		case ADC_STATE_CAPTURE_BATTERY_LEVEL:
+    /* Get CURRENT0 value */
+		case ADC_MOTOR_CURRENT_0:
+		    
+        motorCurrent[0] = ADC0_RA;
 			
+//			ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select the A side of the mux
+  			ADC0_SC1A = TFC_MOTOR_CURRENT_1_CHANNEL | ADC_SC1_AIEN_MASK;
+  			CurrentADC_State = ADC_MOTOR_CURRENT_1;
+  			
+        break;
+		
+    /* Get CURRENT1 value */
+    case ADC_MOTOR_CURRENT_1:
+		
+        motorCurrent[1] = ADC0_RA;
+
+  			ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK; //Select the B side of the mux
+  			ADC0_SC1A  =  TFC_BAT_SENSE_CHANNEL| ADC_SC1_AIEN_MASK;
+  			CurrentADC_State = ADC_STATE_CAPTURE_BATTERY_LEVEL;
+  			
+  			break;
+		
+    /* Get BATTERY value */
+		case ADC_STATE_CAPTURE_BATTERY_LEVEL:
+		
+        ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select A side of the mux
 				BatSenseADC_Value = ADC0_RA;
 				
 				//Now we will start the sequence for the Linescan camera
@@ -567,6 +576,7 @@ void ADC0_IRQHandler()
 				
 				break;
 		
+    /* Get LINESCAN0 */
 		case ADC_STATE_CAPTURE_LINE_SCAN:
 					
 					if(CurrentLineScanPixel<128)
