@@ -30,27 +30,18 @@
  //To do: #
 #define STORE
 
-/* #include SysTick module */
-#include "support/ARM_SysTick.h"
-#define TICKER (TFC_Ticker[TFTP_TICKER])
-#define TIME   ((float) TICKER/ (float) SYSTICK_FREQUENCY)
+/* Import cast_uint8 and time methods */
+#include "support/tools.h"
 
-/* Get constituent bytes of a variable */
-void cast_uint8(uint8_t* out, void* var, uint16_t size) {
-	
-	/* Cast var as uint8_t and copy bytes to *out */
-	for ( ; size > 0; size--, ++out)
-		*out = ((uint8_t *)var)[size - 1];
-	return;
-}
-
-/* Return 4 byte (single) time stamp to *time */
-void getTimeStamp(uint8_t * time) {
-	
-	float t = TIME;
-	cast_uint8(time, &t, sizeof t);
-	return;
-}
+//
+// To do: Write Tftp_Init to send frame containing enivronment configuration data
+//        for historicak purposes and so that Tftp can self-configure various things.
+//
+//        The motivation is to be able to return times as 32-bit integer values instead
+//        of doing many costly time calculations (divisions!) and let Tftp client
+//        calculate times itself.
+//
+// void Tftp_Init() {}
 
 /* Generate a TFTP frame containing a single code/value
  * pair and push directly to the link layer service. */
@@ -60,7 +51,7 @@ int8_t Tftp_Send(uint8_t code, void* value, uint16_t size)
 	uint16_t w = 0; //Write index.
 
 	/* Generate time stamp to nearest ms */
-	getTimeStamp(buffer);
+	getTimestamp(buffer);
 	w = 4;
 
 	/* Add key and value to frame */
@@ -82,7 +73,7 @@ int8_t Tftp_Push(uint8_t code, void* value, uint16_t size)
 	
 	/* Time data */
 	static float frameTime = 0;
-	       float  thisTime = TIME;
+	       float  thisTime = getTime();
 
 	if ( /* Check time difference; if too large */
 		 thisTime - frameTime > TFTP_TIMESTAMP_TOLERANCE ||
@@ -99,7 +90,7 @@ int8_t Tftp_Push(uint8_t code, void* value, uint16_t size)
 
 		/* Start a new one */
 		frameTime = thisTime;  // Save new timestamp...
-		getTimeStamp(buffer); // ...write to frame.
+		getTimestamp(buffer); // ...write to frame.
 		w = 4;                 // Set write index.
 	}
 
