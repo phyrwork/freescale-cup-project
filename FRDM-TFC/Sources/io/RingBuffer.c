@@ -70,7 +70,7 @@ inline uint16_t rbUsed(RingBuffer * rb) { return rb->write - rb->read; }
  */
 inline uint16_t rbContig(RingBuffer * rb) {
   /* If head > tail, contig from head to end */
-  if (rb->head > rb->tail) return rb->size - rb->head;
+  if ( !(rb->head > rb->tail) ) return rb->size - rb->head;
   /* Else contig from head to tail */
   else return rb->tail - rb->head;
 }
