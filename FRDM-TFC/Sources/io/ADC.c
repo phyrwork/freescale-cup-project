@@ -259,7 +259,7 @@ void ADC_Read_Cal(ADC_MemMapPtr, tADC_Cal_Blk *);
 
 
 volatile uint16_t PotADC_Value[2];
-volatile uint16_t motorCurrent[2];
+volatile uint16_t MotorCurrentADC_Value[2];
 volatile uint16_t BatSenseADC_Value;
 static uint8_t 	CurrentADC_State =	ADC_STATE_INIT;	
 
@@ -533,7 +533,7 @@ void ADC0_IRQHandler()
     /* Get CURRENT0 value */
 		case ADC_MOTOR_CURRENT_0:
 		    
-        motorCurrent[0] = ADC0_RA;
+        MotorCurrentADC_Value[0] = ADC0_RA;
 			
 //			ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select the A side of the mux
   			ADC0_SC1A = TFC_MOTOR_CURRENT_1_CHANNEL | ADC_SC1_AIEN_MASK;
@@ -544,7 +544,7 @@ void ADC0_IRQHandler()
     /* Get CURRENT1 value */
     case ADC_MOTOR_CURRENT_1:
 		
-        motorCurrent[1] = ADC0_RA;
+        MotorCurrentADC_Value[1] = ADC0_RA;
 
   			ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK; //Select the B side of the mux
   			ADC0_SC1A  =  TFC_BAT_SENSE_CHANNEL| ADC_SC1_AIEN_MASK;
@@ -643,9 +643,9 @@ float TFC_ReadPot(uint8_t Channel)
 float TFC_ReadMotorCurrent(uint8_t channel) //Amps
 {
 	if(channel == 0)
-		return ((float)motorCurrent[0] / (float)ADC_MAX_CODE) * 3.3f * 2.62f; //2.62 is empirically measured
+		return ((float)MotorCurrentADC_Value[0] / (float)ADC_MAX_CODE) * 3.3f * 2.62f; //2.62 is empirically measured
 	else
-		return ((float)motorCurrent[1] / (float)ADC_MAX_CODE) * 3.3f * 2.62f;
+		return ((float)MotorCurrentADC_Value[1] / (float)ADC_MAX_CODE) * 3.3f * 2.62f;
 }
 
 float TFC_ReadBatteryVoltage()
