@@ -8,6 +8,9 @@
  * instants.
  */
 
+#ifndef FRDM_PROFILER
+#define FRDM_PROFILER
+
 #include <stdint.h>
 
 /* Profiler_Stop send/discard argument definitions */
@@ -38,3 +41,5 @@ void Profiler_Start(uint32_t entry, uint8_t send);
 void Profiler_Checkpoint(uint32_t entry);
 void Profiler_Stop(uint32_t entry, uint8_t send);
 void Profiler_Send(uint32_t entry, uint8_t event);
+
+#endif //FRDM_PROFILER

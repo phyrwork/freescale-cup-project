@@ -11,6 +11,7 @@
 #include "support/Profiler.h"
 #include "config.h"
 #include "support/tools.h"
+#include "telemetry/tftp/tftp.h"
 
 ProfilerEntry ProfilerEntries[NUM_PROFILER_ENTRIES];
 
@@ -64,11 +65,11 @@ void Profiler_Send(uint32_t entry, uint8_t event)
 			frame.data = STOP;
 			break;
 
-		case PROFILER_CHECKPOINT
+		case PROFILER_CHECKPOINT:
 			frame.data = (uint32_t) getTime();
 			break;
 
-		case PROFILER_PERIOD
+		case PROFILER_PERIOD:
 			frame.data = STOP - START;
 			break;
 	}
