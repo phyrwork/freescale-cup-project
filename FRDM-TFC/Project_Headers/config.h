@@ -9,10 +9,16 @@
 //A TFC Ticker is a variable that will increment every 100uS in the Systick interrupt routine
 //you can use it to for general purpose timing, scheduling events, etc.  The TFC_Ticker variable
 //is just an array of 32-bit integers, use the Macro below to set how many tickers you need
-#define NUM_TFC_TICKERS 6
+#define NUM_TFC_TICKERS 7
 #define TFTP_TICKER 4
 #define COLLECTOR_TICKER 5
+#define TRIGGER_TICKER 6
 
+/* main() triggers configuration */
+#define MAIN_TRIGGER_POLLLING_INTERVAL 50
+
+#define CONTROL_TRIGGER_FREQUENCY 50
+#define TELEMETRY_TRIGGER_FREQUENCY 100
 
 //This is what the exposure time for the Linescan will be set to out of bootup
 #define TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS	10000 //50000

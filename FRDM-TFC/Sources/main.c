@@ -4,6 +4,13 @@
 #define CHANNEL_0 0
 #define CHANNEL_1 1
 
+/* Control trigger definitions */
+//#include "support/ARM_SysTick.h"
+#define MAIN_TRIGGER_TICKER TFC_Ticker[TRIGGER_TICKER]
+//Might have to hard code these ticks value if compiler doesn't optimise the division out
+#define CONTROL_TRIGGER_TICKS ( SYSTICK_FREQUENCY / CONTROL_TRIGGER_FREQUENCY )
+#define TELEMETRY_TRIGGER_TICKS ( SYSTICK_FREQUENCY / TELEMETRY_TRIGGER_FREQUENCY )
+
 void TFC_Init(carState_s* carState)
 {
 	TFC_InitClock();
@@ -26,6 +33,7 @@ void TFC_Init(carState_s* carState)
 
 int main(void)
 {
+	/* Initialise control routine */
 	static carState_s carState =
 	{ .motorState = FORCED_DISABLED, .UARTSpeedState = UNDEFINED, .lineDetectionState = LINE_LOST, .lineScanState = NO_NEW_LINESCAN_IMAGE };
 	TFC_Init(&carState);
@@ -35,39 +43,61 @@ int main(void)
 	TFC_SetLED(0);
 
 	while (1)
-	{	
-		Collector(); // Telemetry routine
-		
-		evaluateUARTorSpeed(&carState);
-		evaluateMotorState(&carState);
-		
-//		TFC_SetMotorPWM(0.3f,0.3f);
-//		while(1){}
+	{
+		/* Hold in loop for MAIN_TRIGGER_POLLLING_INTERVAL
+		   cycles to free up memory bus for DMA */
+		for (uint32_t hold = 0; hold < MAIN_TRIGGER_POLLLING_INTERVAL; ++hold){}
 
-		switch ((TFC_GetDIP_Switch() >> 1) & 0x03)
-		{
-		default:
-		case 0:
-			rawFocussingMode(&carState);
-			//TFC_ClearLED(3);
-			break;
+		/* Trigger main control routine */
+		static uint32_t ControlTriggerCounter = 0;
+		ControlTriggerCounter += MAIN_TRIGGER_TICKER;
+		if (ControlTriggerCounter > CONTROL_TRIGGER_TICKS)
+		{   ControlTriggerCounter = 0; //Reset trigger counter
 
-		case 1:
-			servoAlignment();
-			//TFC_ClearLED(3);
-			//speedTestMode(&carState);
-			break;
+			/* Update car state before main control routine */
+			evaluateUARTorSpeed(&carState);
+			evaluateMotorState(&carState);
 
-		case 2:
-			derivativeFocussingMode(&carState);
-			//TFC_ClearLED(3);
-			break;
+			/* Perform main control routine */
+			switch ((TFC_GetDIP_Switch() >> 1) & 0x03)
+			{
+			default:
+			case 0:
+				rawFocussingMode(&carState);
+				//TFC_ClearLED(3);
+				break;
 
-		case 3:
-			lineFollowingMode(&carState);
-			TFC_SetLED(0);
-			break;
+			case 1:
+				servoAlignment();
+				//TFC_ClearLED(3);
+				//speedTestMode(&carState);
+				break;
+
+			case 2:
+				derivativeFocussingMode(&carState);
+				//TFC_ClearLED(3);
+				break;
+
+			case 3:
+				lineFollowingMode(&carState);
+				TFC_SetLED(0);
+				break;
+			}
 		}
+		//End main control routine trigger
+
+		/* Trigger telemetry routine */
+		static uint32_t TelemetryTriggerCounter = 0;
+		TelemetryTriggerCounter += MAIN_TRIGGER_TICKER;
+		if (TelemetryTriggerCounter > TELEMETRY_TRIGGER_TICKS)
+		{   TelemetryTriggerCounter = 0; //Reset trigger counter
+
+			/* Run data collection routine */
+			Collector();
+		}
+
+		/* Reset main trigger counter */
+		MAIN_TRIGGER_TICKER = 0;
 	}
 	return 0;
 }
