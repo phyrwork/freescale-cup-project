@@ -643,9 +643,9 @@ float TFC_ReadPot(uint8_t Channel)
 float TFC_ReadMotorCurrent(uint8_t channel) //Amps
 {
 	if(channel == 0)
-		return ((float)MotorCurrentADC_Value[0] / (float)ADC_MAX_CODE) * 3.3f * 2.62f; //2.62 is empirically measured
+		return ((float)MotorCurrentADC_Value[0] / (float)ADC_MAX_CODE) * 3.3f * 1.2615f; //OLD - 2.62 is empirically measured
 	else
-		return ((float)MotorCurrentADC_Value[1] / (float)ADC_MAX_CODE) * 3.3f * 2.62f;
+		return ((float)MotorCurrentADC_Value[1] / (float)ADC_MAX_CODE) * 3.3f * 1.2615f;
 }
 
 float TFC_ReadBatteryVoltage()
