@@ -30,6 +30,7 @@
 #include "support/ARM_SysTick.h"
 #include "support/carState_s.h"
 #include "telemetry/Collector.h"
+#include "support/Profiler.h"
 #include "config.h"
 
 void TFC_Init(carState_s* carState);

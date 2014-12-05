@@ -62,30 +62,32 @@ int main(void)
 			evaluateMotorState(&carState);
 
 			/* Perform main control routine */
+			Profiler_Start(CONTROL_PROFILER, PROFILER_SEND);
 			switch ((TFC_GetDIP_Switch() >> 1) & 0x03)
 			{
-			default:
-			case 0:
-				rawFocussingMode(&carState);
-				//TFC_ClearLED(3);
-				break;
-
-			case 1:
-				servoAlignment();
-				//TFC_ClearLED(3);
-				//speedTestMode(&carState);
-				break;
-
-			case 2:
-				derivativeFocussingMode(&carState);
-				//TFC_ClearLED(3);
-				break;
-
-			case 3:
-				lineFollowingMode(&carState);
-				TFC_SetLED(0);
-				break;
+				default:
+				case 0:
+					rawFocussingMode(&carState);
+					//TFC_ClearLED(3);
+					break;
+	
+				case 1:
+					servoAlignment();
+					//TFC_ClearLED(3);
+					//speedTestMode(&carState);
+					break;
+	
+				case 2:
+					derivativeFocussingMode(&carState);
+					//TFC_ClearLED(3);
+					break;
+	
+				case 3:
+					lineFollowingMode(&carState);
+					TFC_SetLED(0);
+					break;
 			}
+			Profiler_Stop(CONTROL_PROFILER, PROFILER_SEND);
 		}
 		//End main control routine trigger
 

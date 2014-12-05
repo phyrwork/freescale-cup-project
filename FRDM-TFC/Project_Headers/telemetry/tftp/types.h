@@ -48,6 +48,11 @@
 #define TFTP_TRACK_POSITION_TYPE int8_t
 #define TFTP_TRACK_POSITION_SIZE 1
 
+/* Profiler attribute */
+#include "support/Profiler.h"
+#define TFTP_PROFILER_TYPE ProfilerFrame
+#define TFTP_PROFILER_SIZE 1
+
 #endif //TFTP_TYPES
 
 
