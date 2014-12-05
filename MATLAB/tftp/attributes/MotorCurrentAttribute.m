@@ -20,7 +20,7 @@ classdef MotorCurrentAttribute < TftpAttribute
             value = decode@TftpAttribute(obj, value);
             
             % convert from mtpye to Amps
-            value = (value/4095) * 3.3 * 2.62;
+            value = (value/4095) * 3.3 * 1.2615;
         end
         
         % encode
