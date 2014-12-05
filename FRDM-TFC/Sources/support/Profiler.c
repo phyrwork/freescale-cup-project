@@ -24,7 +24,7 @@ void Profiler_Start(uint32_t entry, uint8_t send)
 {
 	/* Get time reference */
 	ACTIVE = 1;
-	START = (uint32_t) getTime();
+	getTimestamp(&START);
 
 	/* Push to Tftp if requested */
 	if (send == PROFILER_SEND) Profiler_Send(entry, PROFILER_START);
@@ -38,14 +38,14 @@ void Profiler_Checkpoint(uint32_t entry)
 void Profiler_Stop(uint32_t entry, uint8_t send)
 {
 	/* Get time reference */
-	STOP = (uint32_t) getTime();
+	getTimestamp(&STOP);
 	ACTIVE = 0;
 
 	/* Push to Tftp if requested */
 	if (send == PROFILER_SEND)
 	{
 		Profiler_Send(entry, PROFILER_STOP);
-		Profiler_Send(entry, PROFILER_PERIOD);
+		//Profiler_Send(entry, PROFILER_PERIOD);
 	}
 }
 
@@ -55,6 +55,8 @@ void Profiler_Send(uint32_t entry, uint8_t event)
 	ProfilerFrame frame;
 	frame.entry = entry & 0x000000FF; //8:0 passthrough
 	frame.event = event;
+	ProfilerEntry copy = ProfilerEntries[entry];
+	
 	switch(event) {
 		/* Populate frame.data based on event */
 		case PROFILER_START:
@@ -66,12 +68,13 @@ void Profiler_Send(uint32_t entry, uint8_t event)
 			break;
 
 		case PROFILER_CHECKPOINT:
-			frame.data = (uint32_t) getTime();
+			getTimestamp(&frame.data);
 			break;
-
+		/* Fix planned for when reporting ticks not time
 		case PROFILER_PERIOD:
-			frame.data = STOP - START;
+			frame.data = (uint32_t)(((float)STOP) - ((float)START));
 			break;
+		*/
 	}
 
 	/* Push frame onto endpoint */

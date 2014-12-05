@@ -14,7 +14,7 @@
 
 /* Profiler configuration */
 #define NUM_PROFILER_ENTRIES 1
-#define MAIN_PROFILER 0
+#define CONTROL_PROFILER 0
 
 
 //This is what the exposure time for the Linescan will be set to out of bootup
@@ -35,7 +35,7 @@
 #define TERMINAL_GETC           	
 
 /* SERIAL IO */
-#define SERIAL_MAX_MSG_SIZE 512
+#define SERIAL_MAX_MSG_SIZE 384
 #define SERIAL_TX_DMA_ENABLED
 //#define SERIAL_TX_IRQ_ENABLED
 #define SERIAL_TX_DMA_THRESHOLD 64

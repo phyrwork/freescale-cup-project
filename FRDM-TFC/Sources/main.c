@@ -43,7 +43,8 @@ int main(void)
 		
 //		TFC_SetMotorPWM(0.3f,0.3f);
 //		while(1){}
-
+		
+		Profiler_Start(CONTROL_PROFILER, PROFILER_SEND);
 		switch ((TFC_GetDIP_Switch() >> 1) & 0x03)
 		{
 		default:
@@ -68,6 +69,7 @@ int main(void)
 			TFC_SetLED(0);
 			break;
 		}
+		Profiler_Stop(CONTROL_PROFILER, PROFILER_SEND);
 	}
 	return 0;
 }

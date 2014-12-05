@@ -23,9 +23,9 @@ void cast_uint8(uint8_t* out, void* var, uint16_t size)
 inline float getTime() { return TIME; }
 
 /* Return 4 byte (single) time stamp to *time */
-void getTimestamp(uint8_t * time)
+void getTimestamp(void* time)
 {	
 	float t = getTime();
-	cast_uint8(time, &t, sizeof t);
+	cast_uint8((uint8_t*)time, &t, sizeof t);
 	return;
 }
