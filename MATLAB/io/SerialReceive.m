@@ -12,7 +12,18 @@ function [ frames ] = SerialReceive( device )
     
     % define persistent read buffer for function and read from serial
     persistent buffer;
-    buffer = [buffer; fread(device, rsize)];
+    [new, bytesRead] = fread(device,rsize);
+    buffer = [buffer; new];
+    
+    % Calculate data rate
+    persistent tval;
+    try
+        telap = toc(tval); % time elapsed since last read
+        datarate = bytesRead/telap;
+        disp(['Data rate: ',num2str(datarate),' B/s'])
+    catch
+    end
+    tval = tic;
     
     % do
     while (true)

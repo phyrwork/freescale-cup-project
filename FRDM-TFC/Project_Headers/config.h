@@ -17,7 +17,7 @@
 /* main() triggers configuration */
 #define MAIN_TRIGGER_POLLLING_INTERVAL 50
 
-#define CONTROL_TRIGGER_FREQUENCY 50
+#define CONTROL_TRIGGER_FREQUENCY 100
 #define TELEMETRY_TRIGGER_FREQUENCY 100
 
 //This is what the exposure time for the Linescan will be set to out of bootup
@@ -25,7 +25,7 @@
 
 #define TFC_MOTOR_SWITCHING_FREQUENCY	((float)(4000.0))
 
-#define SDA_SERIAL_BAUD		115200	
+#define SDA_SERIAL_BAUD		230400	
 #define SDA_SERIAL_OUTGOING_QUEUE_SIZE	2048
 #define SDA_SERIAL_INCOMING_QUEUE_SIZE	128
 

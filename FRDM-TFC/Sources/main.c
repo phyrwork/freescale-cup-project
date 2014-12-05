@@ -46,7 +46,10 @@ int main(void)
 	{
 		/* Hold in loop for MAIN_TRIGGER_POLLLING_INTERVAL
 		   cycles to free up memory bus for DMA */
-		for (uint32_t hold = 0; hold < MAIN_TRIGGER_POLLLING_INTERVAL; ++hold){}
+		for (uint32_t hold = 0; hold < MAIN_TRIGGER_POLLLING_INTERVAL; ++hold)
+		{
+			__asm("nop");
+		}
 
 		/* Trigger main control routine */
 		static uint32_t ControlTriggerCounter = 0;
