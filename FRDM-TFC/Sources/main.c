@@ -44,6 +44,11 @@ int main(void)
 
 	while (1)
 	{
+		/* Enable UART0 */
+		#ifdef SERIAL_TX_IRQ_ENABLED
+			UART0_ArmIRQ();
+		#endif
+		
 		/* Hold in loop for MAIN_TRIGGER_POLLLING_INTERVAL
 		   cycles to free up memory bus for DMA */
 		for (uint32_t hold = 0; hold < MAIN_TRIGGER_POLLLING_INTERVAL; ++hold)
@@ -56,6 +61,9 @@ int main(void)
 		ControlTriggerCounter += MAIN_TRIGGER_TICKER;
 		if (ControlTriggerCounter > CONTROL_TRIGGER_TICKS)
 		{   ControlTriggerCounter = 0; //Reset trigger counter
+			#ifdef SERIAL_TX_IRQ_ENABLED
+				UART0_DisarmIRQ();
+			#endif
 
 			/* Update car state before main control routine */
 			evaluateUARTorSpeed(&carState);
@@ -96,6 +104,9 @@ int main(void)
 		TelemetryTriggerCounter += MAIN_TRIGGER_TICKER;
 		if (TelemetryTriggerCounter > TELEMETRY_TRIGGER_TICKS)
 		{   TelemetryTriggerCounter = 0; //Reset trigger counter
+			#ifdef SERIAL_TX_IRQ_ENABLED
+				UART0_DisarmIRQ();
+			#endif
 
 			/* Run data collection routine */
 			Collector();

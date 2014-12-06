@@ -32,7 +32,7 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	
 	/* Enable UART transmission if not already enabled */
     #ifdef SERIAL_TX_IRQ_ENABLED
-		UART0_ArmIRQ();
+		//UART0_ArmIRQ();
     #endif
     #ifdef SERIAL_TX_DMA_ENABLED
 		/* If DMA0 is not busy (i.e. there is no ongoing transfer */
@@ -51,12 +51,14 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 // UART0 Driver Methods //
 //////////////////////////
 
-void UART0_ArmIRQ()
+inline void UART0_ArmIRQ()
 {
 	/* If data in transmitter buffer */ 
 	if(rbUsed(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
 		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
+
+inline void UART0_DisarmIRQ() { UART0_C2 &= ~UART_C2_TIE_MASK;  }
 
 void UART0_ArmDMA()
 {
