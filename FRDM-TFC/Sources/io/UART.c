@@ -15,41 +15,42 @@ uint8_t TxBufferData[RB_TX_SIZE];
 RingBuffer RxBuffer;
 RingBuffer TxBuffer;
 
-//DMA TEST
-uint8_t dmaTestStr[] = "This is the last time I'm going to type one of these stupid messages...";
 
-void UART0_Init()
-{
-	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
+////////////////////////
+// UART0 User Methods //
+////////////////////////
+
+/* Encapsulate message and add to transmit buffer */
+int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	
-	/* Initialise ring buffers */
-	rbInit(&RxBuffer, RxBufferData, sizeof RxBufferData);
-	rbInit(&TxBuffer, TxBufferData, sizeof TxBufferData);
+	/* Encapsulate message */
+	uint8_t buffer[FR_MAX_ENC_SIZE];
+	size = SerialEncode(msg, size, buffer);
 	
-	PORTA_PCR1 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;   
-	PORTA_PCR2 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;  
+	/* Push message onto transmit buffer */
+	int8_t error = rbPushFrame(&TxBuffer, buffer, size);
 	
-	//Select PLL/2 Clock
-	SIM_SOPT2 &= ~(3<<26);
-	SIM_SOPT2 |= SIM_SOPT2_UART0SRC(1); 
-	SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;
-	
-	//We have to feed this function the clock in KHz!
-    uart0_init (CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
-    
-    //Enable transmitter DMA requests
-    //UART0_C4 |= UART_C4_TDMAS_MASK;
-    UART0_C5 |= UART0_C5_TDMAE_MASK;
-     
-	//Enable recieve interrupts
-    UART0_C2 |= UART_C2_RIE_MASK;
-    enable_irq(INT_UART0-16);
+	/* Enable UART transmission if not already enabled */
+    #ifdef SERIAL_TX_IRQ_ENABLED
+		UART0_ArmIRQ();
+    #endif
+    #ifdef SERIAL_TX_DMA_ENABLED
+		/* If DMA0 is not busy (i.e. there is no ongoing transfer */
+		if( !(DMA_DSR_BCR0 & DMA_DSR_BCR_BSY_MASK) )
+		{
+			/* And only arm DMA if sufficient data ready for transmission */
+			if ( rbUsed(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
+		}
+	#endif
+		
+	return error;
 }
 
-/*	To do - move this into a periodic routine
-	if main loop too slow OR make sure to call
-	this from the telemetry data collection
-	routines */
+
+//////////////////////////
+// UART0 Driver Methods //
+//////////////////////////
+
 void UART0_ArmIRQ()
 {
 	/* If data in transmitter buffer */ 
@@ -84,35 +85,13 @@ void UART0_ArmDMA()
 	 	 	 |  (DMA_DCR_ERQ_MASK);    //Enable peripheral requests
 }
 
-/* Encapsulate message and add to transmit buffer */
-int8_t UART0_Send(uint8_t * msg, uint16_t size) {
-	
-	/* Encapsulate message */
-	uint8_t buffer[FR_MAX_ENC_SIZE];
-	size = SerialEncode(msg, size, buffer);
-	
-	/* Push message onto transmit buffer */
-	int8_t error = rbPushFrame(&TxBuffer, buffer, size);
-	
-	/* Enable UART transmission if not already enabled */
-    #ifdef SERIAL_TX_IRQ_ENABLED
-		UART0_ArmIRQ();
-    #endif
-    #ifdef SERIAL_TX_DMA_ENABLED
-		/* If DMA0 is not busy (i.e. there is no ongoing transfer */
-		if( !(DMA_DSR_BCR0 & DMA_DSR_BCR_BSY_MASK) )
-		{
-			/* And only arm DMA if sufficient data ready for transmission */
-			if ( rbUsed(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
-		}
-	#endif
-		
-	return error;
-}
-
 void UART0_IRQHandler()
 {
 	uint8_t Temp;
+
+	/////////////
+	// RECEIVE //
+	/////////////
 	
 	/* If receive register full flag is set */
 	if(UART0_S1 & UART_S1_RDRF_MASK)
@@ -120,6 +99,12 @@ void UART0_IRQHandler()
 		/* Push data from UART onto receive buffer */
 		rbPush(&RxBuffer, UART0_D);
 	}
+
+
+	//////////////
+	// TRANSMIT //
+	//////////////
+
 	/* If transmitter data register empty flag set */
 	if(UART0_S1 & UART_S1_TDRE_MASK)
 	{
@@ -140,8 +125,41 @@ void UART0_IRQHandler()
 }
 
 
+//////////////////////////////////
+// UART0 Initialization Methods //
+//////////////////////////////////
 
-void uart0_init (int sysclk, int baud)
+void UART0_Init()
+{
+	/* Enable clock gates to UART0 peripheral and IO pins */
+    SIM_SCGC4 |= SIM_SCGC4_UART0_MASK;
+	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
+	
+	/* Initialise ring buffers */
+	rbInit(&RxBuffer, RxBufferData, sizeof RxBufferData);
+	rbInit(&TxBuffer, TxBufferData, sizeof TxBufferData);
+	
+	PORTA_PCR1 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;   
+	PORTA_PCR2 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;  
+	
+	//Select PLL/2 Clock
+	SIM_SOPT2 &= ~(3<<26);
+	SIM_SOPT2 |= SIM_SOPT2_UART0SRC(1); 
+	SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;
+	
+	//We have to feed this function the clock in KHz!
+    UART0_ConfigureDataRate(CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
+    
+    //Enable transmitter DMA requests
+    //UART0_C4 |= UART_C4_TDMAS_MASK;
+    UART0_C5 |= UART0_C5_TDMAE_MASK;
+     
+	//Enable recieve interrupts
+    UART0_C2 |= UART_C2_RIE_MASK;
+    enable_irq(INT_UART0-16);
+}
+
+void UART0_ConfigureDataRate (int sysclk, int baud)
 {
     uint8_t i;
     uint32_t calculated_baud = 0;
@@ -151,9 +169,6 @@ void uart0_init (int sysclk, int baud)
     uint32_t baud_rate;
     uint32_t reg_temp = 0;
     uint32_t temp = 0;
-    
-    /* Enable clock gate to UART0 */
-    SIM_SCGC4 |= SIM_SCGC4_UART0_MASK;
     
     // Disable UART0 before changing registers
     UART0_C2 &= ~(UART0_C2_TE_MASK | UART0_C2_RE_MASK);
@@ -246,59 +261,4 @@ void uart0_init (int sysclk, int baud)
         //while(1)
 			//	{}
 		}					
-    
 }
-
-/********************************************************************/
-/*
- * Wait for a character to be received on the specified uart
- *
- * Parameters:
- *  channel      uart channel to read from
- *
- * Return Values:
- *  the received character
- */
-char uart_getchar (UART_MemMapPtr channel)
-{
-      /* Wait until character has been received */
-      while (!(UART_S1_REG(channel) & UART_S1_RDRF_MASK));
-    
-      /* Return the 8-bit data from the receiver */
-      return UART_D_REG(channel);
-}
-/********************************************************************/
-/*
- * Wait for space in the uart Tx FIFO and then send a character
- *
- * Parameters:
- *  channel      uart channel to send to
- *  ch			 character to send
- */ 
-void uart_putchar (UART_MemMapPtr channel, char ch)
-{
-      /* Wait until space is available in the FIFO */
-      while(!(UART_S1_REG(channel) & UART_S1_TDRE_MASK));
-    
-      /* Send the character */
-      UART_D_REG(channel) = (uint8_t)ch;
-    
- }
-/********************************************************************/
-/*
- * Check to see if a character has been received
- *
- * Parameters:
- *  channel      uart channel to check for a character
- *
- * Return values:
- *  0       No character received
- *  1       Character has been received
- */
-int uart_getchar_present (UART_MemMapPtr channel)
-{
-    return (UART_S1_REG(channel) & UART_S1_RDRF_MASK);
-}
-/********************************************************************/
-
-
