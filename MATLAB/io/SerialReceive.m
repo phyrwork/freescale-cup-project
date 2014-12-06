@@ -17,9 +17,15 @@ function [ frames ] = SerialReceive( device )
     
     % Calculate data rate
     persistent tval;
+    persistent datarates;
+    if (isempty(datarates))
+        datarates = zeros(50, 1);
+    end
     try
         telap = toc(tval); % time elapsed since last read
-        datarate = bytesRead/telap;
+        datarates = circshift(datarates, -1);
+        datarates(50) = bytesRead/telap;
+        datarate = mean(datarates);
         disp(['Data rate: ',num2str(datarate),' B/s'])
     catch
     end
