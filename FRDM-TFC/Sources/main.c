@@ -22,6 +22,7 @@ void TFC_Init(carState_s* carState)
 	TFC_InitLineScanCamera();
 	UART0_Init();
 	DMA0_Init();
+	HC05_Init();
 	TFC_HBRIDGE_DISABLE;
 	TFC_SetMotorPWM(0, 0);
 	TFC_InitSpeedSensor();

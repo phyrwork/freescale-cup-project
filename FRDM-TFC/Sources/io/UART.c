@@ -179,13 +179,16 @@ void UART0_Init()
 	SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;
 	
 	//We have to feed this function the clock in KHz!
-    UART0_ConfigureDataRate(CORE_CLOCK/2/1000, SDA_SERIAL_BAUD);
+    UART0_ConfigureDataRate(CORE_CLOCK/2/1000, USB_SERIAL_BAUD);
+	#ifdef BLUETOOTH_ENABLED
+    	UART0_ConfigureDataRate(CORE_CLOCK/2/1000, BLUETOOTH_SERIAL_BAUD_DEFAULT);
+	#endif //BLUETOOTH_ENABLED   
     
     //Enable transmitter DMA requests
     //UART0_C4 |= UART_C4_TDMAS_MASK;
     UART0_C5 |= UART0_C5_TDMAE_MASK;
      
-	//Enable recieve interrupts
+	//Enable receive interrupts
     UART0_C2 |= UART_C2_RIE_MASK;
     enable_irq(INT_UART0-16);
 }

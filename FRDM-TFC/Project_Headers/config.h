@@ -54,7 +54,6 @@
 #define BLUETOOTH_SERIAL_BAUD_DEFAULT 9600
 #define BLUETOOTH_CMD_BAUD 38400
 #define BLUETOOTH_SERIAL_BAUD 115200
-#define BLUETOOTH_SERIAL_BAUD_Q "115200" //This needed for Bluetooth module command string.
 
 /* Buffer and MTU configuration */
 #define SERIAL_MAX_MSG_SIZE 384

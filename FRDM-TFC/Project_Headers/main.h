@@ -13,6 +13,7 @@
 #include "devices/CrystalClock.h"
 #include "devices/TFC_SHIELD.h"
 #include "devices/MMA8451Q.h"
+#include "devices/HC05.h"
 //#include "io/I2C.h"
 #include "io/UART.h"
 #include "io/DMA.h"

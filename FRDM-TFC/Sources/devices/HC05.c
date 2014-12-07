@@ -5,6 +5,7 @@
 
 /* Import UART controls; set macros to use them */
 #include "io/UART.h"
+#include "devices/CrystalClock.h"
 #define  TX(msg,size)   UART0_SendRaw( (msg) , (size) )
 #define  SET_BAUD(baud) UART0_ConfigureDataRate(CORE_CLOCK/2/1000, (baud) )
 
@@ -41,7 +42,7 @@ GPIO_Config cmd_conf = { /* .io = */ { /* .io = */ {
 // HC05_Config config = {
 //     /* .baud = */    BLUETOOTH_SERIAL_BAUD,
 //     /* .stop = */    1,
-//     /* .partity = */ 0
+//     /* .parity = */ 0
 // }
 
 /* Macro definitions to facilitate concatenation

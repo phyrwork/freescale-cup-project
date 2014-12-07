@@ -10,7 +10,7 @@ void     UART0_ArmIRQ();
 void     UART0_DisarmIRQ();
 void     UART0_ArmDMA();
 int8_t   UART0_Send(uint8_t * msg, uint16_t size);
-int8_t   UART0_SendRaw(uint8_t * msg, uint16_t size)
+int8_t   UART0_SendRaw(uint8_t * msg, uint16_t size);
 
 extern rbuf_s RxBuffer;
 extern rbuf_s TxBuffer;
