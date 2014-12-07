@@ -2,12 +2,12 @@
 #include "devices/MKL25Z4.h"
 #include "devices/arm_cm0.h"
 #include "devices/CrystalClock.h"
+#include "support/ARM_SysTick.h"
 #include "config.h"
 #include "support/rbuf.h"
 #include "io/Frame.h"
 #include "io/DMA.h"
-
-void uart0_init (int sysclk, int baud);
+#include "io/GPIO.h"
 
 /* RingBuffer storage and structures */
 uint8_t RxBufferData[RB_RX_SIZE];
@@ -48,6 +48,31 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	#endif
 		
 	return 0;
+}
+
+/* Add message to transmit buffer without encapsualtion */
+int8_t UART0_SendRaw(uint8_t * msg, uint16_t size) {
+	/* Write to buffer without encapsulation */
+    uint32_t write = rbuf_write(&TxBuffer, msg, size);
+	if (write != size) return -1; //Not all data was copied to buffer
+    
+    /* Enable UART transmission if not already enabled */
+    #ifdef SERIAL_TX_IRQ_ENABLED
+		//UART0_ArmIRQ();
+    #endif
+    #ifdef SERIAL_TX_DMA_ENABLED
+		/* Cause a compile error */
+		DMA_IS_UNSUPPORTED_IN_RBUF
+	
+		/* If DMA0 is not busy (i.e. there is no ongoing transfer */
+		if( !(DMA_DSR_BCR0 & DMA_DSR_BCR_BSY_MASK) )
+		{
+			/* And only arm DMA if sufficient data ready for transmission */
+			if ( rbUsed(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
+		}
+	#endif
+
+    return 0;
 }
 
 
