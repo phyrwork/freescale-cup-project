@@ -6,7 +6,7 @@
 #include "io/DMA.h"
 #include "devices/arm_cm0.h"
 #include "io/UART.h"
-#include "io/RingBuffer.h"
+#include "support/rbuf.h"
 #include "config.h"
 
 #include <stdint.h>
@@ -47,9 +47,9 @@ void DMA0_IRQHandler()
 	{
 		/* Write to DONE - this resets all flags in DSR */
 		DMA_DSR_BCR0 |= DMA_DSR_BCR_DONE_MASK;
-
+		
 		/* Update TxBuffer head and rearm UART0 DMA transfer */
-		TxBuffer.head = TxBuffer.dhead;
-		if ( rbUsed(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
+		//TxBuffer.head = TxBuffer.dhead;
+		if ( rbuf_used(&TxBuffer) > SERIAL_TX_DMA_THRESHOLD ) UART0_ArmDMA();
 	}
 }

@@ -3,7 +3,7 @@
 #include "devices/arm_cm0.h"
 #include "devices/CrystalClock.h"
 #include "config.h"
-#include "io/RingBuffer.h"
+#include "support/rbuf.h"
 #include "io/Frame.h"
 #include "io/DMA.h"
 
@@ -12,8 +12,8 @@ void uart0_init (int sysclk, int baud);
 /* RingBuffer storage and structures */
 uint8_t RxBufferData[RB_RX_SIZE];
 uint8_t TxBufferData[RB_TX_SIZE];
-RingBuffer RxBuffer;
-RingBuffer TxBuffer;
+rbuf_s  RxBuffer;
+rbuf_s  TxBuffer;
 
 
 ////////////////////////
@@ -28,13 +28,17 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	size = SerialEncode(msg, size, buffer);
 	
 	/* Push message onto transmit buffer */
-	int8_t error = rbPushFrame(&TxBuffer, buffer, size);
+	uint32_t write = rbuf_write(&TxBuffer, buffer, size);
+	if (write != size) return -1; //Not all data was copied to buffer
 	
 	/* Enable UART transmission if not already enabled */
     #ifdef SERIAL_TX_IRQ_ENABLED
 		//UART0_ArmIRQ();
     #endif
     #ifdef SERIAL_TX_DMA_ENABLED
+		/* Cause a compile error */
+		DMA_IS_UNSUPPORTED_IN_RBUF
+	
 		/* If DMA0 is not busy (i.e. there is no ongoing transfer */
 		if( !(DMA_DSR_BCR0 & DMA_DSR_BCR_BSY_MASK) )
 		{
@@ -43,7 +47,7 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 		}
 	#endif
 		
-	return error;
+	return 0;
 }
 
 
@@ -54,7 +58,7 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 inline void UART0_ArmIRQ()
 {
 	/* If data in transmitter buffer */ 
-	if(rbUsed(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
+	if(rbuf_used(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
 		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
 
@@ -63,12 +67,12 @@ inline void UART0_DisarmIRQ() { UART0_C2 &= ~UART_C2_TIE_MASK;  }
 void UART0_ArmDMA()
 {
 	/* Get pointer and transfer length from buffer */
-	Vector8u contig = rbPopDma(&TxBuffer);
+	//Vector8u contig = rbPopDma(&TxBuffer);
 	
 	/* Configure DMATCD */
-	DMA_SAR0 = (uint32_t) contig.ptr;
+	//DMA_SAR0 = (uint32_t) contig.ptr;
 	DMA_DAR0 = (uint32_t) &UART0_D; //Set destination address
-	DMA_DSR_BCR0 |= ((uint32_t) 0x00FFFFFF) & (uint32_t) contig.size;
+	//DMA_DSR_BCR0 |= ((uint32_t) 0x00FFFFFF) & (uint32_t) contig.size;
 	DMA_DCR0 =  (DMA_DCR_EINT_MASK)    //Enable DMA interrupts
 			 |  (DMA_DCR_ERQ_MASK)     //Enable peripheral requests (this enabled by UART0_RearmDma)
 			 |  (DMA_DCR_CS_MASK)      //Enable cycle stealing - one transfer per request
@@ -89,7 +93,7 @@ void UART0_ArmDMA()
 
 void UART0_IRQHandler()
 {
-	uint8_t Temp;
+	uint8_t temp;
 
 	/////////////
 	// RECEIVE //
@@ -99,7 +103,7 @@ void UART0_IRQHandler()
 	if(UART0_S1 & UART_S1_RDRF_MASK)
 	{
 		/* Push data from UART onto receive buffer */
-		rbPush(&RxBuffer, UART0_D);
+		rbuf_write(&RxBuffer, &UART0_D, 1);
 	}
 
 
@@ -111,11 +115,11 @@ void UART0_IRQHandler()
 	if(UART0_S1 & UART_S1_TDRE_MASK)
 	{
 		/* If there is data in transmitter buffer */
-		if(rbUsed(&TxBuffer))
+		if(rbuf_used(&TxBuffer))
 		{
 			/* Pop value from transmitter buffer */
-			rbPop(&TxBuffer, &Temp);
-			UART0_D = Temp; //Write TX data to UART data register.
+			rbuf_read(&TxBuffer, &temp, 1);
+			UART0_D = temp; //Write TX data to UART data register.
 		}
 		/* Otherwise... */
 		else
@@ -138,8 +142,8 @@ void UART0_Init()
 	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
 	
 	/* Initialise ring buffers */
-	rbInit(&RxBuffer, RxBufferData, sizeof RxBufferData);
-	rbInit(&TxBuffer, TxBufferData, sizeof TxBufferData);
+	rbuf_init(&RxBuffer, RxBufferData, sizeof RxBufferData);
+	rbuf_init(&TxBuffer, TxBufferData, sizeof TxBufferData);
 	
 	PORTA_PCR1 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;   
 	PORTA_PCR2 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;  
