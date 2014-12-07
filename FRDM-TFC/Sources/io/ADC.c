@@ -427,7 +427,7 @@ void InitADC0()
 }
 
 
-
+void Conversion_Init();
 void TFC_InitADCs(carState_s* carStateInputPointer)
 {
 	InitADC0();
@@ -462,10 +462,17 @@ void TFC_InitADCs(carState_s* carStateInputPointer)
 #define BATTERY_SAMPLE_TICKS  ( SYSTICK_FREQUENCY / BATTERY_SAMPLE_FREQUENCY )
 #define LINESCAN_SAMPLE_TICKS ( SYSTICK_FREQUENCY / LINESCAN_SAMPLE_FREQUENCY
 
+/* ADC channel definitions */
+#define TFC_POT_0_ADC_CHANNEL        13
+#define TFC_POT_1_ADC_CHANNEL        12
+#define TFC_MOTOR_CURRENT_0_CHANNEL 7 //7a
+#define TFC_MOTOR_CURRENT_1_CHANNEL 3
+#define TFC_BAT_SENSE_CHANNEL        4
+#define TFC_LINESCAN0_ADC_CHANNEL    6
+#define TFC_LINESCAN1_ADC_CHANNEL    7 //7b
+
 /* ADC conversion selections */
 #define ADC_SELECT_NONE            0
-#define ADC_SELECT_FIRST           1
-////////////////////////////////////
 #define ADC_SELECT_POT_0           1
 #define ADC_SELECT_POT_1           2
 #define ADC_SELECT_MOTOR_CURRENT_0 3
@@ -477,7 +484,6 @@ void TFC_InitADCs(carState_s* carStateInputPointer)
 volatile uint16_t PotADC_Value[2];
 volatile uint16_t MotorCurrentADC_Value[2];
 volatile uint16_t BatSenseADC_Value;
-static   uint8_t  CurrentADC_State =  ADC_SELECT_INIT; 
 
 /* Define conversion element struct */
 typedef struct {
@@ -487,7 +493,7 @@ typedef struct {
     uint32_t counter;
 } ConversionItem;
 
-ConversionItems items[] =
+ConversionItem ADCItems[] =
 {
     /* [0] = */ { /* select = */ ADC_SELECT_POT_0, /* frequency = */ POT_0_SAMPLE_FREQUENCY, /* ch = */ /* misc... */ 0,0 },
     /* [1] = */ { /* select = */ ADC_SELECT_POT_1, /* frequency = */ POT_1_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
@@ -495,8 +501,8 @@ ConversionItems items[] =
     /* [3] = */ { /* select = */ ADC_SELECT_MOTOR_CURRENT_1, /* frequency = */ MOTOR_CURRENT_1_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
     /* [4] = */ { /* select = */ ADC_SELECT_BATTERY, /* frequency = */ BATTERY_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
     /* [5] = */ { /* select = */ ADC_SELECT_LINESCAN_0, /* frequency = */ LINESCAN_0_SAMPLE_FREQUENCY, /* misc... */ 0,0 }
-}
-#define ADC_SELECT_NUM ( (sizeof items) / (sizeof (ConversionItem)) )
+};
+#define ADC_SELECT_NUM ( (sizeof ADCItems) / (sizeof (ConversionItem)) )
 
 /* Collector initialization routine */
 void Conversion_Init()
@@ -505,12 +511,10 @@ void Conversion_Init()
     for (uint32_t i = 0; i < ADC_SELECT_NUM; i++ )
     {
         /* Calculate period in ticks; initialize counter */
-        items[i].period = SYSTICK_FREQUENCY/items[i].frequency;
-        items[i].counter = 0;
+        ADCItems[i].period = SYSTICK_FREQUENCY/ADCItems[i].frequency;
+        ADCItems[i].counter = 0;
     }
 }
-
-volatile uint8_t  CurrentLineScanPixel = 0;
 
 /* Flag to signal:
    a) PIT0 to start a new conversion
@@ -522,21 +526,21 @@ void PIT_IRQHandler()
 	//TAOS_SI_HIGH;
 
     /* Periodically sample analog inputs */
-    static uint8_t last = ADC_SELECT_FIRST;
-           uint8_t this = last;
+    static uint32_t last = 0;
+           uint32_t this = last;
 
     if (next == ADC_SELECT_NONE)
     do //Start at last item...
     {
         /* Add number of ticks since last epoch to counter */
-        items[i].counter += SAMPLE_TICKER;
+        ADCItems[this].counter += SAMPLE_TICKER;
 
         /* If CollectorItem counter has reached 
            or exceeded period in ticks */
-        if (items[i].counter >= items[i].period)
+        if (ADCItems[this].counter >= ADCItems[this].period)
         {
-            items[i].counter = 0;   //Reset counter to zero
-            next = items[i].select; //Signal to ADC0 IRQ where to save conversion
+            ADCItems[this].counter = 0;   //Reset counter to zero
+            next = ADCItems[this].select; //Signal to ADC0 IRQ where to save conversion
 
             /* Prime the conversion */
             //To do (perhaps): Move these primer cases into the ConversionItem config
@@ -581,7 +585,7 @@ void PIT_IRQHandler()
         }
 
       if (++this == ADC_SELECT_NUM) this = 0; //Wrap around to start of ConversionItems if appropriate
-    } while(this != last) //...cycle until all have been processed.
+    } while(ADCItems[this].select != ADCItems[last].select); //...cycle until all have been processed.
 
     /* Reset master counter */
     SAMPLE_TICKER = 0;
@@ -591,6 +595,9 @@ void PIT_IRQHandler()
 
 void ADC0_IRQHandler()
 {
+	uint32_t junk;
+	static uint8_t pixel;
+	 
     /* Switch to complete/continue conversion */
 	switch(next)
 	{	
@@ -627,7 +634,7 @@ void ADC0_IRQHandler()
         /* Continue LINESCAN_0 sequence */
 		case ADC_SELECT_LINESCAN_0:
 			
-            static uint8_t pixel = 0;
+            pixel = 0;
 			if(pixel < 128)
 			{
 				LineScanImage0WorkingBuffer[pixel++] = ADC0_RA;              //Store the sample
@@ -642,7 +649,7 @@ void ADC0_IRQHandler()
                 pixel = 0;
 
 				TAOS_CLK_HIGH;					
-				for (junk = 0;junk<10;junk++) {}
+				for (uint8_t i = 0; i < 10; ++i) {}
 				TAOS_CLK_LOW; 
 				
                 /* Swap the image buffer */
@@ -666,7 +673,7 @@ void ADC0_IRQHandler()
 			break;
 
         default:
-            uint32_t junk = ADC0_RA;
+            junk = ADC0_RA;
         break;
 	}
 }

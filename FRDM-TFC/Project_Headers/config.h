@@ -12,7 +12,7 @@
 #define UPTIME_TICKER 4
 #define COLLECTOR_TICKER 5
 #define MAIN_TRIGGER_TICKER 6
-#define ADC_TRIGGER_TICKER 7
+#define ADC_SAMPLE_TICKER 7
 
 /* Trigger configuration */
 #define MAIN_TRIGGER_POLLLING_INTERVAL 50
