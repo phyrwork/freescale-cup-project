@@ -43,19 +43,7 @@ int main(void)
 	TFC_SetLED(0);
 
 	while (1)
-	{
-		/* Enable UART0 */
-		#ifdef SERIAL_TX_IRQ_ENABLED
-			UART0_ArmIRQ();
-		#endif
-		
-		/* Hold in loop for MAIN_TRIGGER_POLLLING_INTERVAL
-		   cycles to free up memory bus for DMA */
-		for (uint32_t hold = 0; hold < MAIN_TRIGGER_POLLLING_INTERVAL; ++hold)
-		{
-			__asm("nop");
-		}
-
+	{	
 		/* Trigger main control routine */
 		static uint32_t ControlTriggerCounter = 0;
 		ControlTriggerCounter += MAIN_TRIGGER_TICKER;
@@ -114,6 +102,11 @@ int main(void)
 
 		/* Reset main trigger counter */
 		MAIN_TRIGGER_TICKER = 0;
+		
+		/* Nothing to be done - enable UART0 */
+		#ifdef SERIAL_TX_IRQ_ENABLED
+			UART0_ArmIRQ();
+		#endif
 	}
 	return 0;
 }
