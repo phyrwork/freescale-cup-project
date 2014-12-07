@@ -18,9 +18,9 @@ typedef struct {
 	uint8_t   deref; /* Number of deferences required to reach data -
 	                   facilitates access to data behind pointers */
 	Endpoint  endpoint;
-	uint16_t  frequency;
-	uint16_t  period;
-	uint16_t  counter;
+	uint32_t  frequency;
+	uint32_t  period;
+	uint32_t  counter;
 } CollectorItem;
 
 /* Endpoint error reporting */

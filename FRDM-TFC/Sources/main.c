@@ -6,7 +6,7 @@
 
 /* Control trigger definitions */
 //#include "support/ARM_SysTick.h"
-#define MAIN_TRIGGER_TICKER TFC_Ticker[TRIGGER_TICKER]
+#define TRIGGER_TICKER TFC_Ticker[MAIN_TRIGGER_TICKER]
 //Might have to hard code these ticks value if compiler doesn't optimise the division out
 #define CONTROL_TRIGGER_TICKS ( SYSTICK_FREQUENCY / CONTROL_TRIGGER_FREQUENCY )
 #define TELEMETRY_TRIGGER_TICKS ( SYSTICK_FREQUENCY / TELEMETRY_TRIGGER_FREQUENCY )
@@ -58,7 +58,7 @@ int main(void)
 
 		/* Trigger main control routine */
 		static uint32_t ControlTriggerCounter = 0;
-		ControlTriggerCounter += MAIN_TRIGGER_TICKER;
+		ControlTriggerCounter += TRIGGER_TICKER;
 		if (ControlTriggerCounter > CONTROL_TRIGGER_TICKS)
 		{   ControlTriggerCounter = 0; //Reset trigger counter
 			#ifdef SERIAL_TX_IRQ_ENABLED
@@ -101,7 +101,7 @@ int main(void)
 
 		/* Trigger telemetry routine */
 		static uint32_t TelemetryTriggerCounter = 0;
-		TelemetryTriggerCounter += MAIN_TRIGGER_TICKER;
+		TelemetryTriggerCounter += TRIGGER_TICKER;
 		if (TelemetryTriggerCounter > TELEMETRY_TRIGGER_TICKS)
 		{   TelemetryTriggerCounter = 0; //Reset trigger counter
 			#ifdef SERIAL_TX_IRQ_ENABLED
@@ -113,7 +113,7 @@ int main(void)
 		}
 
 		/* Reset main trigger counter */
-		MAIN_TRIGGER_TICKER = 0;
+		TRIGGER_TICKER = 0;
 	}
 	return 0;
 }

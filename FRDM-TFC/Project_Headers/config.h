@@ -8,16 +8,24 @@
 
 /* Ticker configuration and index definitions */
 //#define SYSTICK_FREQUENCY /* To do: Move #define here and remove hard coded dependencies on this value */
-#define NUM_TFC_TICKERS 7
+#define NUM_TFC_TICKERS 8
 #define UPTIME_TICKER 4
 #define COLLECTOR_TICKER 5
-#define TRIGGER_TICKER 6
+#define MAIN_TRIGGER_TICKER 6
+#define ADC_TRIGGER_TICKER 7
 
-/* main() triggers configuration */
+/* Trigger configuration */
 #define MAIN_TRIGGER_POLLLING_INTERVAL 50
-
 #define CONTROL_TRIGGER_FREQUENCY 100
 #define TELEMETRY_TRIGGER_FREQUENCY 100
+
+/* ADC sampling configuration - n.b. these are target sampling frequencies only */
+#define POT_0_SAMPLE_FREQUENCY 10
+#define POT_1_SAMPLE_FREQUENCY 10
+#define MOTOR_CURRENT_0_SAMPLE_FREQUENCY 50
+#define MOTOR_CURRENT_1_SAMPLE_FREQUENCY 50
+#define BATTERY_SAMPLE_FREQUENCY 1
+#define LINESCAN_0_SAMPLE_FREQUENCY 50
 
 /* Profiler configuration */
 #define NUM_PROFILER_ENTRIES 1
