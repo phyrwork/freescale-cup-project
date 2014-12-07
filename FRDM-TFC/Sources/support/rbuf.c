@@ -2,46 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <sys/types.h>
-
-#include "rbuf.h"
+#include "support/rbuf.h"
 
 #define RBUF_DEFAULT_SIZE 4096
 
-struct __rbuf_s {
-    u_char *buf;        // the buffer
-    int size;           // buffer size
-    int available;      // buffer size
-    int used;           // used size
-    int rfx;            // read offset
-    int wfx;            // write offset
-    int mode;           // the ringbuffer mode (blocking/overwrite)
-};
-
-rbuf_t *
-rbuf_create(int size) {
-    rbuf_t *new_rb;
-    new_rb = (rbuf_t *)calloc(1, sizeof(rbuf_t));
-    if(!new_rb) {
-        /* TODO - Error Messaeggs */
-        return NULL;
-    }
-    if(size == 0)
-        new_rb->size = RBUF_DEFAULT_SIZE+1;
-    else
-        new_rb->size = size+1;
-    new_rb->buf = (u_char *)malloc(new_rb->size);
-    if(!new_rb->buf) {
-        /* TODO - Error Messaeggs */
-        free(new_rb);
-        return NULL;
-    }
-    new_rb->available = new_rb->size - 1;
-    return new_rb;
+void
+rbuf_init(rbuf_s *rbuf, uint8_t* buf, uint32_t size) {
+    rbuf->size = size;
+    rbuf->buf = buf;
+    rbuf->available = rbuf->size - 1;
+    rbuf->used = 0;
+    rbuf->rfx = 0;
+    rbuf->wfx = 0;
 }
 
 static void
-rbuf_update_size(rbuf_t *rb) {
+rbuf_update_size(rbuf_s *rb) {
     if(rb->wfx == rb->rfx)
         rb->used = 0;
     else if(rb->wfx < rb->rfx)
@@ -53,19 +29,19 @@ rbuf_update_size(rbuf_t *rb) {
 }
 
 void
-rbuf_set_mode(rbuf_t *rbuf, rbuf_mode_t mode)
+rbuf_set_mode(rbuf_s *rbuf, rbuf_mode_t mode)
 {
     rbuf->mode = mode;
 }
 
 rbuf_mode_t
-rbuf_mode(rbuf_t *rbuf)
+rbuf_mode(rbuf_s *rbuf)
 {
     return rbuf->mode;
 }
 
 void
-rbuf_skip(rbuf_t *rb, int size) {
+rbuf_skip(rbuf_s *rb, uint32_t size) {
     if(size >= rb->size) { // just empty the ringbuffer
         rb->rfx = rb->wfx;
     } else {
@@ -79,10 +55,10 @@ rbuf_skip(rbuf_t *rb, int size) {
     rbuf_update_size(rb);
 }
 
-int
-rbuf_read(rbuf_t *rb, u_char *out, int size) {
-    int read_size = rb->used; // never read more than available data
-    int to_end = rb->size - rb->rfx;
+uint32_t
+rbuf_read(rbuf_s *rb, uint8_t *out, uint32_t size) {
+    uint32_t read_size = rb->used; // never read more than available data
+    uint32_t to_end = rb->size - rb->rfx;
 
     // requested size is less than stored data, return only what has been requested
     if(read_size > size)
@@ -108,9 +84,9 @@ rbuf_read(rbuf_t *rb, u_char *out, int size) {
     return read_size;
 }
 
-int
-rbuf_write(rbuf_t *rb, u_char *in, int size) {
-    int write_size = rb->available; // don't write more than available size
+uint32_t
+rbuf_write(rbuf_s *rb, uint8_t *in, uint32_t size) {
+    uint32_t write_size = rb->available; // don't write more than available size
 
     if(!rb || !in || !size) // safety belt
         return 0;
@@ -133,7 +109,7 @@ rbuf_write(rbuf_t *rb, u_char *in, int size) {
         }
         // we are in overwrite mode, so let's make some space
         // for the new data by advancing the read offset
-        int diff = size - write_size;
+        uint32_t diff = size - write_size;
         rb->rfx += diff;
         write_size += diff;
         if (rb->rfx >= rb->size)
@@ -145,7 +121,7 @@ rbuf_write(rbuf_t *rb, u_char *in, int size) {
             memcpy(&rb->buf[rb->wfx], in, write_size);
             rb->wfx+=write_size;
         } else { // and we have to wrap around the buffer
-            int to_end = rb->size - rb->wfx;
+            uint32_t to_end = rb->size - rb->wfx;
             memcpy(&rb->buf[rb->wfx], in, to_end);
             memcpy(rb->buf, in+to_end, write_size - to_end);
             rb->wfx = write_size - to_end;
@@ -160,39 +136,39 @@ rbuf_write(rbuf_t *rb, u_char *in, int size) {
     return write_size;
 }
 
-int
-rbuf_used(rbuf_t *rb) {
+uint32_t
+rbuf_used(rbuf_s *rb) {
     return rb->used;
 }
 
-int
-rbuf_size(rbuf_t *rb) {
+uint32_t
+rbuf_size(rbuf_s *rb) {
     return rb->size - 1;
 }
 
-int
-rbuf_available(rbuf_t *rb) {
+uint32_t
+rbuf_available(rbuf_s *rb) {
     return rb->available;
 }
 
 void
-rbuf_clear(rbuf_t *rb) {
+rbuf_clear(rbuf_s *rb) {
     rb->rfx = rb->wfx = 0;
     rbuf_update_size(rb);
 }
 
 void
-rbuf_destroy(rbuf_t *rb) {
+rbuf_destroy(rbuf_s *rb) {
     if(rb->buf)
         free(rb->buf);
     free(rb);
 }
 
 
-int
-rbuf_find(rbuf_t *rb, u_char octet) {
-    int i;
-    int to_read = rbuf_used(rb);
+uint32_t
+rbuf_find(rbuf_s *rb, uint8_t octet) {
+    uint32_t i;
+    uint32_t to_read = rbuf_used(rb);
     if (to_read == 0)
         return -1;
 
@@ -214,13 +190,13 @@ rbuf_find(rbuf_t *rb, u_char octet) {
     return -1;
 }
 
-int
-rbuf_read_until(rbuf_t *rb, u_char octet, u_char *out, int maxsize)
+uint32_t
+rbuf_read_until(rbuf_s *rb, uint8_t octet, uint8_t *out, uint32_t maxsize)
 {
-    int i;
-    int size = rbuf_used(rb);
-    int to_read = size;
-    int found = 0;
+    uint32_t i;
+    uint32_t size = rbuf_used(rb);
+    uint32_t to_read = size;
+    uint32_t found = 0;
     for (i = rb->rfx; i < rb->size; i++) {
         to_read--;
         if(rb->buf[i] == octet)  {
@@ -247,21 +223,21 @@ rbuf_read_until(rbuf_t *rb, u_char octet, u_char *out, int maxsize)
     return (size-to_read);
 }
 
-static int
-rbuf_copy_internal(rbuf_t *src, rbuf_t *dst, int len, int move)
+static uint32_t
+rbuf_copy_uint32_ternal(rbuf_s *src, rbuf_s *dst, uint32_t len, uint32_t move)
 {
     if (!src || !dst || !len)
         return 0;
 
-    int to_copy = rbuf_available(dst);
+    uint32_t to_copy = rbuf_available(dst);
     if (len < to_copy)
         to_copy = len;
 
-    int available = rbuf_used(src);
+    uint32_t available = rbuf_used(src);
     if (available < to_copy)
         to_copy = available;
 
-    int contiguous = (dst->wfx > dst->rfx)
+    uint32_t contiguous = (dst->wfx > dst->rfx)
                   ? dst->size - dst->wfx
                   : dst->rfx - dst->wfx;
 
@@ -272,7 +248,7 @@ rbuf_copy_internal(rbuf_t *src, rbuf_t *dst, int len, int move)
             if (src->rfx < src->wfx) {
                 memcpy(&dst->buf[dst->wfx], &src->buf[src->rfx], to_copy);
             } else {
-                int to_end = src->size - src->rfx;
+                uint32_t to_end = src->size - src->rfx;
                 memcpy(&dst->buf[dst->wfx], &src->buf[src->rfx], to_end);
                 dst->wfx += to_end;
                 memcpy(&dst->buf[dst->wfx], &src->buf[0], to_copy - to_end);
@@ -280,7 +256,7 @@ rbuf_copy_internal(rbuf_t *src, rbuf_t *dst, int len, int move)
         }
         dst->wfx += to_copy;
     } else {
-        int remainder = to_copy - contiguous;
+        uint32_t remainder = to_copy - contiguous;
         if (move) {
             rbuf_read(src, &dst->buf[dst->wfx], contiguous);
             rbuf_read(src, &dst->buf[0], remainder);
@@ -289,10 +265,10 @@ rbuf_copy_internal(rbuf_t *src, rbuf_t *dst, int len, int move)
                 memcpy(&dst->buf[dst->wfx], &src->buf[src->rfx], contiguous);
                 memcpy(&dst->buf[0], &src->buf[src->rfx + contiguous], remainder);
             } else {
-                int to_end = src->size - src->rfx;
+                uint32_t to_end = src->size - src->rfx;
                 if (to_end > contiguous) {
                     memcpy(&dst->buf[dst->wfx], &src->buf[dst->rfx], contiguous);
-                    int diff = to_end - contiguous;
+                    uint32_t diff = to_end - contiguous;
                     if (diff > remainder) {
                         memcpy(&dst->buf[0], &src->buf[dst->rfx + contiguous], remainder);
                     } else {
@@ -301,7 +277,7 @@ rbuf_copy_internal(rbuf_t *src, rbuf_t *dst, int len, int move)
                     }
                 } else {
                     memcpy(&dst->buf[dst->wfx], &src->buf[dst->rfx], to_end);
-                    int diff = contiguous - to_end;
+                    uint32_t diff = contiguous - to_end;
                     if (diff) {
                         memcpy(&dst->buf[dst->wfx + to_end], &src->buf[0], diff);
                         memcpy(&dst->buf[0], &src->buf[diff], remainder);
@@ -315,16 +291,16 @@ rbuf_copy_internal(rbuf_t *src, rbuf_t *dst, int len, int move)
     return to_copy;
 }
 
-int
-rbuf_move(rbuf_t *src, rbuf_t *dst, int len)
+uint32_t
+rbuf_move(rbuf_s *src, rbuf_s *dst, uint32_t len)
 {
-    return rbuf_copy_internal(src, dst, len, 1);
+    return rbuf_copy_uint32_ternal(src, dst, len, 1);
 }
 
-int
-rbuf_copy(rbuf_t *src, rbuf_t *dst, int len)
+uint32_t
+rbuf_copy(rbuf_s *src, rbuf_s *dst, uint32_t len)
 {
-    return rbuf_copy_internal(src, dst, len, 0);
+    return rbuf_copy_uint32_ternal(src, dst, len, 0);
 }
 
 // vim: tabstop=4 shiftwidth=4 expandtab:
