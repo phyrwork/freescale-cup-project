@@ -524,17 +524,21 @@ static uint8_t next = ADC_SELECT_NONE;
 void PIT_IRQHandler()
 {	
 	//TAOS_SI_HIGH;
+	PIT_TFLG0 = PIT_TFLG_TIF_MASK; //Turn off the Pit 0 Irq flag 
 
     /* Periodically sample analog inputs */
     static uint32_t last = 0;
            uint32_t this = last;
+           
+    /* Add number of ticks since last epoch to counter */
+    for (uint32_t i = 0; i < ADC_SELECT_NUM; ++i)
+    	ADCItems[i].counter += SAMPLE_TICKER;
+    SAMPLE_TICKER = 0; //Reset master counter
+    
 
     if (next == ADC_SELECT_NONE)
     do //Start at last item...
     {
-        /* Add number of ticks since last epoch to counter */
-        ADCItems[this].counter += SAMPLE_TICKER;
-
         /* If CollectorItem counter has reached 
            or exceeded period in ticks */
         if (ADCItems[this].counter >= ADCItems[this].period)
@@ -586,9 +590,6 @@ void PIT_IRQHandler()
 
       if (++this == ADC_SELECT_NUM) this = 0; //Wrap around to start of ConversionItems if appropriate
     } while(ADCItems[this].select != ADCItems[last].select); //...cycle until all have been processed.
-
-    /* Reset master counter */
-    SAMPLE_TICKER = 0;
 }
 
 
@@ -596,7 +597,8 @@ void PIT_IRQHandler()
 void ADC0_IRQHandler()
 {
 	uint32_t junk;
-	static uint8_t pixel;
+	         junk = 0;
+	static uint8_t pixel = 0;
 	 
     /* Switch to complete/continue conversion */
 	switch(next)
@@ -634,7 +636,6 @@ void ADC0_IRQHandler()
         /* Continue LINESCAN_0 sequence */
 		case ADC_SELECT_LINESCAN_0:
 			
-            pixel = 0;
 			if(pixel < 128)
 			{
 				LineScanImage0WorkingBuffer[pixel++] = ADC0_RA;              //Store the sample
