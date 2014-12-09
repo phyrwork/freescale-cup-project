@@ -157,14 +157,6 @@ rbuf_clear(rbuf_s *rb) {
     rbuf_update_size(rb);
 }
 
-void
-rbuf_destroy(rbuf_s *rb) {
-    if(rb->buf)
-        free(rb->buf);
-    free(rb);
-}
-
-
 uint32_t
 rbuf_find(rbuf_s *rb, uint8_t octet) {
     uint32_t i;

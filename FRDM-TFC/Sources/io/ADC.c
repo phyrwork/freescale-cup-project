@@ -2,6 +2,7 @@
 #include "devices/MKL25Z4.h"
 #include "devices/arm_cm0.h"
 #include "sensors/camera/LineScanCamera.h"
+#include "support/cdeque.h"
 #include "config.h"
 
 
