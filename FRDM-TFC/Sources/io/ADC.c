@@ -360,7 +360,7 @@ void InitADC0()
     disable_irq(INT_ADC0-16);   
      
     Master_Adc0_Config.CONFIG1 = ADLPC_NORMAL 			//No low power mode
-								| ADC_CFG1_ADIV(ADIV_4) //divide input by 4
+								| ADC_CFG1_ADIV(ADIV_1) //divide input by 4
 								| ADLSMP_LONG 			//long sample time
 								| ADC_CFG1_MODE(MODE_12)//single ended 8-bit conversion
 								| ADC_CFG1_ADICLK(ADICLK_BUS);
@@ -593,10 +593,11 @@ void Sampler_Dispatch()
         case ADC_SELECT_LINESCAN_0:
             if (LinescanPixel == 0) {
                 /* Start the linescan image grab sequence */
-                TAOS_SI_HIGH;
-                TAOS_CLK_HIGH;
-                for (uint8_t i = 0; i < 50; ++i) {}
-                TAOS_SI_LOW;
+            	
+                //TAOS_SI_HIGH;
+                //TAOS_CLK_HIGH;
+                //for (uint8_t i = 0; i < 50; ++i) {}
+                //TAOS_SI_LOW;
                 
                 ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK;
                 ADC0_SC1A  =  TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
@@ -606,9 +607,9 @@ void Sampler_Dispatch()
             else if (LinescanPixel < 128 && LinescanPixel > 0)
             {
                 /* Shift in the next pixel */
-                TAOS_CLK_LOW;
-                for (uint8_t i = 0; i < 10; ++i) {}
-                TAOS_CLK_HIGH;
+                //TAOS_CLK_LOW;
+                //for (uint8_t i = 0; i < 10; ++i) {}
+                //TAOS_CLK_HIGH;
 
                 ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK;
                 ADC0_SC1A  =  TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
@@ -618,9 +619,9 @@ void Sampler_Dispatch()
             else if (LinescanPixel == 128)
             {
 				/* Complete the image capture sequence */
-				TAOS_CLK_HIGH;                  
-				for (uint8_t i = 0; i < 10; ++i) {}
-				TAOS_CLK_LOW; 
+				//TAOS_CLK_HIGH;                  
+				//for (uint8_t i = 0; i < 10; ++i) {}
+				//TAOS_CLK_LOW; 
 
 				/* Swap the image buffer */
 				if (LineScanWorkingBuffer == 0)
