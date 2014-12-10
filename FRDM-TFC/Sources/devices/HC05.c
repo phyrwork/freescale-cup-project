@@ -22,8 +22,8 @@ GPIO_Config pwr_conf = { /* .io = */ { /* .io = */ {
 
 GPIO_Pin    cmd;
 GPIO_Config cmd_conf = { /* .io = */ { /* .io = */ {
-    /* .port = */ E,
-    /* .pin = */  1 },
+    /* .port = */ D,
+    /* .pin = */  0 },
     /* .mux = */  MUX_ALT1 },
     /* .dir = */  GPIO_OUT
 };
@@ -61,15 +61,17 @@ int8_t HC05_Init(/*HC05_Config* config*/)
     PWR_OFF;
 
     /* Assert KEY and power up again */
-    SET_KEY;
+    //SET_KEY;
     PWR_ON;
     
     /* Do configuration */
-    uint8_t msg[] = "AT+UART=" Str(BLUETOOTH_SERIAL_BAUD) ",1,0\r\n"; //Baud,stop bits,parity bits
-    TX(msg, sizeof msg);
+    //uint8_t msg[] = "AT+UART=" Str(BLUETOOTH_SERIAL_BAUD) ",1,0\r\n"; //Baud,stop bits,parity bits
+    //TX(msg, sizeof msg);
     
     /* Unassert KEY */
-    CLR_KEY;
+    //CLR_KEY;
+    PWR_OFF;
+    PWR_ON;
 
     return 0; //Configuration complete, resume;
 }
