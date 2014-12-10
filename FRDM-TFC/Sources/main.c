@@ -18,8 +18,8 @@ void TFC_Init(carState_s* carState)
 	TFC_InitGPIO();
 	TFC_InitServos();
 	TFC_InitMotorPWM();
-	TFC_InitADCs(carState);
 	TFC_InitLineScanCamera();
+	TFC_InitADCs(carState);
 	UART0_Init();
 	DMA0_Init();
 	TFC_HBRIDGE_DISABLE;

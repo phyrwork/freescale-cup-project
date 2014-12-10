@@ -1,5 +1,5 @@
 /**
- * @file cdeque.h
+ * @file cqueue.h
  *
  * @brief Ring buffers
  *
@@ -23,7 +23,7 @@ extern "C" {
 typedef enum {
     RBUF_MODE_BLOCKING = 0,
     RBUF_MODE_OVERWRITE
-} cdeque_mode_t;
+} cqueue_mode_t;
 */
 
 typedef struct {
@@ -34,22 +34,18 @@ typedef struct {
     uint32_t rfx;            // read offset
     uint32_t wfx;            // write offset
   //uint32_t mode;           // the queue mode (blocking/overwrite)
-} cdeque_s;
+} cqueue_s;
 
-void      cdeque_init(cdeque_s *cd, void* *buf, uint32_t size);
-//void      cdeque_set_mode(cdeque_s *cdeque, cdeque_mode_t mode);
-//cdeque_mode_t cdeque_mode(cdeque_s *cdeque);
-void      cdeque_skip(cdeque_s *cd, uint32_t size);
-uint32_t  cdeque_peek_front(cdeque_s *cd, void* *out, uint32_t size);
-uint32_t  cdeque_peek_back(cdeque_s *cd, void* *out, uint32_t size);
-uint32_t  cdeque_pop_front(cdeque_s *cd, void* *out, uint32_t size);
-uint32_t  cdeque_pop_back(cdeque_s *cd, void* *out, uint32_t size);
-uint32_t  cdeque_push_back(cdeque_s *cd, void* *in, uint32_t size);
-uint32_t  cdeque_push_front(cdeque_s *cd, void* *in, uint32_t size);
-uint32_t  cdeque_size(cdeque_s *cd);
-uint32_t  cdeque_used(cdeque_s *cd);
-uint32_t  cdeque_available(cdeque_s *cd);
-void      cdeque_clear(cdeque_s *cd);
+void      cqueue_init(cqueue_s *cq, void* *buf, uint32_t size);
+//void      cqueue_set_mode(cqueue_s *cqueue, cqueue_mode_t mode);
+//cqueue_mode_t cqueue_mode(cqueue_s *cqueue);
+void      cqueue_skip(cqueue_s *cq, uint32_t size);
+uint32_t  cqueue_pop(cqueue_s *cq, void* *out, uint32_t size);
+uint32_t  cqueue_push(cqueue_s *cq, void* *in, uint32_t size);
+uint32_t  cqueue_size(cqueue_s *cq);
+uint32_t  cqueue_used(cqueue_s *cq);
+uint32_t  cqueue_available(cqueue_s *cq);
+void      cqueue_clear(cqueue_s *cq);
 
 #ifdef __cplusplus
 }

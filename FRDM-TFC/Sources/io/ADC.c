@@ -1,8 +1,9 @@
 #include "io/ADC.h"
 #include "devices/MKL25Z4.h"
 #include "devices/arm_cm0.h"
+#include "devices/CrystalClock.h"
 #include "sensors/camera/LineScanCamera.h"
-#include "support/cdeque.h"
+#include "support/cqueue.h"
 #include "config.h"
 
 
@@ -14,29 +15,7 @@
 #define TFC_LINESCAN0_ADC_CHANNEL	6
 #define TFC_LINESCAN1_ADC_CHANNEL	7 //7b
 
-#define ADC_MAX_CODE    (4095)
-
-#define V_SUP 3.3f
-
-#define ADC0_irq_no   57
-#define ADC1_irq_no   58
-
-#define ADC0_CHANA    19                                    // set to desired ADC0 channel trigger A    
-#define ADC0_CHANB    20                                    // set to desired ADC0 channel trigger B    
-
-#define ADC1_CHANA    20                                    // set to desired ADC1 channel trigger A  20 defaults to potentiometer in TWRK60     
-#define ADC1_CHANB    20                                    // set to desired ADC1 channel trigger B
-
-#define ADC0_DLYA     0x2000                                // ADC0 trigger A delay 
-#define ADC0_DLYB     0x4000                                // ADC0 trigger B delay 
-#define ADC1_DLYA     0x6000                                // ADC1 trigger A delay
-#define ADC1_DLYB     0x7fff                                // ADC1 trigger B delay 
-
-
-#define ADC0A_DONE   0x01       
-#define ADC0B_DONE   0x02       
-#define ADC1A_DONE   0x04       
-#define ADC1B_DONE   0x08       
+#define ADC_MAX_CODE    (4095) //12-bit
 
 
 // Bit shifting of bitfiled is already taken into account so 
@@ -47,13 +26,6 @@
 
 #define A                 0x0
 #define B                 0x1
-
-
-/////// NOTE: the following defines relate to the ADC register definitions
-/////// and the content follows the reference manual, using the same symbols.
-
-
-//// ADCSC1 (register)
 
 // Conversion Complete (COCO) mask
 #define COCO_COMPLETE     ADC_SC1_COCO_MASK
@@ -258,14 +230,6 @@ void ADC_Read_Cal(ADC_MemMapPtr, tADC_Cal_Blk *);
 #define ADC_STATE_CAPTURE_BATTERY_LEVEL			5
 #define ADC_STATE_CAPTURE_LINE_SCAN		        6
 
-
-volatile uint16_t PotADC_Value[2];
-volatile uint16_t MotorCurrentADC_Value[2];
-volatile uint16_t BatSenseADC_Value;
-static uint8_t 	CurrentADC_State =	ADC_STATE_INIT;	
-
-volatile uint8_t CurrentLineScanPixel = 0;
-
 static carState_s* carState;
 
 void InitADC0();
@@ -453,18 +417,12 @@ void InitADC0()
 }
 
 
-
+void Sampler_Init();
 void TFC_InitADCs(carState_s* carStateInputPointer)
 {
 	InitADC0();
-	 
-	carState = carStateInputPointer;
 
-	
-	//All Adc processing of the Pots and linescan will be done in the ADC0 IRQ!
-	//A state machine will scan through the channels.
-	//This is done to automate the linescan capture on Channel 0 to ensure that timing is very even
-	CurrentADC_State =	ADC_STATE_INIT;	
+    carState = carStateInputPointer;
 
   //The pump will be primed with the PIT interrupt.  upon timeout/interrupt it will set the SI signal high
 	//for the camera and then start the conversions for the pots.
@@ -477,6 +435,8 @@ void TFC_InitADCs(carState_s* carStateInputPointer)
 	PIT_MCR |= PIT_MCR_FRZ_MASK; //Pause PIT0 when in debug mode.
 	PIT_MCR &= ~PIT_MCR_MDIS_MASK; //Enable PIT module (Reset = 1 - disabled).
 
+    Sampler_Init();
+
   TFC_SetLineScanExposureTime(TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS);
 	
   /* Configure and enable interrupts */
@@ -486,150 +446,273 @@ void TFC_InitADCs(carState_s* carStateInputPointer)
 	enable_irq(INT_ADC0-16);
 }
 
+/* ADC conversion scheduler and driver
+ * -----------------------------------
+ */
+#include "support/ARM_SysTick.h"
+#define TICKER TFC_Ticker[ADC_SAMPLE_TICKER]
+
+typedef struct {
+    uint8_t  select;
+    uint32_t frequency;
+    uint32_t period;
+    uint32_t counter;
+} SamplerItem;
+
+#define ADC_SELECT_POT_0           1
+#define ADC_SELECT_POT_1           2
+#define ADC_SELECT_MOTOR_CURRENT_0 3
+#define ADC_SELECT_MOTOR_CURRENT_1 4
+#define ADC_SELECT_BATTERY         5
+#define ADC_SELECT_LINESCAN_0      6
+
+/* Sampling configuration */
+SamplerItem SamplerItems[] =
+{
+    /* [0] = */ { /* select = */ ADC_SELECT_POT_0, /* frequency = */ POT_0_SAMPLE_FREQUENCY, /* ch = */ /* misc... */ 0,0 },
+    /* [1] = */ { /* select = */ ADC_SELECT_POT_1, /* frequency = */ POT_1_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
+    /* [2] = */ { /* select = */ ADC_SELECT_MOTOR_CURRENT_0, /* frequency = */ MOTOR_CURRENT_0_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
+    /* [3] = */ { /* select = */ ADC_SELECT_MOTOR_CURRENT_1, /* frequency = */ MOTOR_CURRENT_1_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
+    /* [4] = */ { /* select = */ ADC_SELECT_BATTERY, /* frequency = */ BATTERY_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
+    /* [5] = */ { /* select = */ ADC_SELECT_LINESCAN_0, /* frequency = */ LINESCAN_0_SAMPLE_FREQUENCY, /* misc... */ 0,0 }
+};
+#define NUM_SAMPLER_ITEMS ( (sizeof SamplerItems) / (sizeof (SamplerItem)) )
+
+/* Sample queue initialization */
+void* SamplerQueueData[SAMPLER_QUEUE_LENGTH];
+cqueue_s SamplerQueue;
+
+/* Active sampler item */
+SamplerItem *ActiveItem = 0;
+
+/* Sample storage */
+volatile uint16_t PotADC_Value[2];
+volatile uint16_t MotorCurrentADC_Value[2];
+volatile uint16_t BatSenseADC_Value;
+volatile uint8_t  LinescanPixel = 0;
+
+/* Specific item pointers */
+SamplerItem *linescan0_item;
+
+/* Sampler initialization routine */
+void Sampler_Init()
+{ 
+    /* Initialize PIT1 */
+    PIT_TCTRL1 = PIT_TCTRL_TEN_MASK | PIT_TCTRL_TIE_MASK;
+    PIT_LDVAL1 = (uint32_t) PERIPHERAL_BUS_CLOCK / SAMPLER_POLLING_FREQUENCY;
+
+    /* Initialize sampler items */
+    for (uint32_t i = 0; i < NUM_SAMPLER_ITEMS; i++ )
+    {
+        /* Select item - compiler should optimize this copy away */
+        SamplerItem *item = &SamplerItems[i];
+
+        /* Calculate period in ticks; initialize counter */
+        if (item->frequency != 0)
+        {
+            item->period = SYSTICK_FREQUENCY/item->frequency;
+            item->counter = 0;
+        }
+        else //If frequency set to 0, set period as high as possible
+        {
+            item->period = 0xFFFFFFFF;
+        }
+    }
+
+    /* Export pointers to specific items */
+    for (uint32_t i = 0; i < NUM_SAMPLER_ITEMS; ++i)
+    {
+        SamplerItem *item = &SamplerItems[i];
+
+        //Check against items to export
+        if (item->select == ADC_SELECT_LINESCAN_0) linescan0_item = item;
+    }
+
+    /* Initialise sample queue */
+    cqueue_init(&SamplerQueue, SamplerQueueData, SAMPLER_QUEUE_LENGTH);
+}
+
+void Sampler_Update()
+{
+    /* Iterate through SamplerItems and add them to the ADC queue
+       if they're due for sampling */
+    for (uint32_t i = 0; i < NUM_SAMPLER_ITEMS; ++i)
+    {
+        /* Select item - compiler should optimize this copy away */
+        SamplerItem *item = &SamplerItems[i];
+
+        /* Update item counter */
+        item->counter += TICKER;
+
+        /* If counter greater than threshold, sample is due for conversion */
+        if (item->counter >= item->period)
+        {
+            item->counter = 0; //Reset the counter
+            cqueue_push(&SamplerQueue, (void**) &item, 1);
+        }
+    }
+
+    /* Reset master counter */
+    TICKER = 0;
+}
+
+void Sampler_Dispatch()
+{
+    /* Fetch next conversion request from queue */
+    if (cqueue_used(&SamplerQueue) == 0) return; 
+    cqueue_pop(&SamplerQueue, (void**) &ActiveItem, 1);
+
+    /* Initiate conversion */
+    switch(ActiveItem->select)
+    {
+        case ADC_SELECT_POT_0:
+            ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK;
+            ADC0_SC1A  =  TFC_POT_0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
+            break;
+
+        case ADC_SELECT_POT_1:
+            ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK;
+            ADC0_SC1A  =  TFC_POT_1_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
+            break;
+
+        case ADC_SELECT_MOTOR_CURRENT_0:
+            ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK;
+            ADC0_SC1A = TFC_MOTOR_CURRENT_0_CHANNEL | ADC_SC1_AIEN_MASK;
+            break;
+
+        case ADC_SELECT_MOTOR_CURRENT_1:
+            ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK;
+            ADC0_SC1A = TFC_MOTOR_CURRENT_1_CHANNEL | ADC_SC1_AIEN_MASK;
+            break;
+
+        case ADC_SELECT_BATTERY:
+            ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK;
+            ADC0_SC1A  =  TFC_BAT_SENSE_CHANNEL| ADC_SC1_AIEN_MASK;
+            break;
+
+        case ADC_SELECT_LINESCAN_0:
+            if (LinescanPixel == 0) {
+                /* Start the linescan image grab sequence */
+                TAOS_SI_HIGH;
+                TAOS_CLK_HIGH;
+                for (uint8_t i = 0; i < 50; ++i) {}
+                TAOS_SI_LOW;
+                
+                ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK;
+                ADC0_SC1A  =  TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
+                cqueue_push(&SamplerQueue, (void**) &linescan0_item, 1);
+                break;
+            }
+            else if (LinescanPixel < 128 && LinescanPixel > 0)
+            {
+                /* Shift in the next pixel */
+                TAOS_CLK_LOW;
+                for (uint8_t i = 0; i < 10; ++i) {}
+                TAOS_CLK_HIGH;
+
+                ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK;
+                ADC0_SC1A  =  TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
+                cqueue_push(&SamplerQueue, (void**) &linescan0_item, 1);
+                break;
+            }
+            else if (LinescanPixel == 128)
+            {
+				/* Complete the image capture sequence */
+				TAOS_CLK_HIGH;                  
+				for (uint8_t i = 0; i < 10; ++i) {}
+				TAOS_CLK_LOW; 
+
+				/* Swap the image buffer */
+				if (LineScanWorkingBuffer == 0)
+				{
+					LineScanWorkingBuffer = 1;
+					LineScanImage0WorkingBuffer = &LineScanImage0Buffer[1][0];
+					LineScanImage0 = &LineScanImage0Buffer[0][0];
+				}
+				else
+				{
+					LineScanWorkingBuffer = 0;
+					LineScanImage0WorkingBuffer = &LineScanImage0Buffer[0][0];
+					LineScanImage0 = &LineScanImage0Buffer[1][0];
+				}
+
+				carState->lineScanState = LINESCAN_IMAGE_READY; //Signal to control that new image is ready 
+            }
+            
+        default:
+        	ActiveItem = 0;
+        	break;
+    }
+}
+
+
 void PIT_IRQHandler()
 {
-	PIT_TFLG0 = PIT_TFLG_TIF_MASK; //Turn off the Pit 0 Irq flag 
-	
-	TAOS_SI_HIGH;
-	//Prime the ADC pump and start capturing POT 0
-	CurrentADC_State = ADC_STATE_CAPTURE_POT_0;
-	
-	ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select the A side of the mux
-	ADC0_SC1A  =  TFC_POT_0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;  //Start the State machine at POT0
+    /* PIT0 is used to control the exposure of the linescan
+    * cameras (somehow, note-to-self: read linescan sensor
+    * datasheet again) by controlling the time between capture
+    * sequences
+    */
+    if (PIT_TFLG0) {
+    	PIT_TFLG0 = PIT_TFLG_TIF_MASK; //Clear the IRQ flag
+    	cqueue_push(&SamplerQueue, (void**) &linescan0_item, 1);
+    	LinescanPixel = 0;
+    }
+
+    /* PIT1 is used to queue conversion requests at the appropriate time */
+    if (PIT_TFLG1) {
+        PIT_TFLG1 = PIT_TFLG_TIF_MASK; //Clear the IRQ flag
+
+        Sampler_Update();
+        if (ActiveItem == 0) Sampler_Dispatch();
+    }
 }
 
 
 
 void ADC0_IRQHandler()
 {
-	uint8_t Junk;
-	switch(CurrentADC_State)
-	{
-		default:
-			Junk =  ADC0_RA;
-		break;
-		
-    /* Get POT0 value */
-		case ADC_STATE_CAPTURE_POT_0:
-				
-				PotADC_Value[0] = ADC0_RA;
-				ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select the A side of the mux
-				ADC0_SC1A  =  TFC_POT_1_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
-				CurrentADC_State = ADC_STATE_CAPTURE_POT_1;
-				
-			break;
-		
-    /* Get POT1 value */
-		case ADC_STATE_CAPTURE_POT_1:
-		
-				PotADC_Value[1] = ADC0_RA;
-				
-				ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select the A side of the mux
-				ADC0_SC1A = TFC_MOTOR_CURRENT_0_CHANNEL | ADC_SC1_AIEN_MASK;
-				CurrentADC_State = ADC_STATE_CAPTURE_BATTERY_LEVEL;
-				CurrentADC_State = ADC_MOTOR_CURRENT_0;
-				
-			break;
-		
-    /* Get CURRENT0 value */
-		case ADC_MOTOR_CURRENT_0:
-		    
-        MotorCurrentADC_Value[0] = ADC0_RA;
-			
-//			ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select the A side of the mux
-  			ADC0_SC1A = TFC_MOTOR_CURRENT_1_CHANNEL | ADC_SC1_AIEN_MASK;
-  			CurrentADC_State = ADC_MOTOR_CURRENT_1;
-  			
-        break;
-		
-    /* Get CURRENT1 value */
-    case ADC_MOTOR_CURRENT_1:
-		
-        MotorCurrentADC_Value[1] = ADC0_RA;
+    uint16_t tmp = LinescanPixel;
+    if (tmp == 126) {
+    	tmp = 0;
+    }
 
-  			ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK; //Select the B side of the mux
-  			ADC0_SC1A  =  TFC_BAT_SENSE_CHANNEL| ADC_SC1_AIEN_MASK;
-  			CurrentADC_State = ADC_STATE_CAPTURE_BATTERY_LEVEL;
-  			
-  			break;
-		
-    /* Get BATTERY value */
-		case ADC_STATE_CAPTURE_BATTERY_LEVEL:
-		
-        ADC0_CFG2  &= ~ADC_CFG2_MUXSEL_MASK; //Select A side of the mux
-				BatSenseADC_Value = ADC0_RA;
-				
-				//Now we will start the sequence for the Linescan camera
-				
-				TAOS_CLK_HIGH;
-				
-				for(Junk = 0;Junk<50;Junk++)
-				{
-				}
-				
-				TAOS_SI_LOW;
+    /* Store conversion */
+    switch(ActiveItem->select) {
+ 
+        case ADC_SELECT_POT_0:
+            PotADC_Value[0] = ADC0_RA; //Store value
+            break;
 
-				
-				CurrentLineScanPixel = 0;
-				CurrentADC_State = ADC_STATE_CAPTURE_LINE_SCAN;
-				ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK; //Select the B side of the mux
-				ADC0_SC1A  =  TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
-				
-				break;
-		
-    /* Get LINESCAN0 */
-		case ADC_STATE_CAPTURE_LINE_SCAN:
-					
-					if(CurrentLineScanPixel<128)
-					{
-						
-							LineScanImage0WorkingBuffer[CurrentLineScanPixel] = ADC0_RA;
-							ADC0_SC1A  =  TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
-							
-							CurrentLineScanPixel++;
-							
-							TAOS_CLK_LOW;
-								for(Junk = 0;Junk<10;Junk++)
-									{
-									}
-							TAOS_CLK_HIGH;
-					}
-					else
-					{
-						// done with the capture sequence.  we can wait for the PIT0 IRQ to restart
-					
-						TAOS_CLK_HIGH;
-											
-						for(Junk = 0;Junk<10;Junk++)
-							{
-							}
-						
-						TAOS_CLK_LOW;
-						CurrentADC_State = ADC_STATE_INIT;	 
-						
-						//swap the buffer
-						
-						if(LineScanWorkingBuffer == 0)
-						{
-							LineScanWorkingBuffer = 1;
-							
-							LineScanImage0WorkingBuffer = &LineScanImage0Buffer[1][0];
-							
-							LineScanImage0 = &LineScanImage0Buffer[0][0];
-						}
-						else
-						{
-							LineScanWorkingBuffer = 0;
-							LineScanImage0WorkingBuffer = &LineScanImage0Buffer[0][0];
-							
-							LineScanImage0 = &LineScanImage0Buffer[1][0];
-						}
-						
-						carState->lineScanState = LINESCAN_IMAGE_READY;
-					}
-					
-					break;
-	}
+        case ADC_SELECT_POT_1:
+            PotADC_Value[1] = ADC0_RA;
+            break;
+            
+        case ADC_SELECT_MOTOR_CURRENT_0:
+            MotorCurrentADC_Value[0] = ADC0_RA;
+            break;
+            
+        case ADC_SELECT_MOTOR_CURRENT_1:
+            MotorCurrentADC_Value[1] = ADC0_RA;
+            break;
+
+        case ADC_SELECT_BATTERY:
+            BatSenseADC_Value = ADC0_RA;
+            break;
+
+        case ADC_SELECT_LINESCAN_0:
+            if(LinescanPixel < 128)
+            {
+                LineScanImage0WorkingBuffer[LinescanPixel++] = ADC0_RA;
+            }
+            break;
+        
+        default:
+        	tmp = ADC0_RA;
+    }
+
+    ActiveItem = 0;
+    Sampler_Dispatch();
 }
 
 //Pot Reading is Scaled to return a value of -1.0 to 1.0
