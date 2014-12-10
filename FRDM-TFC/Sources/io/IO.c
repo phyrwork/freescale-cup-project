@@ -24,19 +24,19 @@ void IO_EnableClock(IO_Pin* io) {
 	switch(PORT) {
 		/* One case for each PT */
 		case A:
-			SIM_SCGC5 &= SIM_SCGC5_PORTA_MASK;
+			SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
 			break;
 		case B:
-			SIM_SCGC5 &= SIM_SCGC5_PORTB_MASK;
+			SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK;
 			break;
 		case C:
-			SIM_SCGC5 &= SIM_SCGC5_PORTC_MASK;
+			SIM_SCGC5 |= SIM_SCGC5_PORTC_MASK;
 			break;
 		case D:
-			SIM_SCGC5 &= SIM_SCGC5_PORTD_MASK;
+			SIM_SCGC5 |= SIM_SCGC5_PORTD_MASK;
 			break;
 		case E:
-			SIM_SCGC5 &= SIM_SCGC5_PORTE_MASK;
+			SIM_SCGC5 |= SIM_SCGC5_PORTE_MASK;
 			break;
 	}
 }

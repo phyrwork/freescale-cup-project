@@ -8,6 +8,7 @@
 #include "io/Frame.h"
 #include "io/DMA.h"
 #include "io/GPIO.h"
+#include "devices/HC05.h"
 
 /* RingBuffer storage and structures */
 uint8_t RxBufferData[RB_RX_SIZE];
@@ -179,10 +180,12 @@ void UART0_Init()
 	SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;
 	
 	//We have to feed this function the clock in KHz!
-    UART0_ConfigureDataRate(CORE_CLOCK/2/1000, USB_SERIAL_BAUD);
 	#ifdef BLUETOOTH_ENABLED
-    	UART0_ConfigureDataRate(CORE_CLOCK/2/1000, BLUETOOTH_SERIAL_BAUD_DEFAULT);
-	#endif //BLUETOOTH_ENABLED   
+    	HC05_Init();
+    	UART0_ConfigureDataRate(CORE_CLOCK/2/1000, BLUETOOTH_SERIAL_BAUD);
+	#else
+    	UART0_ConfigureDataRate(CORE_CLOCK/2/1000, USB_SERIAL_BAUD);
+	#endif	
     
     //Enable transmitter DMA requests
     //UART0_C4 |= UART_C4_TDMAS_MASK;

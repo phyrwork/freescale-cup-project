@@ -55,10 +55,10 @@ int8_t HC05_Init(/*HC05_Config* config*/)
     /* Configure IO */
     pwr = GPIO_InitPin(&pwr_conf);
     cmd = GPIO_InitPin(&cmd_conf);
-    SET_BAUD(HC05_CMD_BAUD); // Set serial symbol rate
+    //SET_BAUD(HC05_CMD_BAUD); // Set serial symbol rate
 
     /* Power down HC05 */
-    PWR_OFF;
+    //PWR_OFF;
 
     /* Assert KEY and power up again */
     //SET_KEY;
@@ -70,8 +70,8 @@ int8_t HC05_Init(/*HC05_Config* config*/)
     
     /* Unassert KEY */
     //CLR_KEY;
-    PWR_OFF;
-    PWR_ON;
+    //PWR_OFF;
+    //PWR_ON;
 
     return 0; //Configuration complete, resume;
 }
