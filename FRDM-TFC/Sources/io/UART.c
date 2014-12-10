@@ -24,6 +24,9 @@ rbuf_s  TxBuffer;
 /* Encapsulate message and add to transmit buffer */
 int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	
+	uint32_t avail = rbuf_available(&TxBuffer);
+	if (size > avail) return -1;
+	
 	/* Encapsulate message */
 	uint8_t buffer[FR_MAX_ENC_SIZE];
 	size = SerialEncode(msg, size, buffer);
