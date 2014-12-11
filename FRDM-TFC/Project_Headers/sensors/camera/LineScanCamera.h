@@ -11,7 +11,8 @@ uint32_t TFC_getLineScanExposureTime();
 
 
 #define TAOS_CLK_HIGH  GPIOE_PSOR = (1<<1)  
-#define TAOS_CLK_LOW   GPIOE_PCOR = (1<<1)  
+#define TAOS_CLK_LOW   GPIOE_PCOR = (1<<1)
+#define TAOS_CLK_VAL  (GPIOE_PDOR & (1<<1))
 #define TAOS_SI_HIGH   GPIOD_PSOR = (1<<7)
 #define TAOS_SI_LOW    GPIOD_PCOR =	(1<<7)
 

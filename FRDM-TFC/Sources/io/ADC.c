@@ -435,7 +435,7 @@ void TFC_InitADCs(carState_s* carStateInputPointer)
 	PIT_MCR |= PIT_MCR_FRZ_MASK; //Pause PIT0 when in debug mode.
 	PIT_MCR &= ~PIT_MCR_MDIS_MASK; //Enable PIT module (Reset = 1 - disabled).
 
-    Sampler_Init();
+  Sampler_Init();
 
   TFC_SetLineScanExposureTime(TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS);
 	
@@ -446,11 +446,13 @@ void TFC_InitADCs(carState_s* carStateInputPointer)
 	enable_irq(INT_ADC0-16);
 }
 
-/* ADC conversion scheduler and driver
- * -----------------------------------
- */
+///////////////////////////
+// ADC CONVERISON DRIVER //
+///////////////////////////
+
 #include "support/ARM_SysTick.h"
-#define TICKER TFC_Ticker[ADC_SAMPLE_TICKER]
+#define ADC_TICKER TFC_Ticker[ADC_SAMPLE_TICKER]
+#define UPTIME TFC_Ticker[UPTIME_TICKER]
 
 typedef struct {
     uint8_t  select;
@@ -458,6 +460,21 @@ typedef struct {
     uint32_t period;
     uint32_t counter;
 } SamplerItem;
+
+#define LINESCAN_WAITING 0
+#define LINESCAN_HOLD 1
+#define LINESCAN_SCANNING 2
+#define LINESCAN_DONE 3
+typedef struct {
+    //uint16_t __data[2][128];
+    //uint16_t *data;
+    uint32_t exposure_ticks;
+    uint8_t status;
+    uint8_t scan_pixel;
+    SamplerItem *item;
+} LinescanImage;
+LinescanImage linescan0 = { TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS, LINESCAN_WAITING, 0, 0 };
+//LinescanImage linescan1;
 
 #define ADC_SELECT_POT_0           1
 #define ADC_SELECT_POT_1           2
@@ -474,7 +491,7 @@ SamplerItem SamplerItems[] =
     /* [2] = */ { /* select = */ ADC_SELECT_MOTOR_CURRENT_0, /* frequency = */ MOTOR_CURRENT_0_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
     /* [3] = */ { /* select = */ ADC_SELECT_MOTOR_CURRENT_1, /* frequency = */ MOTOR_CURRENT_1_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
     /* [4] = */ { /* select = */ ADC_SELECT_BATTERY, /* frequency = */ BATTERY_SAMPLE_FREQUENCY, /* misc... */ 0,0 },
-    /* [5] = */ { /* select = */ ADC_SELECT_LINESCAN_0, /* frequency = */ LINESCAN_0_SAMPLE_FREQUENCY, /* misc... */ 0,0 }
+    /* [5] = */ { /* select = */ ADC_SELECT_LINESCAN_0, /* frequency = */ 0, /* misc... */ 0,0 }
 };
 #define NUM_SAMPLER_ITEMS ( (sizeof SamplerItems) / (sizeof (SamplerItem)) )
 
@@ -490,9 +507,6 @@ volatile uint16_t PotADC_Value[2];
 volatile uint16_t MotorCurrentADC_Value[2];
 volatile uint16_t BatSenseADC_Value;
 volatile uint8_t  LinescanPixel = 0;
-
-/* Specific item pointers */
-SamplerItem *linescan0_item;
 
 /* Sampler initialization routine */
 void Sampler_Init()
@@ -525,7 +539,7 @@ void Sampler_Init()
         SamplerItem *item = &SamplerItems[i];
 
         //Check against items to export
-        if (item->select == ADC_SELECT_LINESCAN_0) linescan0_item = item;
+        if (item->select == ADC_SELECT_LINESCAN_0) linescan0.item = item;
     }
 
     /* Initialise sample queue */
@@ -542,7 +556,7 @@ void Sampler_Update()
         SamplerItem *item = &SamplerItems[i];
 
         /* Update item counter */
-        item->counter += TICKER;
+        item->counter += ADC_TICKER;
 
         /* If counter greater than threshold, sample is due for conversion */
         if (item->counter >= item->period)
@@ -553,7 +567,7 @@ void Sampler_Update()
     }
 
     /* Reset master counter */
-    TICKER = 0;
+    ADC_TICKER = 0;
 }
 
 void Sampler_Dispatch()
@@ -591,54 +605,9 @@ void Sampler_Dispatch()
             break;
 
         case ADC_SELECT_LINESCAN_0:
-            if (LinescanPixel == 0) {
-                /* Start the linescan image grab sequence */
-            	
-                //TAOS_SI_HIGH;
-                //TAOS_CLK_HIGH;
-                //for (uint8_t i = 0; i < 50; ++i) {}
-                //TAOS_SI_LOW;
-                
-                ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK;
-                ADC0_SC1A  =  TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
-                cqueue_push(&SamplerQueue, (void**) &linescan0_item, 1);
-                break;
-            }
-            else if (LinescanPixel < 128 && LinescanPixel > 0)
-            {
-                /* Shift in the next pixel */
-                //TAOS_CLK_LOW;
-                //for (uint8_t i = 0; i < 10; ++i) {}
-                //TAOS_CLK_HIGH;
-
-                ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK;
-                ADC0_SC1A  =  TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
-                cqueue_push(&SamplerQueue, (void**) &linescan0_item, 1);
-                break;
-            }
-            else if (LinescanPixel == 128)
-            {
-				/* Complete the image capture sequence */
-				//TAOS_CLK_HIGH;                  
-				//for (uint8_t i = 0; i < 10; ++i) {}
-				//TAOS_CLK_LOW; 
-
-				/* Swap the image buffer */
-				if (LineScanWorkingBuffer == 0)
-				{
-					LineScanWorkingBuffer = 1;
-					LineScanImage0WorkingBuffer = &LineScanImage0Buffer[1][0];
-					LineScanImage0 = &LineScanImage0Buffer[0][0];
-				}
-				else
-				{
-					LineScanWorkingBuffer = 0;
-					LineScanImage0WorkingBuffer = &LineScanImage0Buffer[0][0];
-					LineScanImage0 = &LineScanImage0Buffer[1][0];
-				}
-
-				carState->lineScanState = LINESCAN_IMAGE_READY; //Signal to control that new image is ready 
-            }
+            ADC0_CFG2  |= ADC_CFG2_MUXSEL_MASK;
+            ADC0_SC1A  =  TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK;
+            break;
             
         default:
         	ActiveItem = 0;
@@ -646,7 +615,8 @@ void Sampler_Dispatch()
     }
 }
 
-
+#define CORE2PIT_TICKS(t) ( t * (PERIPHERAL_BUS_CLOCK / CORE_CLOCK ) )
+#define PIT2CORE_TICKS(t) ( t * (CORE_CLOCK / PERIPHERAL_BUS_CLOCK ) )
 void PIT_IRQHandler()
 {
     /* PIT0 is used to control the exposure of the linescan
@@ -655,12 +625,87 @@ void PIT_IRQHandler()
     * sequences
     */
     if (PIT_TFLG0) {
-    	PIT_TFLG0 = PIT_TFLG_TIF_MASK; //Clear the IRQ flag
-    	cqueue_push(&SamplerQueue, (void**) &linescan0_item, 1);
-    	LinescanPixel = 0;
+        /* Clear the IRQ flag */
+        PIT_TFLG0 = PIT_TFLG_TIF_MASK;
+
+        ///////////////////////
+        // LINESCAN0 CONTROL //
+        ///////////////////////
+
+        static uint32_t uptime_ref;
+        if (linescan0.status = LINESCAN_WAITING)
+        {
+            /* Backup exposure time value */
+            linescan0.exposure_ticks = PIT_LDVAL0;
+            uptime_ref = UPTIME;
+
+            /* Begin image capture sequence */
+            TAOS_SI_HIGH; //Stop exposure
+            linescan0.scan_pixel = 0;
+            linescan0.status = LINESCAN_HOLD;
+
+            /* Schedule next PIT0 event */
+            PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK; //Disable the timer
+            PIT_LDVAL0 = 25;
+            PIT_TCTRL0 = PIT_TCTRL_TEN_MASK; //Enable the timer - loads LDVAL0
+        }
+        else
+        {
+            if(linescan0.status == LINESCAN_HOLD)
+            {
+                TAOS_SI_LOW;
+                TAOS_CLK_HIGH; //Shift in the first pixel
+                linescan0.status = LINESCAN_SCANNING;
+
+                /* Schedule next PIT0 event */
+                PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
+                PIT_LDVAL0 = 5; 
+                PIT_TCTRL0 = PIT_TCTRL_TEN_MASK; 
+            } //LINESCAN_HOLD
+            else if(linescan0.status == LINESCAN_SCANNING)
+            {
+                if (TAOS_CLK_VAL > 0) //If TAOS_CLK is high
+                {
+                    cqueue_push(&SamplerQueue, (void**) &item, 1); //Queue conversion
+                    PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK; //Disable PIT0 - next step is IRQ driven
+                }
+                else //If TAOS_CLK is low
+                {
+                    TAOS_CLK_HIGH; //Shift in next pixel
+
+                    PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
+                    PIT_LDVAL0 = 5;
+                    PTCTRL0 = PIT_TCTRL_TEN_MASK;
+                }
+            } //LINESCAN_SCANNING
+            else if(linescan0.status == LINESCAN_DONE)
+            {
+                if (TAOS_CLK_VAL == 0) //If TAOS_CLK is low
+                {
+                    TAOS_CLK_HIGH; //Terminate final pixel
+
+                    PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
+                    PIT_LDVAL0 = 5;
+                    PTCTRL0 = PIT_TCTRL_TEN_MASK;
+                }
+                else //If TAOS_CLK is high
+                {
+                    TAOS_CLK_LOW;
+
+                    /* Restore exposure time value */
+                    PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
+                    uint32_t elapsed = UPTIME - uptime_ref;
+                    PIT_LDVAL0 = linescan0.exposure_ticks - (elapsed/2); //Don't elongate exposure time
+                    PTCTRL0 = PIT_TCTRL_TEN_MASK;
+                }
+            } //LINESCAN_DONE
+        }
     }
 
-    /* PIT1 is used to queue conversion requests at the appropriate time */
+    ///////////////////////
+    // ADC QUEUE CONTROL //
+    ///////////////////////
+
     if (PIT_TFLG1) {
         PIT_TFLG1 = PIT_TFLG_TIF_MASK; //Clear the IRQ flag
 
@@ -702,10 +747,13 @@ void ADC0_IRQHandler()
             break;
 
         case ADC_SELECT_LINESCAN_0:
-            if(LinescanPixel < 128)
-            {
-                LineScanImage0WorkingBuffer[LinescanPixel++] = ADC0_RA;
-            }
+            LineScanImage0WorkingBuffer[linescan0.scan_pixel] = ADC0_RA; //Store pixel
+            if (++linescan0.scan_pixel >= 128) linescan0.status = LINESCAN_DONE;
+
+            TAOS_CLK_LOW;
+            PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
+            PIT_LDVAL0 = 5;
+            PIT_TCTRL0 = PIT_TCTRL_TEN_MASK; 
             break;
         
         default:
