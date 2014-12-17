@@ -697,6 +697,7 @@ void PIT_IRQHandler()
                     uint32_t elapsed = UPTIME - uptime_ref;
                     PIT_LDVAL0 = linescan0.exposure_ticks - (elapsed/2); //Don't elongate exposure time
                     PTCTRL0 = PIT_TCTRL_TEN_MASK;
+                    PIT_LDVAL0 = linescan0.exposure_ticks; //Put original exposure value back on register in case it isn't reset by autoexposure in time.
                 }
             } //LINESCAN_DONE
         }
