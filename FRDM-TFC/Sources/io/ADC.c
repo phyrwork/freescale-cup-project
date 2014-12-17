@@ -633,7 +633,7 @@ void PIT_IRQHandler()
         ///////////////////////
 
         static uint32_t uptime_ref;
-        if (linescan0.status = LINESCAN_WAITING)
+        if (linescan0.status == LINESCAN_WAITING)
         {
             /* Backup exposure time value */
             linescan0.exposure_ticks = PIT_LDVAL0;
@@ -648,7 +648,7 @@ void PIT_IRQHandler()
             PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK; //Disable the timer
             PIT_LDVAL0 = 25;
             PIT_TCTRL0 = PIT_TCTRL_TEN_MASK; //Enable the timer - loads LDVAL0
-        }
+        } //LINESCAN_WAITING
         else
         {
             if(linescan0.status == LINESCAN_HOLD)
@@ -698,6 +698,7 @@ void PIT_IRQHandler()
                     PIT_LDVAL0 = linescan0.exposure_ticks - (elapsed/2); //Don't elongate exposure time
                     PTCTRL0 = PIT_TCTRL_TEN_MASK;
                     PIT_LDVAL0 = linescan0.exposure_ticks; //Put original exposure value back on register in case it isn't reset by autoexposure in time.
+                    linescan0.status == LINESCAN_WAITING
                 }
             } //LINESCAN_DONE
         }
