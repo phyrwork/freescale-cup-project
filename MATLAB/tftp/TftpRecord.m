@@ -83,6 +83,21 @@ classdef TftpRecord < handle
             time = obj.times(ind);
             value = obj.value(ind);
         end
+        
+        % between
+        function [times, values] = between(obj, start, finish)
+            % return samples between given times
+            start = find(obj.times > start, 1, 'first');
+            if isempty(start)
+                start = 1;
+            end
+            finish = find(obj.times > finish, 1, 'first');
+            if isempty(finish)
+                finish = obj.rsize;
+            end
+            times = obj.times(start:finish);
+            values = obj.values(start:finish);
+        end
     end
     
     % get.methods
