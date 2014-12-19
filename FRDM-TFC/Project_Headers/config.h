@@ -36,10 +36,6 @@
 
 #define TFC_MOTOR_SWITCHING_FREQUENCY	((float)(4000.0))
 
-#define SDA_SERIAL_BAUD		460800	
-#define SDA_SERIAL_OUTGOING_QUEUE_SIZE	2048
-#define SDA_SERIAL_INCOMING_QUEUE_SIZE	128
-
 /* Terminal defines from depreciated Terminal.h */
 #define TERMINAL_OUT_QUEUE			
 #define TERMINAL_IN_QUEUE			
@@ -48,14 +44,29 @@
 #define TERMINAL_READABLE       	
 #define TERMINAL_GETC           	
 
-/* SERIAL IO */
-#define SERIAL_MAX_MSG_SIZE 384
-//#define SERIAL_TX_DMA_ENABLED
+//////////////////////////
+// Serial Configuration //
+//////////////////////////
+
+/* Media configuration */
+#define BLUETOOTH_ENABLED
 #define SERIAL_TX_IRQ_ENABLED
+//#define SERIAL_TX_DMA_ENABLED
+
+/* DMA configuration */
 #define SERIAL_TX_DMA_THRESHOLD 64
+#define RB_MAX_DMA_SIZE 256
+
+/* Data rate configuration */
+#define USB_SERIAL_BAUD 115200
+#define BLUETOOTH_SERIAL_BAUD_DEFAULT 9600
+#define BLUETOOTH_CMD_BAUD 38400
+#define BLUETOOTH_SERIAL_BAUD 460800
+
+/* Buffer and MTU configuration */
+#define SERIAL_MAX_MSG_SIZE 384
 #define RB_RX_SIZE 256
 #define RB_TX_SIZE 2048
-#define RB_MAX_DMA_SIZE 256
 
 /* TFTP configuration */
 #define TFTP_TIMESTAMP_TOLERANCE 0.05
