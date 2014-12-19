@@ -475,8 +475,6 @@ typedef struct {
 typedef struct {
     //uint16_t __data[2][128];
     //uint16_t *data;
-    uint32_t exposure_ticks;
-    uint8_t status;
     uint8_t pixel;
     SamplerItem item;
 } LinescanImage;
@@ -629,13 +627,12 @@ void PIT_IRQHandler()
 		/* Begin image capture sequence */
 		linescan0.pixel = 0;
 		TAOS_SI_HIGH;
-		for(uint8_t j = 0; j < 50; ++j) {}
+		for(uint8_t j = 0; j < 10; ++j) {}
 		TAOS_CLK_HIGH;				
-		for(uint8_t j = 0; j < 50; ++j) {}
+		for(uint8_t j = 0; j < 10; ++j) {}
 		TAOS_SI_LOW;
 		SamplerItem *item = &linescan0.item; //To-do separate push into push and push_array
 		cqueue_push(&SamplerQueue, (void**) &item, 1); //Queue conversion
-		linescan0.status = LINESCAN_SCANNING;
     }
 
     ///////////////////////
