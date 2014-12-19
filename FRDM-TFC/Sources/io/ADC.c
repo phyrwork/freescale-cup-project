@@ -479,8 +479,6 @@ typedef struct {
     SamplerItem item;
 } LinescanImage;
 LinescanImage linescan0 = {
-		/* exposure_ticks = */ 0,
-		/* status = */ LINESCAN_WAITING,
 		/* pixel = */ 0,
 		/* item = */ { /* select = */ ADC_SELECT_LINESCAN_0, /* frequency = */ 0, /* misc... */ 0,0 }
 };
@@ -567,6 +565,8 @@ void Sampler_Dispatch()
     /* Fetch next conversion request from queue */
     if (cqueue_used(&SamplerQueue) == 0) return; 
     cqueue_pop(&SamplerQueue, (void**) &ActiveItem, 1);
+    
+    SamplerItem *lol = ActiveItem;
 
     /* Initiate conversion */
     switch(ActiveItem->select)
