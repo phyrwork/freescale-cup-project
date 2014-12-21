@@ -29,16 +29,17 @@
 /* Include headers to access shared data */
 #include "sensors/camera/LineScanCamera.h"
 #include "sensors/camera/LineDetection.h"
+#include "sensors/CurrentSensor.h"
 #include "io/ADC.h"
 
 /* Define CollectorItems */
 CollectorItem items[] = {
 	/* [0] = */ { /* data = */ &LineScanImage0,   /* deref = */ 1, /* endpoint = */ &TFTP_LINESCAN0_ENDPOINT,         /* frequency = */ 30, /* misc...*/ 0,0 },
 	/* [1] = */ { /* data = */ &trackPosition,    /* deref = */ 0, /* endpoint = */ &TFTP_TRACK_POSITION_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [1] = */ { /* data = */ &targetLine,       /* deref = */ 0, /* endpoint = */ &TFTP_TARGET_LINE_ENDPOINT,       /* frequency = */ 20, /* misc...*/ 0,0 },
+	///* [1] = */ { /* data = */ &targetLine,       /* deref = */ 0, /* endpoint = */ &TFTP_TARGET_LINE_ENDPOINT,       /* frequency = */ 20, /* misc...*/ 0,0 },
 	/* [1] = */ { /* data = */ &positioningState, /* deref = */ 0, /* endpoint = */ &TFTP_POSITIONING_STATE_ENDPOINT, /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [4] = */ { /* data = */ &(MotorCurrentADC_Value[1]), /* deref = */ 0, /* endpoint = */ &TFTP_I_RL_ENDPOINT,    /* frequency = */ 30, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &(MotorCurrentADC_Value[0]), /* deref = */ 0, /* endpoint = */ &TFTP_I_RR_ENDPOINT,    /* frequency = */ 30, /* misc...*/ 0,0 }
+	/* [4] = */ { /* data = */ &I_rl.value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RL_ENDPOINT,    /* frequency = */ 100, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &I_rr.value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RR_ENDPOINT,    /* frequency = */ 100, /* misc...*/ 0,0 }
 };
 #define NUM_ITEMS ( (sizeof items) / (sizeof (CollectorItem)) )
 
@@ -49,7 +50,8 @@ void Collector_Init()
 	for (uint32_t i = 0; i < NUM_ITEMS; i++ )
 	{
 		/* Calculate period in ticks; initialize counter */
-		items[i].period = SYSTICK_FREQUENCY/items[i].frequency;
+		if (items[i].frequency != 0) items[i].period = SYSTICK_FREQUENCY/items[i].frequency;
+		else items[i].period = 0xFFFFFFFF;
 		items[i].counter = 0;
 	}
 
@@ -73,6 +75,7 @@ CollectorStatus* Collector()
 
 		/* If CollectorItem counter has reached 
 		   or exceeded period in ticks */
+		if (items[i].frequency == 0) continue;
 		if (items[i].counter >= items[i].period)
 		{
 			/* Reset counter to zero */

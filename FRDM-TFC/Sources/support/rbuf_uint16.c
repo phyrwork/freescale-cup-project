@@ -94,7 +94,7 @@ rbuf_uint16_write(rbuf_uint16_s *rb, uint16_t *in, uint32_t size) {
     // if requested size fits the available space, use that
     if(write_size > size) {
         write_size = size;
-    } else if (rb->mode == RBUF_MODE_OVERWRITE) {
+    } else if (rb->mode == RBUF_UINT16_MODE_OVERWRITE) {
         if (size > rb->size - 1) {
             // the provided buffer is bigger than the
             // ringbuffer itself. Since we are in overwrite mode,

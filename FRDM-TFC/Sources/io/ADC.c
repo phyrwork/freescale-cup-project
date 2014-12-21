@@ -504,7 +504,8 @@ SamplerItem *ActiveItem = 0;
 
 /* Sample storage */
 volatile uint16_t PotADC_Value[2];
-volatile uint16_t MotorCurrentADC_Value[2];
+#include "sensors/CurrentSensor.h"
+extern MotorCurrent I_rl, I_rr;
 volatile uint16_t BatSenseADC_Value;
 
 /* Sampler initialization routine */
@@ -552,6 +553,7 @@ void Sampler_Update()
         item->counter += ticker;
 
         /* If counter greater than threshold, sample is due for conversion */
+        if (item->frequency == 0) continue;
         if (item->counter >= item->period)
         {
             item->counter = 0; //Reset the counter
@@ -663,11 +665,11 @@ void ADC0_IRQHandler()
             break;
             
         case ADC_SELECT_MOTOR_CURRENT_0:
-            MotorCurrentADC_Value[0] = ADC0_RA;
+            rbuf_uint16_write(&I_rr.buffer, (uint16_t*) &ADC0_RA, 1);
             break;
             
         case ADC_SELECT_MOTOR_CURRENT_1:
-            MotorCurrentADC_Value[1] = ADC0_RA;
+        	rbuf_uint16_write(&I_rl.buffer, (uint16_t*) &ADC0_RA, 1);
             break;
 
         case ADC_SELECT_BATTERY:

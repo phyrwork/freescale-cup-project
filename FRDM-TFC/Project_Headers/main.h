@@ -21,6 +21,7 @@
 #include "sensors/camera/LineScanCamera.h"
 #include "sensors/camera/AutoExposure.h"
 #include "sensors/camera/LineDetection.h"
+#include "sensors/CurrentSensor.h"
 #include "sensors/SpeedSensor.h"
 #include "control/Speed.h"
 #include "control/Steering.h"

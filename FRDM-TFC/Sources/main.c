@@ -19,6 +19,7 @@ void TFC_Init(carState_s* carState)
 	TFC_InitServos();
 	TFC_InitMotorPWM();
 	TFC_InitLineScanCamera();
+	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
 	TFC_InitADCs(carState);
 	UART0_Init();
 	DMA0_Init();
@@ -280,8 +281,12 @@ void lineFollowingMode(carState_s* carState)
 	if (TFC_Ticker[0] >= 200)
 	{
 		TFC_Ticker[0] = 0;
-		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
+		//TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
 	}
+	
+	//debug
+	I_rl.value = GetCurrentValue(&I_rl);
+	I_rr.value = GetCurrentValue(&I_rr);
 
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 	{
@@ -318,8 +323,8 @@ void lineFollowingMode(carState_s* carState)
 	}
 	else if (carState->lineDetectionState == LINE_LOST)
 	{
-		TFC_HBRIDGE_DISABLE;
-		TFC_SetMotorPWM(0, 0);
+		//TFC_HBRIDGE_DISABLE;
+		//TFC_SetMotorPWM(0, 0);
 //		TFC_SetLED(2);
 	}
 	else if (carState->lineDetectionState == STOPLINE_DETECTED)
@@ -332,7 +337,7 @@ void lineFollowingMode(carState_s* carState)
 		}
 		else
 		{
-			while(1){TFC_SetMotorPWM(0, 0);}
+			//while(1){TFC_SetMotorPWM(0, 0);}
 		}
 	}
 }

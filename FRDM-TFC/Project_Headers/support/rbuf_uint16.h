@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef __RBUF_H__
-#define __RBUF_H__
+#ifndef __RBUF_UINT16_H__
+#define __RBUF_UINT16_H__
 
 #include <stdint.h>
 
@@ -20,8 +20,8 @@ extern "C" {
 
 
 typedef enum {
-    RBUF_MODE_BLOCKING = 0,
-    RBUF_MODE_OVERWRITE
+    RBUF_UINT16_MODE_BLOCKING = 0,
+    RBUF_UINT16_MODE_OVERWRITE
 } rbuf_uint16_mode_t;
 
 typedef struct {
