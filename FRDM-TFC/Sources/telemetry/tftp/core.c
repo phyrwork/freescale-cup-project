@@ -32,6 +32,7 @@
 
 /* Import cast_uint8 and time methods */
 #include "support/tools.h"
+#include "support/ARM_SysTick.h"
 
 //
 // To do: Write Tftp_Init to send frame containing enivronment configuration data
@@ -65,6 +66,7 @@ int8_t Tftp_Send(uint8_t code, void* value, uint16_t size)
 	return 0;
 }
 
+#define TFTP_TIMESTAMP_TOLERANCE_TICKS (TFTP_TIMESTAMP_TOLERANCE_SECONDS * SYSTICK_FREQUENCY)
 int8_t Tftp_Push(uint8_t code, void* value, uint16_t size)
 {
 	/* Static frame storage */
@@ -72,11 +74,11 @@ int8_t Tftp_Push(uint8_t code, void* value, uint16_t size)
 	static uint16_t w = 0;
 	
 	/* Time data */
-	static float frameTime = 0;
-	       float  thisTime = getTime();
+	static uint32_t frameTime = 0;
+	       uint32_t  thisTime = getTime();
 
 	if ( /* Check time difference; if too large */
-		 thisTime - frameTime > TFTP_TIMESTAMP_TOLERANCE ||
+		 thisTime - frameTime > TFTP_TIMESTAMP_TOLERANCE_TICKS ||
 		 /* Check there is enough space left in the buffer */
 		 (sizeof buffer) - w < (size + sizeof code)
 	   ) {

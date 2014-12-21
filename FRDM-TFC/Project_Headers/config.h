@@ -70,6 +70,6 @@
 #define RB_TX_SIZE 2048
 
 /* TFTP configuration */
-#define TFTP_TIMESTAMP_TOLERANCE 0.0005
+#define TFTP_TIMESTAMP_TOLERANCE_SECONDS 0.05
 
 #endif /* TFC_CONFIG_H_ */
