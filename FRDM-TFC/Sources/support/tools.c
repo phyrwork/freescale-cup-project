@@ -18,14 +18,13 @@ void cast_uint8(uint8_t* out, void* var, uint16_t size)
 #include "support/ARM_SysTick.h"
 #include "config.h"
 #define TICKER (TFC_Ticker[UPTIME_TICKER])
-#define TIME   ((float) TICKER / (float) SYSTICK_FREQUENCY)
 
-inline float getTime() { return TIME; }
+inline uint32_t getTime() { return TICKER; }
 
 /* Return 4 byte (single) time stamp to *time */
 void getTimestamp(void* time)
 {	
-	float t = getTime();
+	uint32_t t = getTime();
 	cast_uint8((uint8_t*)time, &t, sizeof t);
 	return;
 }

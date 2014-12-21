@@ -3,6 +3,7 @@ classdef Tftp < handle
     
     properties (Access = private, Constant)
         sizeof_time = 4;
+        systick_frequency = 10000;
     end
     
     properties (Access = protected)
@@ -44,9 +45,9 @@ classdef Tftp < handle
         function segments = parse(obj, frame)
             % extract time code
             time = frame(1:obj.sizeof_time);
-            % time = obj.formatTime(time);
             time = flip(time);
-            time = typecast(time, 'single');
+            time = typecast(time, 'uint32');
+            time = cast(time, 'single')/obj.systick_frequency;
             
             index = obj.sizeof_time + 1; % advance frame read index
             
