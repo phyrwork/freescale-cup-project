@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "support/cqueue.h"
+#include "support/rbuf_voidptr.h"
 
 void
-cqueue_init(cqueue_s *cqueue, void* *buf, uint32_t size) {
+rbuf_voidptr_init(rbuf_voidptr_s *cqueue, void* *buf, uint32_t size) {
     cqueue->size = size;
     cqueue->buf = buf;
     cqueue->available = cqueue->size - 1;
@@ -15,7 +15,7 @@ cqueue_init(cqueue_s *cqueue, void* *buf, uint32_t size) {
 }
 
 static void
-cqueue_update_size(cqueue_s *cq) {
+rbuf_voidptr_update_size(rbuf_voidptr_s *cq) {
     if(cq->wfx == cq->rfx)
         cq->used = 0;
     else if(cq->wfx < cq->rfx)
@@ -29,20 +29,20 @@ cqueue_update_size(cqueue_s *cq) {
 /* OVERWITE MODE NOT IMPLEMENTED
  *
 void
-cqueue_set_mode(cqueue_s *cqueue, cqueue_mode_t mode)
+rbuf_voidptr_set_mode(rbuf_voidptr_s *cqueue, rbuf_voidptr_mode_t mode)
 {
     cqueue->mode = mode;
 }
 
-cqueue_mode_t
-cqueue_mode(cqueue_s *cqueue)
+rbuf_voidptr_mode_t
+rbuf_voidptr_mode(rbuf_voidptr_s *cqueue)
 {
     return cqueue->mode;
 }
 */
 
 void
-cqueue_skip(cqueue_s *cq, uint32_t size) {
+rbuf_voidptr_skip(rbuf_voidptr_s *cq, uint32_t size) {
     if(size >= cq->size) { // just empty the ringbuffer
         cq->rfx = cq->wfx;
     } else {
@@ -53,11 +53,11 @@ cqueue_skip(cqueue_s *cq, uint32_t size) {
             cq->rfx+=size;
         }
     }
-    cqueue_update_size(cq);
+    rbuf_voidptr_update_size(cq);
 }
 
 uint32_t
-cqueue_pop(cqueue_s *cq, void* *out, uint32_t size) {
+rbuf_voidptr_pop(rbuf_voidptr_s *cq, void* *out, uint32_t size) {
     uint32_t read_size = cq->used; // never read more than available data
     uint32_t to_end = cq->size - cq->rfx;
 
@@ -80,13 +80,13 @@ cqueue_pop(cqueue_s *cq, void* *out, uint32_t size) {
         }
     }
 
-    cqueue_update_size(cq);
+    rbuf_voidptr_update_size(cq);
 
     return read_size;
 }
 
 uint32_t
-cqueue_push(cqueue_s *cq, void* *in, uint32_t size) {
+rbuf_voidptr_push(rbuf_voidptr_s *cq, void* *in, uint32_t size) {
     uint32_t write_size = cq->available; // don't write more than available size
 
     if(!cq || !in || !size) // safety belt
@@ -108,7 +108,7 @@ cqueue_push(cqueue_s *cq, void* *in, uint32_t size) {
             cq->rfx = 0;
             memcpy(cq->buf, in, write_size);
             cq->wfx = write_size;
-            cqueue_update_size(cq);
+            rbuf_voidptr_update_size(cq);
             return size;
         }
         // we are in overwrite mode, so let's make some space
@@ -136,30 +136,30 @@ cqueue_push(cqueue_s *cq, void* *in, uint32_t size) {
         cq->wfx+=write_size;
     }
 
-    cqueue_update_size(cq);
+    rbuf_voidptr_update_size(cq);
 
     return write_size;
 }
 
 uint32_t
-cqueue_used(cqueue_s *cq) {
+rbuf_voidptr_used(rbuf_voidptr_s *cq) {
     return cq->used;
 }
 
 uint32_t
-cqueue_size(cqueue_s *cq) {
+rbuf_voidptr_size(rbuf_voidptr_s *cq) {
     return cq->size - 1;
 }
 
 uint32_t
-cqueue_available(cqueue_s *cq) {
+rbuf_voidptr_available(rbuf_voidptr_s *cq) {
     return cq->available;
 }
 
 void
-cqueue_clear(cqueue_s *cq) {
+rbuf_voidptr_clear(rbuf_voidptr_s *cq) {
     cq->rfx = cq->wfx = 0;
-    cqueue_update_size(cq);
+    rbuf_voidptr_update_size(cq);
 }
 
 // vim: tabstop=4 shiftwidth=4 expandtab:

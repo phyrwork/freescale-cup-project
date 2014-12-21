@@ -3,7 +3,7 @@
 #include "devices/arm_cm0.h"
 #include "devices/CrystalClock.h"
 #include "sensors/camera/LineScanCamera.h"
-#include "support/cqueue.h"
+#include "support/rbuf_voidptr.h"
 #include "config.h"
 
 
@@ -360,7 +360,7 @@ void InitADC0()
     disable_irq(INT_ADC0-16);   
      
     Master_Adc0_Config.CONFIG1 = ADLPC_NORMAL 			//No low power mode
-								| ADC_CFG1_ADIV(ADIV_2) //divide input by 4
+								| ADC_CFG1_ADIV(ADIV_1) //divide clock input by 4
 								| ADLSMP_LONG 			//long sample time
 								| ADC_CFG1_MODE(MODE_12)//single ended 8-bit conversion
 								| ADC_CFG1_ADICLK(ADICLK_BUS);
@@ -497,7 +497,7 @@ SamplerItem SamplerItinerary[] =
 
 /* Sample queue initialization */
 void* SamplerQueueData[SAMPLER_QUEUE_LENGTH];
-cqueue_s SamplerQueue;
+rbuf_voidptr_s SamplerQueue;
 
 /* Active sampler item */
 SamplerItem *ActiveItem = 0;
@@ -533,40 +533,38 @@ void Sampler_Init()
     }
 
     /* Initialise sample queue */
-    cqueue_init(&SamplerQueue, SamplerQueueData, SAMPLER_QUEUE_LENGTH);
+    rbuf_voidptr_init(&SamplerQueue, SamplerQueueData, SAMPLER_QUEUE_LENGTH);
 }
 
 void Sampler_Update()
 {
     /* Iterate through SamplerItinerary and add them to the ADC queue
        if they're due for sampling */
+	uint32_t ticker = ADC_TICKER;
+	ADC_TICKER = 0;
+	
     for (uint32_t i = 0; i < NUM_SAMPLER_ITEMS; ++i)
     {
         /* Select item - compiler should optimize this copy away */
         SamplerItem *item = &SamplerItinerary[i];
 
         /* Update item counter */
-        item->counter += ADC_TICKER;
+        item->counter += ticker;
 
         /* If counter greater than threshold, sample is due for conversion */
         if (item->counter >= item->period)
         {
             item->counter = 0; //Reset the counter
-            cqueue_push(&SamplerQueue, (void**) &item, 1);
+            rbuf_voidptr_push(&SamplerQueue, (void**) &item, 1);
         }
     }
-
-    /* Reset master counter */
-    ADC_TICKER = 0;
 }
 
 void Sampler_Dispatch()
 {	
     /* Fetch next conversion request from queue */
-    if (cqueue_used(&SamplerQueue) == 0) return; 
-    cqueue_pop(&SamplerQueue, (void**) &ActiveItem, 1);
-    
-    SamplerItem *lol = ActiveItem;
+    if (rbuf_voidptr_used(&SamplerQueue) == 0) return; 
+    rbuf_voidptr_pop(&SamplerQueue, (void**) &ActiveItem, 1);
 
     /* Initiate conversion */
     switch(ActiveItem->select)
@@ -632,7 +630,7 @@ void PIT_IRQHandler()
 		for(uint8_t j = 0; j < 10; ++j) {}
 		TAOS_SI_LOW;
 		SamplerItem *item = &linescan0.item; //To-do separate push into push and push_array
-		cqueue_push(&SamplerQueue, (void**) &item, 1); //Queue conversion
+		rbuf_voidptr_push(&SamplerQueue, (void**) &item, 1); //Queue conversion
     }
 
     ///////////////////////
@@ -680,7 +678,7 @@ void ADC0_IRQHandler()
         	if (linescan0.pixel < 128) {
             	LineScanImage0WorkingBuffer[linescan0.pixel++] = ADC0_RA; //Store pixel
             	SamplerItem *item = &linescan0.item; //To-do separate push into push and push_array
-            	cqueue_push(&SamplerQueue, (void**) &item, 1); //Queue conversion
+            	rbuf_voidptr_push(&SamplerQueue, (void**) &item, 1); //Queue conversion
             	
             	TAOS_CLK_LOW;				
             	for(uint8_t j = 0; j < 10; ++j) {}

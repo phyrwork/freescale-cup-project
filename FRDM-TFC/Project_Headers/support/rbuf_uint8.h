@@ -1,5 +1,5 @@
 /**
- * @file rbuf.h
+ * @file rbuf_uint8.h
  *
  * @brief Ring buffers
  *
@@ -22,7 +22,7 @@ extern "C" {
 typedef enum {
     RBUF_MODE_BLOCKING = 0,
     RBUF_MODE_OVERWRITE
-} rbuf_mode_t;
+} rbuf_uint8_mode_t;
 
 typedef struct {
     uint8_t *buf;            // the buffer
@@ -32,7 +32,7 @@ typedef struct {
     uint32_t rfx;            // read offset
     uint32_t wfx;            // write offset
     uint32_t mode;           // the ringbuffer mode (blocking/overwrite)
-} rbuf_s;
+} rbuf_uint8_s;
 
 /**
  * @brief Initialize a ringbuffer
@@ -40,31 +40,31 @@ typedef struct {
  * @param buf  : A pointer to the storage array
  * @param size : The size of the ringbuffer (in bytes)
  */
-void rbuf_init(rbuf_s *rbuf, uint8_t *buf, uint32_t size);
+void rbuf_uint8_init(rbuf_uint8_s *rbuf, uint8_t *buf, uint32_t size);
 
-void rbuf_set_mode(rbuf_s *rbuf, rbuf_mode_t mode);
-rbuf_mode_t rbuf_mode(rbuf_s *rbuf);
+void rbuf_uint8_set_mode(rbuf_uint8_s *rbuf, rbuf_uint8_mode_t mode);
+rbuf_uint8_mode_t rbuf_uint8_mode(rbuf_uint8_s *rbuf);
 
 /**
  * @brief Skip the specified amount of bytes
- * @param rbuf  : A valid pointer to a rbuf_s structure
+ * @param rbuf  : A valid pointer to a rbuf_uint8_s structure
  * @param size  : The number of bytes to skip
  */
-void rbuf_skip(rbuf_s *rbuf, uint32_t size);
+void rbuf_uint8_skip(rbuf_uint8_s *rbuf, uint32_t size);
 
 /**
  * @brief Read the specified amount of bytes from the ringbuffer
- * @param rbuf : A valid pointer to a rbuf_s structure
+ * @param rbuf : A valid pointer to a rbuf_uint8_s structure
  * @param out  : A valid pointer initialized to store the read data 
  * @param size : The amount of bytes to read and copy to the memory
  *               pointed by 'out'
  * @return     : The amount of bytes actually read from the ringbuffer
  */
-uint32_t rbuf_read(rbuf_s *rbuf, uint8_t *out, uint32_t size);
+uint32_t rbuf_uint8_read(rbuf_uint8_s *rbuf, uint8_t *out, uint32_t size);
 
 /**
  * @brief Write the specified amount of bytes into the ringbuffer
- * @param rbuf : A valid pointer to a rbuf_s structure
+ * @param rbuf : A valid pointer to a rbuf_uint8_s structure
  * @param in   : A pointer to the data to copy into the ringbuffer
  * @param size : The amount of bytes to be copied
  * @return     : The amount of bytes actually copied into the ringbuffer
@@ -74,60 +74,60 @@ uint32_t rbuf_read(rbuf_s *rbuf, uint8_t *out, uint32_t size);
  *               writing the remainder once the ringbuffer has been emptied
  *               sufficiently
  */
-uint32_t rbuf_write(rbuf_s *rbuf, uint8_t *in, uint32_t size);
+uint32_t rbuf_uint8_write(rbuf_uint8_s *rbuf, uint8_t *in, uint32_t size);
 
 /**
  * @brief Returns the total size of the ringbuffer (specified at creation time)
- * @param rbuf  : A valid pointer to a rbuf_s structure
+ * @param rbuf  : A valid pointer to a rbuf_uint8_s structure
  * @return the total amount of bytes that can be stored in the rbuf
  */
-uint32_t rbuf_size(rbuf_s *rbuf);
+uint32_t rbuf_uint8_size(rbuf_uint8_s *rbuf);
 
 /**
  * @brief Returns the amount of bytes stored into the ringbuffer
  *        and available for reading
- * @param rbuf  : A valid pointer to a rbuf_s structure
+ * @param rbuf  : A valid pointer to a rbuf_uint8_s structure
  * @return the amount of bytes stored into the ringbuffer
  *         and available for reading
  */
-uint32_t rbuf_used(rbuf_s *rbuf);
+uint32_t rbuf_uint8_used(rbuf_uint8_s *rbuf);
 
 /**
  * @brief Returns the amount of space left in the ringbuffer for writing
- * @note equivalent to: rbuf_size() - rbuf_used()
- * @param rbuf  : A valid pointer to a rbuf_s structure
+ * @note equivalent to: rbuf_uint8_size() - rbuf_uint8_used()
+ * @param rbuf  : A valid pointer to a rbuf_uint8_s structure
  * @return the amount of bytes which is still possible to write into the ringbuffer
- *         until some data is consumed by a rbuf_read() operation
+ *         until some data is consumed by a rbuf_uint8_read() operation
  */
-uint32_t rbuf_available(rbuf_s *rbuf);
+uint32_t rbuf_uint8_available(rbuf_uint8_s *rbuf);
 
 /**
  * @brief Scan the ringbuffer untill the specific byte is found
- * @param rbuf   : A valid pointer to a rbuf_s structure
+ * @param rbuf   : A valid pointer to a rbuf_uint8_s structure
  * @param octet : The byte to search into the ringbuffer
  * @return the offset to the specified byte, -1 if not found
  */
-uint32_t rbuf_find(rbuf_s *rbuf, uint8_t octet);
+uint32_t rbuf_uint8_find(rbuf_uint8_s *rbuf, uint8_t octet);
 
 /**
  * @brief Read until a specific byte is found or maxsize is reached
- * @param rbuf     : A valid pointer to a rbuf_s structure
+ * @param rbuf     : A valid pointer to a rbuf_uint8_s structure
  * @param octet   : The byte to look for before stopping
  * @param out     : A valid pointer initialized to store the read data 
  * @param maxsize : The maximum amount of bytes that can be copied to
  *                  the memory pointed by 'out'
  * @return        : The amount of bytes actually read from the ringbuffer
  */
-uint32_t rbuf_read_until(rbuf_s *rbuf, uint8_t octet, uint8_t *out, uint32_t maxsize);
+uint32_t rbuf_uint8_read_until(rbuf_uint8_s *rbuf, uint8_t octet, uint8_t *out, uint32_t maxsize);
 
-uint32_t rbuf_move(rbuf_s *src, rbuf_s *dst, uint32_t len);
-uint32_t rbuf_copy(rbuf_s *src, rbuf_s *dst, uint32_t len);
+uint32_t rbuf_uint8_move(rbuf_uint8_s *src, rbuf_uint8_s *dst, uint32_t len);
+uint32_t rbuf_uint8_copy(rbuf_uint8_s *src, rbuf_uint8_s *dst, uint32_t len);
 
 /**
  * @brief Clear the ringbuffer by eventually skipping all the unread bytes (if any)
- * @param rbuf : A valid pointer to a rbuf_s structure
+ * @param rbuf : A valid pointer to a rbuf_uint8_s structure
  */
-void rbuf_clear(rbuf_s *rbuf);
+void rbuf_uint8_clear(rbuf_uint8_s *rbuf);
 
 #ifdef __cplusplus
 }

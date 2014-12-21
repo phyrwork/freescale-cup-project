@@ -1,5 +1,5 @@
 /**
- * @file cqueue.h
+ * @file rbuf_voidptr.h
  *
  * @brief Ring buffers
  *
@@ -23,7 +23,7 @@ extern "C" {
 typedef enum {
     RBUF_MODE_BLOCKING = 0,
     RBUF_MODE_OVERWRITE
-} cqueue_mode_t;
+} rbuf_voidptr_mode_t;
 */
 
 typedef struct {
@@ -34,18 +34,18 @@ typedef struct {
     uint32_t rfx;            // read offset
     uint32_t wfx;            // write offset
   //uint32_t mode;           // the queue mode (blocking/overwrite)
-} cqueue_s;
+} rbuf_voidptr_s;
 
-void      cqueue_init(cqueue_s *cq, void* *buf, uint32_t size);
-//void      cqueue_set_mode(cqueue_s *cqueue, cqueue_mode_t mode);
-//cqueue_mode_t cqueue_mode(cqueue_s *cqueue);
-void      cqueue_skip(cqueue_s *cq, uint32_t size);
-uint32_t  cqueue_pop(cqueue_s *cq, void* *out, uint32_t size);
-uint32_t  cqueue_push(cqueue_s *cq, void* *in, uint32_t size);
-uint32_t  cqueue_size(cqueue_s *cq);
-uint32_t  cqueue_used(cqueue_s *cq);
-uint32_t  cqueue_available(cqueue_s *cq);
-void      cqueue_clear(cqueue_s *cq);
+void      rbuf_voidptr_init(rbuf_voidptr_s *cq, void* *buf, uint32_t size);
+//void      rbuf_voidptr_set_mode(rbuf_voidptr_s *cqueue, rbuf_voidptr_mode_t mode);
+//rbuf_voidptr_mode_t rbuf_voidptr_mode(rbuf_voidptr_s *cqueue);
+void      rbuf_voidptr_skip(rbuf_voidptr_s *cq, uint32_t size);
+uint32_t  rbuf_voidptr_pop(rbuf_voidptr_s *cq, void* *out, uint32_t size);
+uint32_t  rbuf_voidptr_push(rbuf_voidptr_s *cq, void* *in, uint32_t size);
+uint32_t  rbuf_voidptr_size(rbuf_voidptr_s *cq);
+uint32_t  rbuf_voidptr_used(rbuf_voidptr_s *cq);
+uint32_t  rbuf_voidptr_available(rbuf_voidptr_s *cq);
+void      rbuf_voidptr_clear(rbuf_voidptr_s *cq);
 
 #ifdef __cplusplus
 }

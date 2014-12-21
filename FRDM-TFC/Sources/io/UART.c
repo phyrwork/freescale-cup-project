@@ -4,7 +4,7 @@
 #include "devices/CrystalClock.h"
 #include "support/ARM_SysTick.h"
 #include "config.h"
-#include "support/rbuf.h"
+#include "support/rbuf_uint8.h"
 #include "io/Frame.h"
 #include "io/DMA.h"
 #include "io/GPIO.h"
@@ -13,8 +13,8 @@
 /* RingBuffer storage and structures */
 uint8_t RxBufferData[RB_RX_SIZE];
 uint8_t TxBufferData[RB_TX_SIZE];
-rbuf_s  RxBuffer;
-rbuf_s  TxBuffer;
+rbuf_uint8_s  RxBuffer;
+rbuf_uint8_s  TxBuffer;
 
 
 ////////////////////////
@@ -24,7 +24,7 @@ rbuf_s  TxBuffer;
 /* Encapsulate message and add to transmit buffer */
 int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	
-	uint32_t avail = rbuf_available(&TxBuffer);
+	uint32_t avail = rbuf_uint8_available(&TxBuffer);
 	if (size > avail) return -1;
 	
 	/* Encapsulate message */
@@ -32,7 +32,7 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 	size = SerialEncode(msg, size, buffer);
 	
 	/* Push message onto transmit buffer */
-	uint32_t write = rbuf_write(&TxBuffer, buffer, size);
+	uint32_t write = rbuf_uint8_write(&TxBuffer, buffer, size);
 	if (write != size) return -1; //Not all data was copied to buffer
 	
 	/* Enable UART transmission if not already enabled */
@@ -57,7 +57,7 @@ int8_t UART0_Send(uint8_t * msg, uint16_t size) {
 /* Add message to transmit buffer without encapsualtion */
 int8_t UART0_SendRaw(uint8_t * msg, uint16_t size) {
 	/* Write to buffer without encapsulation */
-    uint32_t write = rbuf_write(&TxBuffer, msg, size);
+    uint32_t write = rbuf_uint8_write(&TxBuffer, msg, size);
 	if (write != size) return -1; //Not all data was copied to buffer
     
     /* Enable UART transmission if not already enabled */
@@ -87,7 +87,7 @@ int8_t UART0_SendRaw(uint8_t * msg, uint16_t size) {
 inline void UART0_ArmIRQ()
 {
 	/* If data in transmitter buffer */ 
-	if(rbuf_used(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
+	if(rbuf_uint8_used(&TxBuffer) && (UART0_S1 & UART_S1_TDRE_MASK))
 		UART0_C2 |= UART_C2_TIE_MASK; //Enable Transmitter Interrupts
 }
 
@@ -132,7 +132,7 @@ void UART0_IRQHandler()
 	if(UART0_S1 & UART_S1_RDRF_MASK)
 	{
 		/* Push data from UART onto receive buffer */
-		rbuf_write(&RxBuffer, &UART0_D, 1);
+		rbuf_uint8_write(&RxBuffer, &UART0_D, 1);
 	}
 
 
@@ -144,10 +144,10 @@ void UART0_IRQHandler()
 	if(UART0_S1 & UART_S1_TDRE_MASK)
 	{
 		/* If there is data in transmitter buffer */
-		if(rbuf_used(&TxBuffer))
+		if(rbuf_uint8_used(&TxBuffer))
 		{
 			/* Pop value from transmitter buffer */
-			rbuf_read(&TxBuffer, &temp, 1);
+			rbuf_uint8_read(&TxBuffer, &temp, 1);
 			UART0_D = temp; //Write TX data to UART data register.
 		}
 		/* Otherwise... */
@@ -171,8 +171,8 @@ void UART0_Init()
 	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
 	
 	/* Initialise ring buffers */
-	rbuf_init(&RxBuffer, RxBufferData, sizeof RxBufferData);
-	rbuf_init(&TxBuffer, TxBufferData, sizeof TxBufferData);
+	rbuf_uint8_init(&RxBuffer, RxBufferData, sizeof RxBufferData);
+	rbuf_uint8_init(&TxBuffer, TxBufferData, sizeof TxBufferData);
 	
 	PORTA_PCR1 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;   
 	PORTA_PCR2 = PORT_PCR_MUX(2) | PORT_PCR_DSE_MASK;  
