@@ -23,6 +23,10 @@
 #define TFTP_ANGULAR_VELOCITY_SIZE  1
 
 /* Motor current attribute */
+#define TFTP_MOTOR_DUTY_TYPE  float
+#define TFTP_MOTOR_DUTY_SIZE  1
+
+/* Motor current attribute */
 #define TFTP_MOTOR_CURRENT_TYPE  float
 #define TFTP_MOTOR_CURRENT_SIZE  1
 

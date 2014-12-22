@@ -30,6 +30,7 @@
 #include "sensors/camera/LineScanCamera.h"
 #include "sensors/camera/LineDetection.h"
 #include "sensors/current.h"
+#include "control/powertrain/motor/pwm.h"
 #include "control/powertrain/motor/torque.h"
 #include "io/ADC.h"
 
@@ -44,7 +45,9 @@ CollectorItem items[] = {
 	/* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_T_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
 	/* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_T_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
 	/* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].cmd, /* deref = */ 0, /* endpoint = */ &TFTP_TREF_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].cmd, /* deref = */ 0, /* endpoint = */ &TFTP_TREF_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 }
+	/* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].cmd, /* deref = */ 0, /* endpoint = */ &TFTP_TREF_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorPWM[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorPWM[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 }
 };
 #define NUM_ITEMS ( (sizeof items) / (sizeof (CollectorItem)) )
 
