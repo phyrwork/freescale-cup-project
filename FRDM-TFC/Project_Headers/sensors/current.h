@@ -19,7 +19,7 @@ typedef struct {
 extern MotorCurrent_s MotorCurrent[NUM_MOTORS];
 
 /* Methods */
-void    InitCurrentSensors();
-int16_t GetCurrentValue(MotorCurrent_s *current);
+void  InitCurrentSensors();
+float UpdateCurrentValue(MotorCurrent_s *current);
 
 #endif //CURRENT_SENSOR_H

@@ -38,8 +38,8 @@ CollectorItem items[] = {
 	/* [1] = */ { /* data = */ &trackPosition,    /* deref = */ 0, /* endpoint = */ &TFTP_TRACK_POSITION_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
 	///* [1] = */ { /* data = */ &targetLine,       /* deref = */ 0, /* endpoint = */ &TFTP_TARGET_LINE_ENDPOINT,       /* frequency = */ 20, /* misc...*/ 0,0 },
 	/* [1] = */ { /* data = */ &positioningState, /* deref = */ 0, /* endpoint = */ &TFTP_POSITIONING_STATE_ENDPOINT, /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [4] = */ { /* data = */ &MotorCurrent[I_RL].value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RL_ENDPOINT,    /* frequency = */ 100, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &MotorCurrent[I_RR].value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RR_ENDPOINT,    /* frequency = */ 100, /* misc...*/ 0,0 }
+	/* [4] = */ { /* data = */ &MotorCurrent[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RL_ENDPOINT,    /* frequency = */ 100, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorCurrent[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RR_ENDPOINT,    /* frequency = */ 100, /* misc...*/ 0,0 }
 };
 #define NUM_ITEMS ( (sizeof items) / (sizeof (CollectorItem)) )
 

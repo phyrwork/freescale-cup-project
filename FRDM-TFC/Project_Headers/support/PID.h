@@ -20,4 +20,6 @@ typedef struct {
 	float integral;
 } PID_s;
 
+void UpdatePID(PID_s *PID, float ref, float actual);
+
 #endif /* PID_H_ */

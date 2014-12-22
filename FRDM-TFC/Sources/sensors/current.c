@@ -15,15 +15,18 @@ MotorCurrent_s MotorCurrent[NUM_MOTORS];
 void InitCurrentSensors()
 {
 	/* Initialise signal buffers */
-	for (uint8_t i = 0; i < NUM_MOTORS; ++i) {
-		rbuf_uint16_init(&MotorCurrent[i].buffer, &MotorCurrent[i].data, CURRENT_FILTER_BUFFER_SIZE);
-		rbuf_uint16_set_mode(&MotorCurrent[i].buffer, RBUF_UINT16_MODE_OVERWRITE); //Set overwrite mode so that the buffer is never 'full'.
+	for (uint8_t i = 0; i < NUM_MOTORS; ++i)
+	{
+		MotorCurrent_s *current = &MotorCurrent[i];
+		
+		rbuf_uint16_init(&current->buffer, current->data, CURRENT_FILTER_BUFFER_SIZE);
+		rbuf_uint16_set_mode(&current->buffer, RBUF_UINT16_MODE_OVERWRITE); //Set overwrite mode so that the buffer is never 'full'.
 	}
 }
 
 /* Convolve filter with most recent samples to determine current value */
 #define UINT16_MAX 0xFFFF
-int16_t GetCurrentValue(MotorCurrent_s *current)
+float UpdateCurrentValue(MotorCurrent_s *current)
 {
 	float sum = 0;
 	uint32_t elem = current->buffer.rfx; //Find first element position
@@ -38,9 +41,8 @@ int16_t GetCurrentValue(MotorCurrent_s *current)
 		sum += sample * current_filter_coeffs[s];
 	}
 	
-	/* Return value */
-	if (sum > UINT16_MAX) return UINT16_MAX;
-	else if (sum < 0) return 0;
-	else return (uint16_t) sum;
+	/* Convert from 12-bit to actual figure */
+	current->value *= 3.3f * 1.2615f; //1.2615f is empirically measured
+	return current->value;
 }
 

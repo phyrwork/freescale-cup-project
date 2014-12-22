@@ -48,8 +48,8 @@ void InitMotorPWMControl()
     TPM0_C3SC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSA_MASK; // invert the second PWM signal for a complimentary output;
     
     //Assign TPM channels to PWM structs */
-    MotorPWM[I_RL].tpm = &MotorTPM[1];
-    MotorPWM[I_RR].tpm = &MotorTPM[0];
+    MotorPWM[REAR_LEFT].tpm = &MotorTPM[1];
+    MotorPWM[REAR_RIGHT].tpm = &MotorTPM[0];
     
     //Set the Default duty cycle to 50% duty cycle -  50% each way, net 0%.
     TFC_SetMotorPWM(0.0,0.0);
@@ -82,10 +82,10 @@ float GetMotorPWM(MotorPWM_s *pwm) { return pwm->value; }
 /* Backwards compatibility code */
 void TFC_SetMotorPWM(float duty_A, float duty_B)
 {
-	//Motor A = I_RR
-	SetMotorPWM(&MotorPWM[I_RR], duty_A);
-	//Motor B = I_RL
-	SetMotorPWM(&MotorPWM[I_RL], duty_B);
+	//Motor A = REAR_RIGHT
+	SetMotorPWM(&MotorPWM[REAR_RIGHT], duty_A);
+	//Motor B = REAR_LEFT
+	SetMotorPWM(&MotorPWM[REAR_LEFT], duty_B);
 }
 
 float TFC_GetMotorPWM(uint8_t channel)
