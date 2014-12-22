@@ -10,16 +10,15 @@
 const float current_filter_coeffs[] = CURRENT_FILTER_COEFFS;
 
 /* Current signal structs */
-MotorCurrent_s I_rl;
-MotorCurrent_s I_rr;
+MotorCurrent_s MotorCurrent[NUM_MOTORS];
 
 void InitCurrentSensors()
 {
 	/* Initialise signal buffers */
-	rbuf_uint16_init(&I_rl.buffer, I_rl.data, CURRENT_FILTER_BUFFER_SIZE);
-	rbuf_uint16_init(&I_rr.buffer, I_rr.data, CURRENT_FILTER_BUFFER_SIZE);
-	rbuf_uint16_set_mode(&I_rl.buffer, RBUF_UINT16_MODE_OVERWRITE); //Set overwrite mode so that the buffer is never 'full'.
-	rbuf_uint16_set_mode(&I_rr.buffer, RBUF_UINT16_MODE_OVERWRITE);
+	for (uint8_t i = 0; i < NUM_MOTORS; ++i) {
+		rbuf_uint16_init(&MotorCurrent[i].buffer, &MotorCurrent[i].data, CURRENT_FILTER_BUFFER_SIZE);
+		rbuf_uint16_set_mode(&MotorCurrent[i].buffer, RBUF_UINT16_MODE_OVERWRITE); //Set overwrite mode so that the buffer is never 'full'.
+	}
 }
 
 /* Convolve filter with most recent samples to determine current value */

@@ -16,12 +16,10 @@ typedef struct {
 	rbuf_uint16_s buffer;
 	int16_t value;
 } MotorCurrent_s;
+extern MotorCurrent_s MotorCurrent[NUM_MOTORS];
 
 /* Methods */
 void    InitCurrentSensors();
 int16_t GetCurrentValue(MotorCurrent_s *current);
-
-extern MotorCurrent_s I_rl;
-extern MotorCurrent_s I_rr;
 
 #endif //CURRENT_SENSOR_H

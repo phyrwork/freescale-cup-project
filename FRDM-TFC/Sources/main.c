@@ -283,10 +283,6 @@ void lineFollowingMode(carState_s* carState)
 		TFC_Ticker[0] = 0;
 		//TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
 	}
-	
-	//debug
-	I_rl.value = GetCurrentValue(&I_rl);
-	I_rr.value = GetCurrentValue(&I_rr);
 
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 	{
