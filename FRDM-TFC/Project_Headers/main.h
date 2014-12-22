@@ -26,6 +26,7 @@
 #include "control/powertrain/Speed.h"
 #include "control/steering/Steering.h"
 #include "control/powertrain/motor/pwm.h"
+#include "control/powertrain/motor/torque.h"
 #include "control/steering/Servo.h"
 #include "control/TargetSpeed.h"
 #include "control/powertrain/Differential.h"

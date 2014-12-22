@@ -28,19 +28,21 @@ void InitMotorTorqueControl()
 		torque->PID->Kp = TORQUE_KP;
 		torque->PID->Ki = TORQUE_KI;
 		torque->PID->Kd = TORQUE_KD;
-		torque->PID->value_max = TORQUE_MAX;
-		torque->PID->value_min = -TORQUE_MAX;
+		torque->PID->time = 0;
+		torque->PID->value = 0;
+		torque->PID->value_max = 1;
+		torque->PID->value_min = -1;
 	}
 }
 
 void UpdateMotorTorque(MotorTorque_s *torque)
 {
-	UpdateCurrentValue(&torque->current); //Update current value
+	UpdateCurrentValue(torque->current); //Update current value
 	torque->value = torque->current->value * TORQUE_KT; //Scale by torque constant
 }
 
 void SetMotorTorque(MotorTorque_s *torque, float command)
 {
 	UpdateMotorTorque(torque);
-	UpdatePID(&torque->PID, command, torque->value);
+	UpdatePID(torque->PID, command, torque->value);
 }

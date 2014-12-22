@@ -13,17 +13,18 @@
 #include "support/PID.h"
 
 /* Motor properties */
-#define TORQUE_MAX 0.005 //Nm
-#define TORQUE_KT 1 //Torque constant
+#define TORQUE_MAX 0.0075f //Nm
+#define TORQUE_KT 0.0134f //Torque constant
 
 /* Control properties */
-#define TORQUE_KP 1
-#define TORQUE_KI 1
-#define TORQUE_KD 1
+#define TORQUE_KP 0.3f
+#define TORQUE_KI 0.5f
+#define TORQUE_KD 0.0f
 
 /* Torque structs */
 typedef struct {
 	float value;
+	float cmd;
 	MotorPWM_s *pwm;
 	MotorCurrent_s *current;
 	PID_s *PID;
