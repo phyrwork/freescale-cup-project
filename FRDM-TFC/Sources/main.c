@@ -17,7 +17,7 @@ void TFC_Init(carState_s* carState)
 	TFC_InitSysTick();
 	TFC_InitGPIO();
 	TFC_InitServos();
-	InitMotorControl();
+	InitMotorPWMControl();
 	TFC_InitLineScanCamera();
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
 	TFC_InitADCs(carState);
@@ -325,7 +325,7 @@ void lineFollowingMode(carState_s* carState)
 	{
 		//TFC_HBRIDGE_DISABLE;
 		//TFC_SetMotorPWM(0, 0);
-//		TFC_SetLED(2);
+//		TFC_SetLED(2);PWM
 	}
 	else if (carState->lineDetectionState == STOPLINE_DETECTED)
 	{

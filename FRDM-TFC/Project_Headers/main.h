@@ -25,7 +25,7 @@
 #include "sensors/SpeedSensor.h"
 #include "control/powertrain/Speed.h"
 #include "control/steering/Steering.h"
-#include "control/powertrain/Motor.h"
+#include "control/powertrain/motor/PWM.h"
 #include "control/steering/Servo.h"
 #include "control/TargetSpeed.h"
 #include "control/powertrain/Differential.h"
