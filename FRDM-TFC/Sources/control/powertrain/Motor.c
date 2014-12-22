@@ -1,4 +1,4 @@
-#include "control/Motor.h"
+#include "control/powertrain/Motor.h"
 #include "devices/MKL25Z4.h"
 #include "devices/CrystalClock.h"
 
