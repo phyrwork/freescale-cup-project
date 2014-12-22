@@ -17,9 +17,10 @@ void TFC_Init(carState_s* carState)
 	TFC_InitSysTick();
 	TFC_InitGPIO();
 	TFC_InitServos();
-	InitMotorPWMControl();
 	TFC_InitLineScanCamera();
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
+	InitMotorPWMControl();
+	InitMotorTorqueControl();
 	TFC_InitADCs(carState);
 	UART0_Init();
 	DMA0_Init();
@@ -299,6 +300,8 @@ void lineFollowingMode(carState_s* carState)
 					getDesiredMotorPWM(targetSpeed, speedMeasurement[1], isANewmeasurementAvailable(CHANNEL_1), CHANNEL_1));
 			*/
 			TFC_SetMotorPWM(0.2,0.2);
+			UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
+			UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 		}
 		else if (carState->UARTSpeedState == DUAL_SPEED_NO_UART)
 		{
@@ -330,6 +333,7 @@ void lineFollowingMode(carState_s* carState)
 		if (speedMeasurement[0] > 2.0f || speedMeasurement[1] > 2.0f)
 		{
 			//TFC_SetMotorPWM(-0.5f, -0.5f);
+			
 		}
 		else
 		{
