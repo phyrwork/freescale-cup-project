@@ -3,7 +3,7 @@
 
 #include "support/Types.h"
 
-void TFC_InitMotorPWM();
+void InitMotorControl();
 void TFC_SetMotorPWM(float MotorA ,float MotorB);
 float TFC_GetMotorPWM(uint8_t channel);
 

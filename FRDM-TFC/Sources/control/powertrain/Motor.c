@@ -13,23 +13,15 @@ static float motorValue[2];
 /**********************************************************************************************/
 
 
-void TFC_InitMotorPWM()
+void InitMotorControl()
 {
-	//Clock Setup for the TPM requires a couple steps.
-
-	
-    //1st,  set the clock mux
-    //See Page 124 of f the KL25 Sub-Family Reference Manual, Rev. 3, September 2012
-    SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;// We Want MCGPLLCLK/2 (See Page 196 of the KL25 Sub-Family Reference Manual, Rev. 3, September 2012)
+	//Mux clock to TPM0
+    SIM_SOPT2 |= SIM_SOPT2_PLLFLLSEL_MASK;// We Want MCGPLLCLK/2 
     SIM_SOPT2 &= ~(SIM_SOPT2_TPMSRC_MASK);
-    SIM_SOPT2 |= SIM_SOPT2_TPMSRC(1); //We want the MCGPLLCLK/2 (See Page 196 of the KL25 Sub-Family Reference Manual, Rev. 3, September 2012)
+    SIM_SOPT2 |= SIM_SOPT2_TPMSRC(1);
 
-
-	//Enable the Clock to the FTM0 Module
-	//See Page 207 of f the KL25 Sub-Family Reference Manual, Rev. 3, September 2012
+    //Enable clock
 	SIM_SCGC6 |= SIM_SCGC6_TPM0_MASK;
-    
-    //The TPM Module has Clock.  Now set up the peripheral
     
     //Blow away the control registers to ensure that the counter is not running
     TPM0_SC = 0;
@@ -39,11 +31,9 @@ void TFC_InitMotorPWM()
     TPM0_CONF |= 0x00000060;
     
     //While the counter is disabled we can setup the prescaler
-    
     TPM0_SC = TPM_SC_PS(FTM0_CLK_PRESCALE);
     
     //Setup the mod register to get the correct PWM Period
-    
     TPM0_MOD = FTM0_CLOCK/(1<<FTM0_CLK_PRESCALE)/FTM0_OVERFLOW_FREQUENCY;
     
     //Setup Channels 0,1,2,3
@@ -52,22 +42,17 @@ void TFC_InitMotorPWM()
     TPM0_C2SC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSB_MASK;
     TPM0_C3SC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSA_MASK; // invert the second PWM signal for a complimentary output;
     
-    
-    //Enable the Counter
-    
-    //Set the Default duty cycle to 50% duty cycle
+    //Set the Default duty cycle to 50% duty cycle -  50% each way, net 0%.
     TFC_SetMotorPWM(0.0,0.0);
     
     //Enable the TPM COunter
     TPM0_SC |= TPM_SC_CMOD(1);
-    
     
     //Enable the FTM functions on the the port
     PORTC_PCR1 = PORT_PCR_MUX(4);
     PORTC_PCR2 = PORT_PCR_MUX(4);     
     PORTC_PCR3 = PORT_PCR_MUX(4);  
     PORTC_PCR4 = PORT_PCR_MUX(4);
-
 }
 
 

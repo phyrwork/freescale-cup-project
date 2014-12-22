@@ -17,7 +17,7 @@ void TFC_Init(carState_s* carState)
 	TFC_InitSysTick();
 	TFC_InitGPIO();
 	TFC_InitServos();
-	TFC_InitMotorPWM();
+	InitMotorControl();
 	TFC_InitLineScanCamera();
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
 	TFC_InitADCs(carState);
