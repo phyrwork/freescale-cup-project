@@ -29,7 +29,7 @@
 /* Include headers to access shared data */
 #include "sensors/camera/LineScanCamera.h"
 #include "sensors/camera/LineDetection.h"
-#include "sensors/CurrentSensor.h"
+#include "sensors/current.h"
 #include "io/ADC.h"
 
 /* Define CollectorItems */

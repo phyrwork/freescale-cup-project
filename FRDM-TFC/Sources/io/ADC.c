@@ -504,8 +504,8 @@ SamplerItem *ActiveItem = 0;
 
 /* Sample storage */
 volatile uint16_t PotADC_Value[2];
-#include "sensors/CurrentSensor.h"
-extern MotorCurrent I_rl, I_rr;
+#include "sensors/current.h"
+extern MotorCurrent_s I_rl, I_rr;
 volatile uint16_t BatSenseADC_Value;
 
 /* Sampler initialization routine */

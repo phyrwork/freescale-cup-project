@@ -3,15 +3,15 @@
  * Current signal storage and filtering.
  */
 
-#include "sensors/CurrentSensor.h"
+#include "sensors/current.h"
 #include "config.h"
 
 /* Import filter co-effs */
 const float current_filter_coeffs[] = CURRENT_FILTER_COEFFS;
 
 /* Current signal structs */
-MotorCurrent I_rl;
-MotorCurrent I_rr;
+MotorCurrent_s I_rl;
+MotorCurrent_s I_rr;
 
 void InitCurrentSensors()
 {
@@ -24,7 +24,7 @@ void InitCurrentSensors()
 
 /* Convolve filter with most recent samples to determine current value */
 #define UINT16_MAX 0xFFFF
-int16_t GetCurrentValue(MotorCurrent *current)
+int16_t GetCurrentValue(MotorCurrent_s *current)
 {
 	float sum = 0;
 	uint32_t elem = current->buffer.rfx; //Find first element position
