@@ -25,6 +25,8 @@ classdef AxisView < GuiView
             addParameter(p, 'title', char.empty, @ischar);
             addParameter(p, 'xlabel', char.empty, @ischar);
             addParameter(p, 'ylabel', char.empty, @ischar);
+            addParameter(p, 'xlim', 'auto');
+            addParameter(p, 'ylim', 'auto');
             parse(p, session, attribute, varargin{:});
             
             % initialise GuiView
@@ -46,11 +48,16 @@ classdef AxisView < GuiView
                 );
             end
             
+            % label axes
             obj = obj.label(...
                 'title', p.Results.title,...
                 'xlabel', p.Results.xlabel,...
                 'ylabel', p.Results.ylabel...
             );
+        
+            % set axes limits
+            xlim(obj.haxis, p.Results.xlim);
+            ylim(obj.haxis, p.Results.ylim);
         end
         
         % select axis
