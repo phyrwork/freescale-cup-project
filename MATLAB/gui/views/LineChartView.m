@@ -26,6 +26,8 @@ classdef LineChartView < AxisView
             addParameter(p, 'title', char.empty, @ischar);
             addParameter(p, 'xlabel', char.empty, @ischar);
             addParameter(p, 'ylabel', char.empty, @ischar);
+            addParameter(p, 'xlim', 'auto');
+            addParameter(p, 'ylim', 'auto');
             addParameter(p, 'period', 20, @issingle); % default period = 20s
             parse(p, session, attribute, varargin{:});
             
@@ -37,7 +39,9 @@ classdef LineChartView < AxisView
                 'position', p.Results.position,... 
                 'title', p.Results.title,...
                 'xlabel', p.Results.xlabel,...
-                'ylabel', p.Results.ylabel...
+                'ylabel', p.Results.ylabel,...
+                'xlim', p.Results.xlim,...
+                'ylim', p.Results.ylim...
             );
             obj.period = p.Results.period;
         end
@@ -65,6 +69,7 @@ classdef LineChartView < AxisView
             
             % draw chart
             obj = obj.draw(x, y);
+            xlim(obj.haxis, [x(1), x(end)]); % adjust y-axis limits
         end
     end
     
