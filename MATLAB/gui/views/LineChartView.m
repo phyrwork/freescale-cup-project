@@ -49,10 +49,12 @@ classdef LineChartView < AxisView
         function obj = draw(obj, x, y)
             % draw
             if (isempty(obj.hplot)) % initialise plot
-                obj.hplot = plot(obj.haxis, x, y);
+                obj.hplot = plot(obj.haxis, x, y); % returns one handle for each line (i.e. if x is 2-dimensional)
                 obj = label(obj);
             else % replace plot data
-                set(obj.hplot, 'XData', x, 'YData', y);
+                for h = 1:length(obj.hplot) % update one line at a time
+                    set(obj.hplot, 'XData', x(h,:), 'YData', y); % replace one row of data
+                end
             end
         end
         
