@@ -47,7 +47,9 @@ CollectorItem items[] = {
 	/* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].cmd, /* deref = */ 0, /* endpoint = */ &TFTP_TREF_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
 	/* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].cmd, /* deref = */ 0, /* endpoint = */ &TFTP_TREF_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
 	/* [5] = */ { /* data = */ &MotorPWM[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &MotorPWM[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 }
+	/* [5] = */ { /* data = */ &MotorPWM[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].PID, /* deref = */ 1, /* endpoint = */ &TFTP_PID_T_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].PID, /* deref = */ 1, /* endpoint = */ &TFTP_PID_T_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 }
 };
 #define NUM_ITEMS ( (sizeof items) / (sizeof (CollectorItem)) )
 

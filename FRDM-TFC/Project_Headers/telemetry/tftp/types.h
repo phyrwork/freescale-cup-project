@@ -57,6 +57,11 @@
 #define TFTP_PROFILER_TYPE ProfilerFrame
 #define TFTP_PROFILER_SIZE 1
 
+/* PID attributes */
+#include "support/PID.h"
+#define TFTP_PID_TYPE PID_s
+#define TFTP_PID_SIZE 1
+
 #endif //TFTP_TYPES
 
 

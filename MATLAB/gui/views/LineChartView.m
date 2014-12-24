@@ -29,6 +29,7 @@ classdef LineChartView < AxisView
             addParameter(p, 'xlim', 'auto');
             addParameter(p, 'ylim', 'auto');
             addParameter(p, 'period', 20, @issingle); % default period = 20s
+            addParameter(p, 'legend', []);
             parse(p, session, attribute, varargin{:});
             
             % initialise AxisView
@@ -41,7 +42,8 @@ classdef LineChartView < AxisView
                 'xlabel', p.Results.xlabel,...
                 'ylabel', p.Results.ylabel,...
                 'xlim', p.Results.xlim,...
-                'ylim', p.Results.ylim...
+                'ylim', p.Results.ylim,...
+                'legend', p.Results.legend...
             );
             obj.period = p.Results.period;
         end
@@ -55,6 +57,9 @@ classdef LineChartView < AxisView
             if (isempty(obj.hplot)) % initialise plot
                 obj.hplot = plot(obj.haxis, x, y); % returns one handle for each line (i.e. if x is 2-dimensional)
                 obj = label(obj);
+                if (~isempty(obj.hplot)) % only call legend if plot exists to surpress warnings
+                    obj.clegend('on');
+                end
             else % replace plot data
                 for h = 1:length(obj.hplot) % update one line at a time
                     set(obj.hplot, 'XData', x(h,:), 'YData', y); % replace one row of data
@@ -64,6 +69,11 @@ classdef LineChartView < AxisView
         
         % update chart
         function obj = update(obj)
+            % if no data nothing to do, return
+            if (obj.record.rsize < 1)
+                return;
+            end
+            
             % fetch data
             [x,y] = obj.record.latest(obj.period);
             
