@@ -64,6 +64,11 @@ classdef LineChartView < AxisView
         
         % update chart
         function obj = update(obj)
+            % if no data nothing to do, return
+            if (obj.record.rsize < 1)
+                return;
+            end
+            
             % fetch data
             [x,y] = obj.record.latest(obj.period);
             
