@@ -62,7 +62,7 @@ classdef LineChartView < AxisView
                 end
             else % replace plot data
                 for h = 1:length(obj.hplot) % update one line at a time
-                    set(obj.hplot, 'XData', x(h,:), 'YData', y); % replace one row of data
+                    set(obj.hplot, 'XData', x, 'YData', y(h,:)); % replace one row of data
                 end
             end
         end

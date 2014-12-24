@@ -45,6 +45,11 @@ classdef PidView < LineChartView
     methods
         % update chart - overload update@LineChartView
         function obj = update(obj)
+            % if no data nothing to do, return
+            if (obj.record.rsize < 1)
+                return;
+            end
+            
             % fetch and prepare data
             [x,samples] = obj.record.latest(obj.period);
             y = zeros(2,length(samples), 'single');
