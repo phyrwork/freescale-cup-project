@@ -46,4 +46,5 @@ void SetMotorTorque(MotorTorque_s *torque, float command)
 	torque->cmd = command; //Store command for telemetry purposes.
 	UpdateMotorTorque(torque);
 	UpdatePID(torque->PID, command, torque->value);
+	SetMotorPWM(torque->pwm, torque->PID->value);
 }
