@@ -57,7 +57,9 @@ classdef LineChartView < AxisView
             if (isempty(obj.hplot)) % initialise plot
                 obj.hplot = plot(obj.haxis, x, y); % returns one handle for each line (i.e. if x is 2-dimensional)
                 obj = label(obj);
-                obj.clegend('on');
+                if (~isempty(obj.hplot)) % only call legend if plot exists to surpress warnings
+                    obj.clegend('on');
+                end
             else % replace plot data
                 for h = 1:length(obj.hplot) % update one line at a time
                     set(obj.hplot, 'XData', x(h,:), 'YData', y); % replace one row of data
