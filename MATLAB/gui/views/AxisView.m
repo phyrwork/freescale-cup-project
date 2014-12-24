@@ -11,6 +11,7 @@ classdef AxisView < GuiView
         atitle      = char.empty; % axis title
         axlabel     = char.empty; % x-axis label
         aylabel     = char.empty; % y-axis label
+        elegend      = []; % legend entries
     end
     
     methods
@@ -60,10 +61,8 @@ classdef AxisView < GuiView
             xlim(obj.haxis, p.Results.xlim);
             ylim(obj.haxis, p.Results.ylim);
             
-            % draw legend if supplied
-            if ~isempty(p.Results.legend)
-                legend(obj.haxis, p.Results.legend);
-            end
+            % save legend entries if supplied
+            obj.elegend = p.Results.legend;
         end
         
         % select axis
@@ -96,6 +95,20 @@ classdef AxisView < GuiView
                 obj.aylabel = p.Results.ylabel;
             end
             ylabel(obj.haxis, obj.aylabel);
+        end
+        
+        % enable/disable legend
+        function obj = clegend(obj, action)
+            switch (action)
+                case 'on'
+                    if ~isempty(obj.elegend)
+                        legend(obj.haxis, obj.elegend, 'Location', 'northwest');
+                        legend(obj.haxis, 'show');
+                    end        
+                    
+                case 'off'
+                    legend(obj.haxis, 'hide');
+            end
         end
     end
     
