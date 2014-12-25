@@ -39,5 +39,5 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 	
 	/* Saturation filter */
 	if (PID->value > PID->value_max) PID->value = PID->value_max;
-	if (PID->value > PID->value_min) PID->value = PID->value_min;
+	if (PID->value < PID->value_min) PID->value = PID->value_min;
 }
