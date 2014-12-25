@@ -42,7 +42,7 @@ float UpdateCurrentValue(MotorCurrent_s *current)
 	}
 	
 	/* Convert from 12-bit to actual figure */
-	current->value = sum * 0.00101659; //3.3 (V) / 4095 (12-bit) * 1.2615 (empirically measured)
+	current->value = sum * 0.002111355311355; //3.3 (V) / 4095 (12-bit) * ('14 - 2.62)('15 - 1.2615) (empirically measured)
 	return current->value;
 }
 
