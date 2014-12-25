@@ -665,11 +665,11 @@ void ADC0_IRQHandler()
             break;
             
         case ADC_SELECT_MOTOR_CURRENT_0:
-            rbuf_uint16_write(&MotorCurrent[REAR_LEFT].buffer, (uint16_t*) &ADC0_RA, 1);
+            rbuf_uint16_write(&MotorCurrent[REAR_RIGHT].buffer, (uint16_t*) &ADC0_RA, 1);
             break;
             
         case ADC_SELECT_MOTOR_CURRENT_1:
-        	rbuf_uint16_write(&MotorCurrent[REAR_RIGHT].buffer, (uint16_t*) &ADC0_RA, 1);
+        	rbuf_uint16_write(&MotorCurrent[REAR_LEFT].buffer, (uint16_t*) &ADC0_RA, 1);
             break;
 
         case ADC_SELECT_BATTERY:

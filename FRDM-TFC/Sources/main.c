@@ -299,9 +299,9 @@ void lineFollowingMode(carState_s* carState)
 					getDesiredMotorPWM(targetSpeed, speedMeasurement[0], isANewmeasurementAvailable(CHANNEL_0), CHANNEL_0),
 					getDesiredMotorPWM(targetSpeed, speedMeasurement[1], isANewmeasurementAvailable(CHANNEL_1), CHANNEL_1));
 			*/
-			TFC_SetMotorPWM(0.2,0.2);
-			UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
-			UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
+			//TFC_SetMotorPWM(0.2,0.2);
+			SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);
+			SetMotorTorque(&MotorTorque[REAR_RIGHT], 0.0012);
 		}
 		else if (carState->UARTSpeedState == DUAL_SPEED_NO_UART)
 		{
