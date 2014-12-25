@@ -1,6 +1,7 @@
 #include "control/powertrain/motor/PWM.h"
 #include "devices/MKL25Z4.h"
 #include "devices/CrystalClock.h"
+#include <math.h>
 
 #define FTM0_MOD_VALUE	(int)((float)(PERIPHERAL_BUS_CLOCK)/TFC_MOTOR_SWITCHING_FREQUENCY)
 
@@ -44,16 +45,17 @@ void InitMotorPWMControl()
     
     //Setup Channels 0,1,2,3
     TPM0_C0SC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSB_MASK;
-    TPM0_C1SC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSA_MASK; // invert the second PWM signal for a complimentary output;
+    TPM0_C1SC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSB_MASK; 
     TPM0_C2SC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSB_MASK;
-    TPM0_C3SC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSA_MASK; // invert the second PWM signal for a complimentary output;
+    TPM0_C3SC = TPM_CnSC_MSB_MASK | TPM_CnSC_ELSB_MASK;
     
     //Assign TPM channels to PWM structs */
     MotorPWM[REAR_LEFT].tpm = &MotorTPM[1];
     MotorPWM[REAR_RIGHT].tpm = &MotorTPM[0];
     
-    //Set the Default duty cycle to 50% duty cycle -  50% each way, net 0%.
-    TFC_SetMotorPWM(0.0,0.0);
+    //Initialise motors at zero duty
+    for (uint8_t i = 0; i < NUM_MOTORS; ++i)
+    	SetMotorPWM(&MotorPWM[i], 0.0);
     
     //Enable the TPM COunter
     TPM0_SC |= TPM_SC_CMOD(1);
@@ -67,15 +69,46 @@ void InitMotorPWMControl()
 
 void SetMotorPWM(MotorPWM_s *pwm, float value)
 {
-	//Limit and store value
-	if (value > MAX_DUTY) value = MAX_DUTY;
-	else if (value < -MAX_DUTY) value = -MAX_DUTY;
-	pwm->value = value;
-	
-	//Set TPM value registers for new PWM value
-	uint16_t r = (uint16_t) ((float)TPM0_MOD * (float)((value + 1.0)/2.0));
-	*(pwm->tpm->fwdCnVReg) = (uint16_t) r;
-	*(pwm->tpm->bwdCnVReg) = (uint16_t) r; //Nothing fancy going on, just complementary output.
+	/* Negative values not possible, so...   *
+	 * For positive torque: fwd > 0, bwd = 0 *
+	 * For negative torque: fwd = 0, bwd > 0 *
+	 * ------------------------------------- *
+	 * Be sure to limit duty to 1 to prevent *
+	 * overflows                             */
+
+	 //Check polarity
+	 #define FORWARD 0
+	 #define BACKWARD 1
+	 uint8_t pol;
+	 if (value > 0.0) pol = FORWARD;
+	 else pol = BACKWARD;
+
+	 //Check/limit magnitude
+	 value = fabsf(value); //return abs(float value)
+	 if (value > MAX_DUTY) value = MAX_DUTY; //limit to max duty
+
+	 //Set PWM
+	 if (value != 0.0) //Any magnitude
+		//+'ve
+		if (pol == FORWARD)
+		{
+			*(pwm->tpm->fwdCnVReg) = TPM0_MOD * (uint16_t) value;
+			*(pwm->tpm->bwdCnVReg) = 0;
+			pwm->value = value;
+		}
+		//-'ve
+		else //(if value ==  BACKWARD)
+		{
+			*(pwm->tpm->fwdCnVReg) = 0;
+			*(pwm->tpm->bwdCnVReg) = TPM0_MOD * (uint16_t) value;
+			pwm->value = -value;
+		}
+	else //No magnitude
+	{
+		*(pwm->tpm->fwdCnVReg) = 0; //fwd = 0, bwd = 0...
+		*(pwm->tpm->bwdCnVReg) = 0; //...motor free runs.
+		pwm->value = 0;
+	}
 }
 
 float GetMotorPWM(MotorPWM_s *pwm) { return pwm->value; }
