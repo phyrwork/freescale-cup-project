@@ -92,7 +92,7 @@ void SetMotorPWM(MotorPWM_s *pwm, float value)
 		//+'ve
 		if (pol == FORWARD)
 		{
-			*(pwm->tpm->fwdCnVReg) = TPM0_MOD * (uint16_t) value;
+			*(pwm->tpm->fwdCnVReg) = (uint16_t) (TPM0_MOD * (float) value);
 			*(pwm->tpm->bwdCnVReg) = 0;
 			pwm->value = value;
 		}
@@ -100,7 +100,7 @@ void SetMotorPWM(MotorPWM_s *pwm, float value)
 		else //(if value ==  BACKWARD)
 		{
 			*(pwm->tpm->fwdCnVReg) = 0;
-			*(pwm->tpm->bwdCnVReg) = TPM0_MOD * (uint16_t) value;
+			*(pwm->tpm->bwdCnVReg) = (uint16_t) (TPM0_MOD * (float) value);
 			pwm->value = -value;
 		}
 	else //No magnitude
