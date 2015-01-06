@@ -1,0 +1,30 @@
+FRDM-TFC IO MAP
+===============
+
+PTA2:1	UART0 TX:RX
+PTA2:1	Cadence sensors 1:0
+
+PTB1:0	Servo
+PTB2	Potentiometer 1 (ADC) 
+PTB3	Potentiometer 0 (ADC)
+PTB11:8	LEDs
+
+PTC4:1  H-bridge PWM
+PTC13	Button 0
+PTC17	Button 1
+
+PTD0	HC05 cmd
+PTD5	Linescan 0 (ADC)
+PTD6	Linescan 1 (ADC) - not used.
+PTD7	Linescan SI
+
+PTE0 	HC05 power
+PTE1 	Linescan CLK
+PTE5:2 	4-way switch
+PTE20	H-bridge fault
+PTE21	H-bridge enable
+PTE21	Battery voltage (ADC) - not muxed.
+PTE22	Motor 1 current (ADC)
+PTE23	Motor 0 current (ADC)
+PTE25:24 Accelerometer (I2C) - fixed.
+
