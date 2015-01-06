@@ -8,8 +8,10 @@ PTB1:0	Servo
 PTB2	Potentiometer 1 (ADC) 
 PTB3	Potentiometer 0 (ADC)
 PTB11:8	LEDs
+PTB19:18 (proposed) Cadence sensors 1:0
 
 PTC4:1  H-bridge PWM
+PTC9:8	(proposed) Cadence sensors 3:2
 PTC13	Button 0
 PTC17	Button 1
 
