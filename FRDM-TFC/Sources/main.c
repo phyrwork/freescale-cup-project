@@ -281,7 +281,7 @@ void lineFollowingMode(carState_s* carState)
 	if (TFC_Ticker[0] >= 200)
 	{
 		TFC_Ticker[0] = 0;
-		//TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
+		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
 	}
 	
 	//debug
