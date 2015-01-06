@@ -3,28 +3,30 @@
  * Current signal storage and filtering.
  */
 
-#include "sensors/CurrentSensor.h"
+#include "sensors/current.h"
 #include "config.h"
 
 /* Import filter co-effs */
 const float current_filter_coeffs[] = CURRENT_FILTER_COEFFS;
 
 /* Current signal structs */
-MotorCurrent I_rl;
-MotorCurrent I_rr;
+MotorCurrent_s MotorCurrent[NUM_MOTORS];
 
 void InitCurrentSensors()
 {
 	/* Initialise signal buffers */
-	rbuf_uint16_init(&I_rl.buffer, I_rl.data, CURRENT_FILTER_BUFFER_SIZE);
-	rbuf_uint16_init(&I_rr.buffer, I_rr.data, CURRENT_FILTER_BUFFER_SIZE);
-	rbuf_uint16_set_mode(&I_rl.buffer, RBUF_UINT16_MODE_OVERWRITE); //Set overwrite mode so that the buffer is never 'full'.
-	rbuf_uint16_set_mode(&I_rr.buffer, RBUF_UINT16_MODE_OVERWRITE);
+	for (uint8_t i = 0; i < NUM_MOTORS; ++i)
+	{
+		MotorCurrent_s *current = &MotorCurrent[i];
+		
+		rbuf_uint16_init(&current->buffer, current->data, CURRENT_FILTER_BUFFER_SIZE);
+		rbuf_uint16_set_mode(&current->buffer, RBUF_UINT16_MODE_OVERWRITE); //Set overwrite mode so that the buffer is never 'full'.
+	}
 }
 
 /* Convolve filter with most recent samples to determine current value */
 #define UINT16_MAX 0xFFFF
-int16_t GetCurrentValue(MotorCurrent *current)
+float UpdateCurrentValue(MotorCurrent_s *current)
 {
 	float sum = 0;
 	uint32_t elem = current->buffer.rfx; //Find first element position
@@ -39,9 +41,8 @@ int16_t GetCurrentValue(MotorCurrent *current)
 		sum += sample * current_filter_coeffs[s];
 	}
 	
-	/* Return value */
-	if (sum > UINT16_MAX) return UINT16_MAX;
-	else if (sum < 0) return 0;
-	else return (uint16_t) sum;
+	/* Convert from 12-bit to actual figure */
+	current->value = sum * 0.002111355311355; //3.3 (V) / 4095 (12-bit) * ('14 - 2.62)('15 - 1.2615) (empirically measured)
+	return current->value;
 }
 

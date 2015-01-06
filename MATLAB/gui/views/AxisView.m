@@ -11,6 +11,7 @@ classdef AxisView < GuiView
         atitle      = char.empty; % axis title
         axlabel     = char.empty; % x-axis label
         aylabel     = char.empty; % y-axis label
+        elegend      = []; % legend entries
     end
     
     methods
@@ -25,6 +26,9 @@ classdef AxisView < GuiView
             addParameter(p, 'title', char.empty, @ischar);
             addParameter(p, 'xlabel', char.empty, @ischar);
             addParameter(p, 'ylabel', char.empty, @ischar);
+            addParameter(p, 'xlim', 'auto');
+            addParameter(p, 'ylim', 'auto');
+            addParameter(p, 'legend', []);
             parse(p, session, attribute, varargin{:});
             
             % initialise GuiView
@@ -46,11 +50,19 @@ classdef AxisView < GuiView
                 );
             end
             
+            % label axes
             obj = obj.label(...
                 'title', p.Results.title,...
                 'xlabel', p.Results.xlabel,...
                 'ylabel', p.Results.ylabel...
             );
+        
+            % set axes limits
+            xlim(obj.haxis, p.Results.xlim);
+            ylim(obj.haxis, p.Results.ylim);
+            
+            % save legend entries if supplied
+            obj.elegend = p.Results.legend;
         end
         
         % select axis
@@ -83,6 +95,20 @@ classdef AxisView < GuiView
                 obj.aylabel = p.Results.ylabel;
             end
             ylabel(obj.haxis, obj.aylabel);
+        end
+        
+        % enable/disable legend
+        function obj = clegend(obj, action)
+            switch (action)
+                case 'on'
+                    if ~isempty(obj.elegend)
+                        legend(obj.haxis, obj.elegend, 'Location', 'northwest');
+                        legend(obj.haxis, 'show');
+                    end        
+                    
+                case 'off'
+                    legend(obj.haxis, 'hide');
+            end
         end
     end
     

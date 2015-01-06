@@ -5,7 +5,7 @@
  *      Author: Matt
  */
 
-#include "control/Steering.h"
+#include "control/steering/Steering.h"
 #include "support/Types.h"
 #include "sensors/camera/LineDetection.h"
 #include "support/ARM_SysTick.h"

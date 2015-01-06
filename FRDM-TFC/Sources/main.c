@@ -17,9 +17,10 @@ void TFC_Init(carState_s* carState)
 	TFC_InitSysTick();
 	TFC_InitGPIO();
 	TFC_InitServos();
-	TFC_InitMotorPWM();
 	TFC_InitLineScanCamera();
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
+	InitMotorPWMControl();
+	InitMotorTorqueControl();
 	TFC_InitADCs(carState);
 	UART0_Init();
 	DMA0_Init();
@@ -283,10 +284,6 @@ void lineFollowingMode(carState_s* carState)
 		TFC_Ticker[0] = 0;
 		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
 	}
-	
-	//debug
-	I_rl.value = GetCurrentValue(&I_rl);
-	I_rr.value = GetCurrentValue(&I_rr);
 
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 	{
@@ -302,7 +299,9 @@ void lineFollowingMode(carState_s* carState)
 					getDesiredMotorPWM(targetSpeed, speedMeasurement[0], isANewmeasurementAvailable(CHANNEL_0), CHANNEL_0),
 					getDesiredMotorPWM(targetSpeed, speedMeasurement[1], isANewmeasurementAvailable(CHANNEL_1), CHANNEL_1));
 			*/
-			TFC_SetMotorPWM(0.2,0.2);
+			//TFC_SetMotorPWM(0.2,0.2);
+			SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);
+			SetMotorTorque(&MotorTorque[REAR_RIGHT], 0.0012);
 		}
 		else if (carState->UARTSpeedState == DUAL_SPEED_NO_UART)
 		{
@@ -325,7 +324,7 @@ void lineFollowingMode(carState_s* carState)
 	{
 		//TFC_HBRIDGE_DISABLE;
 		//TFC_SetMotorPWM(0, 0);
-//		TFC_SetLED(2);
+//		TFC_SetLED(2);PWM
 	}
 	else if (carState->lineDetectionState == STOPLINE_DETECTED)
 	{
@@ -334,6 +333,7 @@ void lineFollowingMode(carState_s* carState)
 		if (speedMeasurement[0] > 2.0f || speedMeasurement[1] > 2.0f)
 		{
 			//TFC_SetMotorPWM(-0.5f, -0.5f);
+			
 		}
 		else
 		{

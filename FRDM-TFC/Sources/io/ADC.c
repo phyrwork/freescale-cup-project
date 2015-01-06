@@ -504,8 +504,8 @@ SamplerItem *ActiveItem = 0;
 
 /* Sample storage */
 volatile uint16_t PotADC_Value[2];
-#include "sensors/CurrentSensor.h"
-extern MotorCurrent I_rl, I_rr;
+#include "sensors/current.h"
+extern MotorCurrent_s MotorCurrent[NUM_MOTORS];
 volatile uint16_t BatSenseADC_Value;
 
 /* Sampler initialization routine */
@@ -665,11 +665,11 @@ void ADC0_IRQHandler()
             break;
             
         case ADC_SELECT_MOTOR_CURRENT_0:
-            rbuf_uint16_write(&I_rr.buffer, (uint16_t*) &ADC0_RA, 1);
+            rbuf_uint16_write(&MotorCurrent[REAR_RIGHT].buffer, (uint16_t*) &ADC0_RA, 1);
             break;
             
         case ADC_SELECT_MOTOR_CURRENT_1:
-        	rbuf_uint16_write(&I_rl.buffer, (uint16_t*) &ADC0_RA, 1);
+        	rbuf_uint16_write(&MotorCurrent[REAR_LEFT].buffer, (uint16_t*) &ADC0_RA, 1);
             break;
 
         case ADC_SELECT_BATTERY:

@@ -29,17 +29,27 @@
 /* Include headers to access shared data */
 #include "sensors/camera/LineScanCamera.h"
 #include "sensors/camera/LineDetection.h"
-#include "sensors/CurrentSensor.h"
+#include "sensors/current.h"
+#include "control/powertrain/motor/pwm.h"
+#include "control/powertrain/motor/torque.h"
 #include "io/ADC.h"
 
 /* Define CollectorItems */
 CollectorItem items[] = {
-	/* [0] = */ { /* data = */ &LineScanImage0,   /* deref = */ 1, /* endpoint = */ &TFTP_LINESCAN0_ENDPOINT,         /* frequency = */ 30, /* misc...*/ 0,0 },
+	///* [0] = */ { /* data = */ &LineScanImage0,   /* deref = */ 1, /* endpoint = */ &TFTP_LINESCAN0_ENDPOINT,         /* frequency = */ 30, /* misc...*/ 0,0 },
 	/* [1] = */ { /* data = */ &trackPosition,    /* deref = */ 0, /* endpoint = */ &TFTP_TRACK_POSITION_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
-	///* [1] = */ { /* data = */ &targetLine,       /* deref = */ 0, /* endpoint = */ &TFTP_TARGET_LINE_ENDPOINT,       /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [1] = */ { /* data = */ &positioningState, /* deref = */ 0, /* endpoint = */ &TFTP_POSITIONING_STATE_ENDPOINT, /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [4] = */ { /* data = */ &I_rl.value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RL_ENDPOINT,    /* frequency = */ 100, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &I_rr.value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RR_ENDPOINT,    /* frequency = */ 100, /* misc...*/ 0,0 }
+	///* [2] = */ { /* data = */ &targetLine,       /* deref = */ 0, /* endpoint = */ &TFTP_TARGET_LINE_ENDPOINT,       /* frequency = */ 20, /* misc...*/ 0,0 },
+	/* [3] = */ { /* data = */ &positioningState, /* deref = */ 0, /* endpoint = */ &TFTP_POSITIONING_STATE_ENDPOINT, /* frequency = */ 20, /* misc...*/ 0,0 },
+	/* [4] = */ { /* data = */ &MotorCurrent[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorCurrent[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_T_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_T_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].cmd, /* deref = */ 0, /* endpoint = */ &TFTP_TREF_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].cmd, /* deref = */ 0, /* endpoint = */ &TFTP_TREF_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorPWM[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorPWM[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].PID, /* deref = */ 1, /* endpoint = */ &TFTP_PID_T_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].PID, /* deref = */ 1, /* endpoint = */ &TFTP_PID_T_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 }
 };
 #define NUM_ITEMS ( (sizeof items) / (sizeof (CollectorItem)) )
 

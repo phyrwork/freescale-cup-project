@@ -1,4 +1,4 @@
-/* CurrentSensor.h
+/* current.h
  * ==========================================
  * Current signal storage and filtering.
  */
@@ -14,14 +14,12 @@
 typedef struct {
 	uint16_t data[CURRENT_FILTER_BUFFER_SIZE];
 	rbuf_uint16_s buffer;
-	int16_t value;
-} MotorCurrent;
+	float value;
+} MotorCurrent_s;
+extern MotorCurrent_s MotorCurrent[NUM_MOTORS];
 
 /* Methods */
-void    InitCurrentSensors();
-int16_t GetCurrentValue(MotorCurrent *current);
-
-extern MotorCurrent I_rl;
-extern MotorCurrent I_rr;
+void  InitCurrentSensors();
+float UpdateCurrentValue(MotorCurrent_s *current);
 
 #endif //CURRENT_SENSOR_H
