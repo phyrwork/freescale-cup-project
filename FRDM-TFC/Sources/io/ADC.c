@@ -457,7 +457,7 @@ typedef int8_t (*AdcComplete_f)(void);
 typedef struct {
     AdcPrime_f    primer;
     AdcComplete_f completer;
-} AdcConfig_s
+} AdcConfig_s;
 
 
 //////////////////////////////////
@@ -477,7 +477,9 @@ typedef struct {
     AdcConfig_s *AdcConfig;
 } LinescanImage;
 
-LinescanImage linescan0; //pre-declare
+LinescanImage  linescan0;
+AdcConfig_s    AdcConfigLinescan0;
+rbuf_voidptr_s queue;
 
 int8_t AdcPrimeLinescan0 ()
 {
@@ -532,11 +534,11 @@ int8_t AdcCompleteLinescan0 ()
 AdcConfig_s AdcConfigLinescan0 = { //linescan0 ADC config
     /* primer = */ &AdcPrimeLinescan0,
     /* completer = */ &AdcCompleteLinescan0
-}
+};
 
 LinescanImage linescan0 = { //linescan0 struct
 	/* pixel = */ 0,
-    /* AdcConfig = */ &AdcConfigLinescan0;
+    /* AdcConfig = */ &AdcConfigLinescan0
 };
 
 
@@ -588,12 +590,12 @@ int8_t AdcCompletePotentiometer1 ()
 AdcConfig_s AdcConfigPotentiometer0 = { //potentiometer0 ADC config
     /* primer = */ &AdcPrimePotentiometer0,
     /* completer = */ &AdcCompletePotentiometer0
-}
+};
 
 AdcConfig_s AdcConfigPotentiometer1 = { //potentiometer1 ADC config
     /* primer = */ &AdcPrimePotentiometer1,
     /* completer = */ &AdcCompletePotentiometer1
-}
+};
 
 
 ///////////////////////////////////////
@@ -633,12 +635,12 @@ int8_t AdcCompleteMotorCurrent1 ()
 AdcConfig_s AdcConfigMotorCurrent0 = { //MotorCurrent0 ADC config
     /* primer = */ &AdcPrimeMotorCurrent0,
     /* completer = */ &AdcCompleteMotorCurrent0
-}
+};
 
 AdcConfig_s AdcConfigMotorCurrent1 = { //MotorCurrent1 ADC config
     /* primer = */ &AdcPrimeMotorCurrent1,
     /* completer = */ &AdcCompleteMotorCurrent1
-}
+};
 
 
 ///////////////////////////////////
@@ -681,7 +683,7 @@ PeriodicSample_s schedule[] =
         /* period = */    SET_BY_INITIALIZATION,
         /* counter = */   SET_BY_INITIALIZATION
     }
-}
+};
 #define SIZEOF_SCHEDULE ( (sizeof schedule) / (sizeof (PeriodicSample_s)) )
 
 
@@ -746,7 +748,7 @@ void Sampler_Dispatch()
     if (rbuf_voidptr_used(&queue) == 0) return;        //if queue empty, no samples to dispatch
     else rbuf_voidptr_pop(&queue, (void**) &focus, 1); //otherwise pop a queued sample
 
-    *(focus->primer)(); //call the specified priming method
+    (*(focus->primer))(); //call the specified priming method
 }
 
 
@@ -804,7 +806,7 @@ void PIT_IRQHandler()
 
 void ADC0_IRQHandler()
 {
-    if (focus != 0) *(focus->completer)();
+    if (focus != 0) (*(focus->completer))();
     else
     {
         uint16_t tmp = ADC0_RA; //clear an orphaned sample?
