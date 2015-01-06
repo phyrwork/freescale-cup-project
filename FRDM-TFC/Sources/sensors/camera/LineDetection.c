@@ -48,10 +48,10 @@ void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
 	//////////////////////////////////////////////
 	
 	Line *best = LineBuffer;
-	for (uint8_t k = 1, Line *candidate = &LineBuffer[1];
-		 k < numFeatures;
-		 ++k, ++candidate)
+	for (uint8_t k = 1; k < numFeatures; ++k)
 	{
+		Line *candidate = &LineBuffer[k];
+		                              
 		if (candidate->edges[L].type != EDGE_TYPE_VIRTUAL &&
 		    candidate->edges[R].type != EDGE_TYPE_VIRTUAL &&
 		    candidate->P_width > best->P_width)
@@ -94,11 +94,11 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	///////////////////////////////////
 
 	Line *best = LineBuffer;
-	for (uint8_t k = 1, Line *candidate = &LineBuffer[1];
-	     k < numFeatures;
-	     ++k, ++candidate) //select best absolute match
+	for (uint8_t k = 1; k < numFeatures; ++k) //select best absolute match
 	{
-		if (candidiate->P_absLine > best->P_absLine)
+		Line *candidate = &LineBuffer[k];
+		                              
+		if (candidate->P_absLine > best->P_absLine)
 		{
 			//Candidate is best absolute match so far
 			best = candidate;
@@ -126,12 +126,13 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	////////////////////////////////////
 	// Next look for a relative match //
 	////////////////////////////////////
-
-	Line *best = LineBuffer;
-	for (uint8_t k = 1, Line *candidate = &LineBuffer[1];
-	     k < numFeatures;
-	     ++k, ++candidate) //select best relative match
+	
+	//Line *best = LineBuffer;
+	best = LineBuffer;
+	for (uint8_t k = 1; k < numFeatures; ++k) //select best relative match
 	{
+		Line *candidate = &LineBuffer[k];
+		
 		if (candidate->P_relLine > best->P_relLine)
 		{
 			//Candidate is best relative match so far
@@ -139,7 +140,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 		}
 	}
 
-	if if (best->P_relLine > MIN_CERTAINTY) {
+	if (best->P_relLine > MIN_CERTAINTY) {
 		//Found a relative match - i.e. a partial line similar to the target line
 
 		int8_t offset; //New position estimated by change in position of visible edge
@@ -149,7 +150,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 			positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
 			offset = best->edges[L].pos - TargetLine.edges[L].pos;
 		}
-		else if (bestLine->edges[R].type != EDGE_TYPE_VIRTUAL) {
+		else if (best->edges[R].type != EDGE_TYPE_VIRTUAL) {
 			//Right edge is not virtual i.e. visible
 			positioningState = POSITIONING_STATE_PARTIAL_LEFT;
 			offset = best->edges[R].pos - TargetLine.edges[R].pos;
@@ -159,7 +160,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 		carState->lineCenter += offset;
 		trackPosition = carState->lineCenter; //local copy of road position for telemetry.
 
-		TargetLine = best; //matched line becomes new target line
+		TargetLine = *best; //matched line becomes new target line
 
 		/* Update car status; reset timeout counter */
 		carState->lineDetectionState = LINE_FOUND;
@@ -243,7 +244,9 @@ uint8_t findLines(Edge *edges, uint8_t numEdges)
 	
 	/* A line potentially exists between every pair of edges */
 	Line *line = LineBuffer;
-	for (uint8_t e = 0, Edge *edge = edges; e < numEdges; ++e, ++edge) {
+	for (uint8_t e = 0; e < numEdges; ++e) {
+		
+		Edge *edge = &edges[e];
 
 		/* Make sure we only capture the next edge of a different type */
 		if (edge->type == line->edges[L].type) continue;
@@ -315,13 +318,13 @@ int8_t weightLines(Line* target, Line* lines, uint8_t size)
 
 		//Relative line
 		line->P_relLine  = P_shared;
-		line->P_relLine *= line->P_dWidth
+		line->P_relLine *= line->P_dWidth;
 
 		//Absolute line
 		line->P_absLine  = P_shared;
-		line->P_absline *= line->P_width;
+		line->P_absLine *= line->P_width;
 		if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
-			line0>edges[R].type == EDGE_TYPE_VIRTUAL)
+			line->edges[R].type == EDGE_TYPE_VIRTUAL)
 		{
 			//One or both edges isn't visible, so despite width cannot be absolute match
 			line->P_absLine = 0;
