@@ -98,7 +98,7 @@ void    derivative(volatile uint16_t* input, int16_t* output, uint8_t length);
 
 /* Data sharing for telemetry */
 extern PositioningState positioningState; // Line tracking status
-extern Line             targetLine;	// Current model line
+extern Line             TargetLine;	// Current model line
 extern int8_t           trackPosition;     // Current detected road position
 
 #endif /* LINEDETECTION_H_ */
