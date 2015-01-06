@@ -262,33 +262,46 @@ void weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges) {
 	return;
 }
 
-int8_t weightLines(Line* targetLine, Line* lines, uint8_t numLines)
+int8_t weightLines(Line* target, Line* lines, uint8_t size)
 {
-	for (uint8_t k = 0; k < numLines; k++) {
+	for (uint8_t k = 0; k < size; ++k) {
 
-		/* Calculate probability line is line based on width */
-		lines[k].P_width = getProbability( lines[k].width,
-								             LINE_WIDTH_SD, LINE_WIDTH_MEAN );
+		Line *line = &lines[k]; //pointer to candidate line
 
-		/* Calculate probabilty line is line based on change in width */
-		uint8_t dWidth = lines[k].width - targetLine->width;
-		lines[k].P_dWidth = getProbability( dWidth,
-								             LINE_DWIDTH_SD, LINE_DWIDTH_MEAN );
+		////////////////////////////////////////
+		// Calculate individual probabilities //
+		////////////////////////////////////////
 
-		/* Calculate likelihood of correct edges */
-		weightEdges(targetLine->edges, lines[k].edges, 2);
+		line->P_width = getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN); //P based on abs width
 
-		/* Calculate combined probabilities */
+		uint8_t dWidth = line->width - target->width;
+		line->P_dWidth = getProbability(dWidth, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN); //P based on change in width
+
+		weightEdges(target->edges, line->edges, 2); //P of constituent edges
+
+
+		//////////////////////////////////////
+		// Calculate combined probabilities //
+		//////////////////////////////////////
+
+		//Shared component
+		float P_shared  = 1;
+		      P_shared *= line->edges[L].P_edge[L];
+		      P_shared *= line->edges[R].P_edge[R];
 
 		//Relative line
-		lines[k].P_relLine  = 1;
-		lines[k].P_relLine *= lines[k].P_dWidth
-		lines[k].P_relLine *= lines[k].edges[L].P_edge[L];
-		lines[k].P_relLine *= lines[k].edges[R].P_edge[R];
+		line->P_relLine  = P_shared;
+		line->P_relLine *= line->P_dWidth
 
 		//Absolute line
-		lines[k].P_absLine  = lines[k].P_relLine;
-		lines[k].P_absline *= lines[k].P_width;
+		line->P_absLine  = P_shared;
+		line->P_absline *= line->P_width;
+		if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
+			line0>edges[R].type == EDGE_TYPE_VIRTUAL)
+		{
+			//One or both edges isn't visible, so despite width cannot be absolute match
+			line->P_absLine = 0;
+		}
 
 	}
 	return 0;
