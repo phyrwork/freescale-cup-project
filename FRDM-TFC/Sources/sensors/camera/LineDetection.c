@@ -60,9 +60,15 @@ void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
 void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold)
 {
 	/* If car has 'stopped', nothing to do; return */
+	// To-do: Move this check to main()
 	if (carState->lineDetectionState == STOPLINE_DETECTED) return;
 
-	/* Get derivative of linescan image */
+
+	//////////////////////////////////////////
+	// Analyse most recently captured image //
+	//////////////////////////////////////////
+
+	/* Get derivative of image */
 	static int16_t dI[128];
 	derivative(linescan, dI, 128);
 
@@ -70,111 +76,108 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	static uint8_t numFeatures = 0;
 	numFeatures = findEdges(dI, dI_threshold);
 	
-	/* Generate possible lines for analysis */
+	/* Generate lines and analyse */
 	numFeatures = findLines(edgeBuffer, numFeatures);
-
-	/* Find best match for target line */
 	weightLines(&targetLine, lineBuffer, numFeatures);
+
+
+	///////////////////////////////////
+	// Look for absolute match first //
+	///////////////////////////////////
+
 	uint8_t best = 0;
 	#define bestLine lineBuffer[best]
-	
-	for (uint8_t k = 1; k < numFeatures; k++)
-		if (lineBuffer[k].P_line > bestLine.P_line) best = k;
+	for (uint8_t k = 1; k < numFeatures; k++) //select best absolute match
+		if (lineBuffer[k].P_absLine > bestLine.P_absLine) best = k;
 
-	/* Decide what to do with the result */
-	if (bestLine.P_line > MIN_CERTAINTY) {
+	if (bestLine.P_absLine > MIN_CERTAINTY) {
+		//Found an absolute match - i.e. a complete line.
 
-		/* Determine if detected line spans the whole track:
-		 * if neither of the edges are EDGE_TYPE_VIRTUAL then yes */
-		if (bestLine.edges[L].type != EDGE_TYPE_VIRTUAL &&
-			bestLine.edges[R].type != EDGE_TYPE_VIRTUAL) {
+		/* Calculate car's track position */
+		int8_t center = ((bestLine.start + bestLine.finish)/2) - 64;
+		carState->lineCenter = center; //this is offset from car's perspective
+		trackPosition = carState->lineCenter; //local copy of track position for telemetry
 
-			positioningState = POSITIONING_STATE_FULL;
-			TFC_ClearLED(2);
-			TFC_ClearLED(3);
-			TFC_SetLED(1);
-
-			/* Calculate car's road position */
-			int8_t center = ((bestLine.start + bestLine.finish)/2) - 64;
-			carState->lineCenter = center;
-			//This is the offset of the center of the track from the car's
-			//perspective, -not- the offset of the car (i.e. the track position)
-			
-			trackPosition = carState->lineCenter; //Local copy of road position for telemetry.
-		}
-		else {
-			/* We have detected a track partial - we cannot calculate
-			 * the absolute center of the track without edges at both sides:
-			 * instead must estimate new position of car using change in edge
-			 * positions */
-			int8_t offset = 0;
-
-			/* Choose non-'EDGE_TYPE_VIRTUAL' edge to use to calculate offset */
-			if (bestLine.edges[L].type != EDGE_TYPE_VIRTUAL) {
-				/* Edge at RHS; RHS partial */
-				positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
-				TFC_SetLED(1);
-				TFC_ClearLED(2);
-				TFC_ClearLED(3);
-				
-				offset = bestLine.edges[L].pos - targetLine.edges[L].pos;
-			}
-			else if (bestLine.edges[R].type != EDGE_TYPE_VIRTUAL) {
-				/* Edge at LHS; LHS partial */
-				positioningState = POSITIONING_STATE_PARTIAL_LEFT;
-				TFC_SetLED(1);
-				TFC_ClearLED(2);
-				TFC_ClearLED(3);
-				
-				offset = bestLine.edges[R].pos - targetLine.edges[R].pos;
-			}
-			/* Apply offset to position */
-			carState->lineCenter += offset;
-			//This is the offset of the center of the track from the car's
-			//perspective, -not- the offset of the car (i.e. the track position)
-			
-			trackPosition = carState->lineCenter; //Local copy of road position for telemetry.
-		}
-
-		/* Store best line as the new target line */
-		targetLine = bestLine;
+		targetLine = bestLine; //matched line becomes new target line
 
 		/* Update car status; reset timeout counter */
 		carState->lineDetectionState = LINE_FOUND;
 		TFC_Ticker[3] = 0;
+
+		return;
 	}
-	else {
-		
-		/* Look for stop line */
-		/*
-		if ( findStop(lineBuffer, numFeatures) ) {
-		 	carState->lineDetectionState = STOPLINE_DETECTED;
-		 	TFC_ClearLED(1);
-		 	TFC_SetLED(2);
-		 	TFC_SetLED(3);
-		 	return;
+	
+
+	////////////////////////////////////
+	// Next look for a relative match //
+	////////////////////////////////////
+
+	uint8_t best = 0;
+	for (uint8_t k = 1; k < numFeatures; k++) //select best absolute match
+		if (lineBuffer[k].P_relLine > bestLine.P_relLine) best = k;
+
+	if if (bestLine.P_relLine > MIN_CERTAINTY) {
+		//Found a relative match - i.e. a partial line similar to the target line
+
+		int8_t offset; //New position estimated by change in position of visible edge
+
+		if (bestLine.edges[L].type != EDGE_TYPE_VIRTUAL) {
+			//Left edge is not virtual i.e. visible
+			positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
+			offset = bestLine.edges[L].pos - targetLine.edges[L].pos;
 		}
-		*/
-		
-		
-		/* And if not this then probably just noise or car
-		 * is traversing a cross-over section
-		 */
-		if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION) {
-			 carState->lineDetectionState = LINE_LOST;
-			 TFC_ClearLED(1);
-			 TFC_ClearLED(2);
-			 TFC_SetLED(3);
+		else if (bestLine.edges[R].type != EDGE_TYPE_VIRTUAL) {
+			//Right edge is not virtual i.e. visible
+			positioningState = POSITIONING_STATE_PARTIAL_LEFT;
+			offset = bestLine.edges[R].pos - targetLine.edges[R].pos;
 		}
-	 	else {
-	 		carState->lineDetectionState = LINE_TEMPORARILY_LOST;
-	 		TFC_ClearLED(1);
-	 		TFC_SetLED(2);
-	 		TFC_ClearLED(3);
-	 	}
+
+		/* Apply offset to position */
+		carState->lineCenter += offset;
+		trackPosition = carState->lineCenter; //local copy of road position for telemetry.
+
+		targetLine = bestLine; //matched line becomes new target line
+
+		/* Update car status; reset timeout counter */
+		carState->lineDetectionState = LINE_FOUND;
+		TFC_Ticker[3] = 0;
+
+		return;
 	}
 
-	
+	/////////////////////////////////
+	// Next look for the stop line //
+	/////////////////////////////////
+
+	/*
+	if ( findStop(lineBuffer, numFeatures) )
+	{
+	 	carState->lineDetectionState = STOPLINE_DETECTED;
+	 	TFC_ClearLED(1);
+	 	TFC_SetLED(2);
+	 	TFC_SetLED(3);
+	 	return;
+	}
+	*/
+
+	/////////////////////////////////////////////////////	
+	// And if not this then probably just noise or car //
+	// is traversing a cross-over section              //
+	/////////////////////////////////////////////////////
+
+	if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION) {
+		 carState->lineDetectionState = LINE_LOST;
+		 TFC_ClearLED(1);
+		 TFC_ClearLED(2);
+		 TFC_SetLED(3);
+	}
+ 	else {
+ 		carState->lineDetectionState = LINE_TEMPORARILY_LOST;
+ 		TFC_ClearLED(1);
+ 		TFC_SetLED(2);
+ 		TFC_ClearLED(3);
+ 	}
+
 	return;
 
 	#undef bestLine
@@ -251,7 +254,7 @@ void weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges) {
 			int16_t dPos = edges[e].pos - targetEdges[t].pos;
 			edges[e].P_dPos[t] = getProbability(dPos, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
 	
-			/* Calculate combined probability */
+			/* Calculate probability */
 			edges[e].P_edge[t]  = 1;
 			edges[e].P_edge[t] *= edges[e].P_dPos[t];
 		}
@@ -272,14 +275,21 @@ int8_t weightLines(Line* targetLine, Line* lines, uint8_t numLines)
 		lines[k].P_dWidth = getProbability( dWidth,
 								             LINE_DWIDTH_SD, LINE_DWIDTH_MEAN );
 
-		/* Factor likelihood of correct edges */
+		/* Calculate likelihood of correct edges */
 		weightEdges(targetLine->edges, lines[k].edges, 2);
 
-		/* Calculate combined probability */
-		lines[k].P_line  = 1;
-		//lines[k].P_line *= lines[k].P_dWidth
-		lines[k].P_line *= lines[k].edges[L].P_edge[L];
-		lines[k].P_line *= lines[k].edges[R].P_edge[R];
+		/* Calculate combined probabilities */
+
+		//Relative line
+		lines[k].P_relLine  = 1;
+		lines[k].P_relLine *= lines[k].P_dWidth
+		lines[k].P_relLine *= lines[k].edges[L].P_edge[L];
+		lines[k].P_relLine *= lines[k].edges[R].P_edge[R];
+
+		//Absolute line
+		lines[k].P_absLine  = lines[k].P_relLine;
+		lines[k].P_absline *= lines[k].P_width;
+
 	}
 	return 0;
 }
