@@ -5,9 +5,11 @@
 #ifndef MOTOR_SPEED_CONTROL_H_
 #define MOTOR_SPEED_CONTROL_H_
 
+#include "sensors/cadence.h"
+
 typedef struct {
 	float value;
-	//MotorSpeed_s *sensor
+	CadenceSensor_s *sensor;
 	PID_s *pid;
 } MotorSpeed_s;
 

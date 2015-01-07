@@ -5,8 +5,12 @@
  *      Author: Matt
  */
 
-#ifndef SPEEDSENSOR_H_
-#define SPEEDSENSOR_H_
+#ifndef MOTOR_SPEED_SENSOR_H
+#define MOTOR_SPEED_SENSOR_H
+
+/////////////////////////////////////////
+// LEGACY CODE: To be depreciated ASAP //
+/////////////////////////////////////////
 
 #include "support/Types.h"
 
@@ -24,7 +28,7 @@ struct speed_s{
 
 void TFC_InitSpeedSensor();
 volatile isNewMeasurementAvailable_t* isANewmeasurementAvailable(uint8_t channel);
-void FTM2_IRQHandler();
+//void FTM2_IRQHandler();
 float getSpeed(uint8_t channel);
 
-#endif /* SPEEDSENSOR_H_ */
+#endif /* MOTOR_SPEED_SENSOR_H */
