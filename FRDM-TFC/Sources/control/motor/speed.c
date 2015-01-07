@@ -5,7 +5,7 @@
  *      Author: Matt
  */
 
-#include "control/powertrain/Speed.h"
+#include "control/motor/speed.h"
 #include "support/ARM_SysTick.h"
 
 #define KP 0.3f

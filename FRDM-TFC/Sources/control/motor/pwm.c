@@ -1,4 +1,4 @@
-#include "control/powertrain/motor/PWM.h"
+#include "control/motor/PWM.h"
 #include "devices/MKL25Z4.h"
 #include "devices/CrystalClock.h"
 #include <math.h>

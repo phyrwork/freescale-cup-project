@@ -1,4 +1,4 @@
-#include "sensors/SpeedSensor.h"
+#include "sensors/motor/speed.h"
 #include "devices/MKL25Z4.h"
 #include "devices/TFC_SHIELD.h"
 #include "devices/arm_cm0.h"

@@ -1,14 +1,24 @@
-/*
- * SpeedControl.h
- *
- *  Created on: Feb 3, 2014
- *      Author: Matt
- */
+//#include "sensors/speed.h"
+#include "support/PID.h"
+#include "sensors/motor/speed.h"
 
-#include "sensors/SpeedSensor.h"
+#ifndef MOTOR_SPEED_CONTROL_H_
+#define MOTOR_SPEED_CONTROL_H_
 
-#ifndef SPEEDCONTROL_H_
-#define SPEEDCONTROL_H_
+typedef struct {
+	float value;
+	//MotorSpeed_s *sensor
+	PID_s *pid;
+} MotorSpeed_s;
+
+void InitMotorSpeedControl();
+void UpdateMotorSpeed(MotorSpeed_s *speed);
+void SetMotorSpeed(MotorSpeed_s *speed, float command);
+
+
+/////////////////////////////////////////
+// LEGACY CODE: To be depreciated ASAP //
+/////////////////////////////////////////
 
 struct persistantPIDVariables_s{
 	float PWM;

@@ -1,5 +1,5 @@
 
-#include "control/powertrain/Differential.h"
+#include "control/Differential.h"
 
 #define KP 0.001f
 

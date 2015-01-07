@@ -504,7 +504,7 @@ SamplerItem *ActiveItem = 0;
 
 /* Sample storage */
 volatile uint16_t PotADC_Value[2];
-#include "sensors/current.h"
+#include "sensors/motor/current.h"
 extern MotorCurrent_s MotorCurrent[NUM_MOTORS];
 volatile uint16_t BatSenseADC_Value;
 

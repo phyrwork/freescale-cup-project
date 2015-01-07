@@ -29,9 +29,9 @@
 /* Include headers to access shared data */
 #include "sensors/camera/LineScanCamera.h"
 #include "sensors/camera/LineDetection.h"
-#include "sensors/current.h"
-#include "control/powertrain/motor/pwm.h"
-#include "control/powertrain/motor/torque.h"
+#include "sensors/motor/current.h"
+#include "control/motor/pwm.h"
+#include "control/motor/torque.h"
 #include "io/ADC.h"
 
 /* Define CollectorItems */

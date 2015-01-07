@@ -8,8 +8,8 @@
 #ifndef MOTOR_TORQUE_H_
 #define MOTOR_TORQUE_H_
 
-#include "control/powertrain/motor/pwm.h"
-#include "sensors/current.h"
+#include "control/motor/pwm.h"
+#include "sensors/motor/current.h"
 #include "support/PID.h"
 
 /* Motor properties */
@@ -24,7 +24,7 @@
 /* Torque structs */
 typedef struct {
 	float value;
-	float cmd;
+	float cmd; //debug
 	MotorPWM_s *pwm;
 	MotorCurrent_s *current;
 	PID_s *PID;

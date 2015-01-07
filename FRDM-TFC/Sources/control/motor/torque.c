@@ -5,7 +5,7 @@
  *      Author: Connor
  */
 
-#include "control/powertrain/motor/torque.h"
+#include "control/motor/torque.h"
 
 /* Define torque control structs */
 static PID_s PID[NUM_MOTORS];
