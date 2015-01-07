@@ -26,7 +26,10 @@ classdef LineChartView < AxisView
             addParameter(p, 'title', char.empty, @ischar);
             addParameter(p, 'xlabel', char.empty, @ischar);
             addParameter(p, 'ylabel', char.empty, @ischar);
+            addParameter(p, 'xlim', 'auto');
+            addParameter(p, 'ylim', 'auto');
             addParameter(p, 'period', 20, @issingle); % default period = 20s
+            addParameter(p, 'legend', []);
             parse(p, session, attribute, varargin{:});
             
             % initialise AxisView
@@ -37,7 +40,10 @@ classdef LineChartView < AxisView
                 'position', p.Results.position,... 
                 'title', p.Results.title,...
                 'xlabel', p.Results.xlabel,...
-                'ylabel', p.Results.ylabel...
+                'ylabel', p.Results.ylabel,...
+                'xlim', p.Results.xlim,...
+                'ylim', p.Results.ylim,...
+                'legend', p.Results.legend...
             );
             obj.period = p.Results.period;
         end
@@ -49,20 +55,31 @@ classdef LineChartView < AxisView
         function obj = draw(obj, x, y)
             % draw
             if (isempty(obj.hplot)) % initialise plot
-                obj.hplot = plot(obj.haxis, x, y);
+                obj.hplot = plot(obj.haxis, x, y); % returns one handle for each line (i.e. if x is 2-dimensional)
                 obj = label(obj);
+                if (~isempty(obj.hplot)) % only call legend if plot exists to surpress warnings
+                    obj.clegend('on');
+                end
             else % replace plot data
-                set(obj.hplot, 'XData', x, 'YData', y);
+                for h = 1:length(obj.hplot) % update one line at a time
+                    set(obj.hplot(h), 'XData', x, 'YData', y(h,:)); % replace one row of data
+                end
             end
         end
         
         % update chart
         function obj = update(obj)
+            % if no data nothing to do, return
+            if (obj.record.rsize < 1)
+                return;
+            end
+            
             % fetch data
             [x,y] = obj.record.latest(obj.period);
             
             % draw chart
             obj = obj.draw(x, y);
+            xlim(obj.haxis, [x(1), x(end)]); % adjust y-axis limits
         end
     end
     

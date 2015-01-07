@@ -1,9 +1,9 @@
-classdef MotorCurrentAttribute < TftpAttribute
+classdef MotorDutyAttribute < TftpAttribute
     %AngularVelocityAttribute
  
     methods
-        % MotorCurrentAttribute constructor
-        function obj = MotorCurrentAttribute(code, attribute)
+        % MotorPwmAttribute constructor
+        function obj = MotorDutyAttribute(code, attribute)
             % set default properties used in superclass constructor
             fsize = 4;
             ssize = 1;

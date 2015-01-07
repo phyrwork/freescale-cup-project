@@ -23,7 +23,11 @@
 #define TFTP_ANGULAR_VELOCITY_SIZE  1
 
 /* Motor current attribute */
-#define TFTP_MOTOR_CURRENT_TYPE  uint16_t
+#define TFTP_MOTOR_DUTY_TYPE  float
+#define TFTP_MOTOR_DUTY_SIZE  1
+
+/* Motor current attribute */
+#define TFTP_MOTOR_CURRENT_TYPE  float
 #define TFTP_MOTOR_CURRENT_SIZE  1
 
 /* Motor torque attribute */
@@ -52,6 +56,11 @@
 #include "support/Profiler.h"
 #define TFTP_PROFILER_TYPE ProfilerFrame
 #define TFTP_PROFILER_SIZE 1
+
+/* PID attributes */
+#include "support/PID.h"
+#define TFTP_PID_TYPE PID_s
+#define TFTP_PID_SIZE 1
 
 #endif //TFTP_TYPES
 
