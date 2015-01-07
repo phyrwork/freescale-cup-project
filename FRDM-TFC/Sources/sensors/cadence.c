@@ -7,7 +7,7 @@
  */
 
 #include "sensors/cadence.h"
-#include "MKL25Z4.h"
+#include "devices/arm_cm0.h"
 
 /* Sensor configurations and data */
 CadenceSensor_s sensors[] = {
@@ -18,7 +18,7 @@ CadenceSensor_s sensors[] = {
 		/* period = */    0,
 		/* events = */    0,
 		/* epr = */       2
-	}, {
+	},
 	/* [1] = */ {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   1,
@@ -102,7 +102,7 @@ void FTM2_IRQHandler()
 		if (sensor->TPM->SC & TPM_SC_TOF_MASK)
 		{
 			/* Clear timer flag if last sensor to be handled */
-			if (i = NUM_SENSORS - 1) sensor->TPM->SC |= TPM_SC_TOF_MASK;
+			if (i == NUM_SENSORS - 1) sensor->TPM->SC |= TPM_SC_TOF_MASK;
 
 			/* Increment sensor overflow counter */
 			sensor->overflows++;

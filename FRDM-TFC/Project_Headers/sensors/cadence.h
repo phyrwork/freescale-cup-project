@@ -9,6 +9,8 @@
 #ifndef HALL_SENSORS_H_
 #define HALL_SENSORS_H_
 
+#include "devices/MKL25Z4.h"
+
 typedef struct {
   TPM_MemMapPtr TPM;       //pointer to TPM module struct
   uint8_t       channel;   //channel occupied by sensor
