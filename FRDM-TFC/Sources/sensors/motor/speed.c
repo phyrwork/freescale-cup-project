@@ -87,6 +87,7 @@ float getSpeed(uint8_t channel)
 	return speeds[channel].speed;
 }
 
+/*
 void FTM2_IRQHandler()
 {
 	if (((TPM2_SC >> 7) & 0x0001) == 0x0001) //If counter overflow interrupt flag is set
@@ -134,4 +135,5 @@ void FTM2_IRQHandler()
 		speeds[1].measurementAvailable = NEW_MEASUREMENT_AVAILABLE;
 	}
 }
+*/
 
