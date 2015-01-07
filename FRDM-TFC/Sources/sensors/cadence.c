@@ -6,32 +6,34 @@
  *  Author:  Connor Newton
  */
 
-#include "sensors/hall.h"
+#include "sensors/cadence.h"
 #include "MKL25Z4.h"
 
 /* Sensor configurations and data */
-HallSensor_s sensors[] = {
+CadenceSensor_s sensors[] = {
 	/* [0] = */  {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   0,
 		/* overflows = */ 0,
-		/* ticks = */     0,
-		/* events = */    0
+		/* period = */    0,
+		/* events = */    0,
+		/* epr = */       2
 	}, {
 	/* [1] = */ {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   1,
 		/* overflows = */ 0,
-		/* ticks = */     0,
-		/* events = */    0
+		/* period = */    0,
+		/* events = */    0,
+		/* epr = */       2
 	}
 };
-HallSensor_s *HallSensors = sensors; //"rename" for other files
+CadenceSensor_s *CadenceSensors = sensors; //"rename" for other files
 
 /* Sensor count macro */
-#define NUM_SENSORS (sizeof(sensors) / sizeof(HallSensor_s))
+#define NUM_SENSORS (sizeof(sensors) / sizeof(CadenceSensor_s))
 
-void HallSensors_Init()
+void CadenceSensors_Init()
 {
 	disable_irq(INT_TPM2 - 16);
 
@@ -61,12 +63,12 @@ void HallSensors_Init()
 	enable_irq(INT_TPM2);
 }
 
-void InitSensor(HallSensor_s* sensor)
+void InitSensor(CadenceSensor_s* sensor)
 {
 	/* Init individual sensors in here! */
 }
 
-void SensorEventHandler(HallSensor_s* sensor)
+void SensorEventHandler(CadenceSensor_s* sensor)
 {
 	/* If sensor X event flag is set */
 	if (sensor->TPM->CONTROLS[sensor->channel].CnSC & TPM_CnSC_CHF_MASK)
@@ -75,11 +77,12 @@ void SensorEventHandler(HallSensor_s* sensor)
 		sensor->TPM->CONTROLS[sensor->channel].CnSC |= TPM_CnSC_CHF_MASK;
 
 		/* Calculate period since last event */
-		sensor->ticks = (uint32_t)sensor->TPM->CONTROLS[sensor->channel].CnV + ((uint32_t)0xFFFF - sensor->ticks);
+		sensor->period = (uint32_t)sensor->TPM->CONTROLS[sensor->channel].CnV + ((uint32_t)0xFFFF - sensor->period);
 
 		/* Account for LPTPM overflows */
 		if (sensor->overflows) {
-			sensor->ticks += ((uint32_t)0xFFFF * (sensor->overflows - 1)); //Add period equal to complete LPTPM period * # overflows.
+			sensor->period += ((uint32_t)0xFFFF * (sensor->overflows - 1)); //Add period equal to complete LPTPM period * # overflows.
+			sensor->period *= sensor->epr; //Adjust period to represent complete revolution
 			sensor->overflows = 0; //Reset overflow counter.
 		}
 	}
@@ -90,7 +93,7 @@ void FTM2_IRQHandler()
 	for(uint8_t i = 0; i < NUM_SENSORS; ++i)
 	{
 		/* Select Hall sensor */
-		HallSensor_s *sensor = &sensors[i];
+		CadenceSensor_s *sensor = &sensors[i];
 
 		/* If TPM module doesn't belong to this interrupt routine */
 		if (sensor->TPM != TPM2_BASE_PTR) continue;
