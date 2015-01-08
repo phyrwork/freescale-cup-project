@@ -143,7 +143,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	if (best->P_relLine > MIN_CERTAINTY) {
 		//Found a relative match - i.e. a partial line similar to the target line
 
-		int8_t offset; //New position estimated by change in position of visible edge
+		int8_t offset = 0; //New position estimated by change in position of visible edge
 
 		if (best->edges[L].type != EDGE_TYPE_VIRTUAL) {
 			//Left edge is not virtual i.e. visible
@@ -183,6 +183,42 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	 	return;
 	}
 	*/
+	
+	/////////////////////////////////////////////////////////////
+	// Before giving up try and re-find the line if it is lost //
+	/////////////////////////////////////////////////////////////
+	
+	//Line *best = LineBuffer;
+	best = LineBuffer;
+	for (uint8_t k = 1; k < numFeatures; ++k) //select best new match
+	{
+		Line *candidate = &LineBuffer[k];
+									  
+		if (candidate->P_newLine > best->P_newLine)
+		{
+			//Candidate is best absolute match so far
+			best = candidate;
+		}
+	}
+
+	if (best->P_newLine > MIN_CERTAINTY) {
+		//Found an absolute match - i.e. a complete line.
+
+		/* Calculate car's track position */
+		int8_t center = ((best->start + best->finish)/2) - 64;
+		carState->lineCenter = center; //this is offset from car's perspective
+		trackPosition = carState->lineCenter; //local copy of track position for telemetry
+
+		TargetLine = *best; //matched line becomes new target line
+
+		/* Update car status; reset timeout counter */
+		carState->lineDetectionState = LINE_FOUND;
+		TFC_Ticker[3] = 0;
+
+		return;
+	}
+	
+	
 
 	/////////////////////////////////////////////////////	
 	// And if not this then probably just noise or car //
@@ -310,6 +346,16 @@ int8_t weightLines(Line* target, Line* lines, uint8_t size)
 		//////////////////////////////////////
 		// Calculate combined probabilities //
 		//////////////////////////////////////
+		
+		//New line
+		line->P_newLine  = 1;
+		line->P_newLine *= line->P_width;
+		if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
+			line->edges[R].type == EDGE_TYPE_VIRTUAL)
+		{
+			//One or both edges isn't visible, so despite width cannot be absolute match
+			line->P_newLine = 0;
+		}
 
 		//Shared component
 		float P_shared  = 1;

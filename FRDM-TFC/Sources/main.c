@@ -40,7 +40,7 @@ int main(void)
 	TFC_Init(&carState);
 	
 	while (carState.lineScanState != LINESCAN_IMAGE_READY){};
-	InitTracking(LineScanImage0, 350);
+	//InitTracking(LineScanImage0, 350);
 	TFC_SetLED(0);
 
 	while (1)

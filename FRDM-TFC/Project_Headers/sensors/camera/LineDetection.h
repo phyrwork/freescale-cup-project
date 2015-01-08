@@ -65,6 +65,7 @@ typedef struct {
 	uint8_t width;
 	float   P_width;
 	float   P_dWidth;
+	float   P_newLine;
 	float   P_absLine;
 	float   P_relLine;
 } Line;
