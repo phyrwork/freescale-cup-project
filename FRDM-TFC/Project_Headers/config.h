@@ -16,7 +16,7 @@
 
 /* Trigger configuration */
 #define MAIN_TRIGGER_POLLLING_INTERVAL 50
-#define CONTROL_TRIGGER_FREQUENCY 120
+#define CONTROL_TRIGGER_FREQUENCY 300
 #define TELEMETRY_TRIGGER_FREQUENCY 200
 
 /* ADC sampling configuration - n.b. these are target sampling frequencies only */

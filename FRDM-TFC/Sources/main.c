@@ -297,7 +297,7 @@ void lineFollowingMode(carState_s* carState)
 					getDesiredMotorPWM(targetSpeed, speedMeasurement[0], isANewmeasurementAvailable(CHANNEL_0), CHANNEL_0),
 					getDesiredMotorPWM(targetSpeed, speedMeasurement[1], isANewmeasurementAvailable(CHANNEL_1), CHANNEL_1));
 			*/
-			TFC_SetMotorPWM(0.2,0.2);
+			TFC_SetMotorPWM(0.3,0.3);
 			UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 			UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 			//SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);
