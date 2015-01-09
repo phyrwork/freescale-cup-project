@@ -26,7 +26,8 @@ void TFC_Init(carState_s* carState)
 	DMA0_Init();
 	TFC_HBRIDGE_DISABLE;
 	TFC_SetMotorPWM(0, 0);
-	TFC_InitSpeedSensor();
+	//TFC_InitSpeedSensor();
+	CadenceSensors_Init();
 	preloadProbabilityTables(); //Prevents probability tables for stop line evaluation from being created too late
 	Collector_Init(); // Initialise telemetry
 }

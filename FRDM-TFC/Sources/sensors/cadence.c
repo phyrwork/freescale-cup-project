@@ -36,6 +36,8 @@ CadenceSensor_s *CadenceSensors = sensors; //"rename" for other files
 void CadenceSensors_Init()
 {
 	disable_irq(INT_TPM2 - 16);
+	
+	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
 
 	GPIOA_PDDR &= 0xFFFFFFF9; //Configure PTA1 and PTA2 as inputs
 
@@ -75,6 +77,7 @@ void SensorEventHandler(CadenceSensor_s* sensor)
 	{
 		/* Clear event flag */
 		sensor->TPM->CONTROLS[sensor->channel].CnSC |= TPM_CnSC_CHF_MASK;
+		sensor->event = 1; //signal to other modules new data
 
 		/* Calculate period since last event */
 		sensor->period = (uint32_t)sensor->TPM->CONTROLS[sensor->channel].CnV + ((uint32_t)0xFFFF - sensor->period);
@@ -90,6 +93,8 @@ void SensorEventHandler(CadenceSensor_s* sensor)
 
 void FTM2_IRQHandler()
 {
+	uint8_t br = 0;
+	
 	for(uint8_t i = 0; i < NUM_SENSORS; ++i)
 	{
 		/* Select Hall sensor */
