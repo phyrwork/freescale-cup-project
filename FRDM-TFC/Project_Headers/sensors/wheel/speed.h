@@ -5,7 +5,7 @@
 
 typedef struct {
 	float value;
-	CadenceSensor_s *sensor; //either direct pointer to a hall sensor
+	CadenceSensor_s *sensor; //pointer to a cadence sensor
 	float ratio; //period ratio of wheel:sensor (wheel:motor = 8:1??)
 } WheelSpeed_s;
 
