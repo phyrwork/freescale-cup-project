@@ -14,18 +14,20 @@ CadenceSensor_s sensors[] = {
 	/* [0] = */  {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   0,
+		/* cnv = */       0,
 		/* overflows = */ 0,
 		/* period = */    0,
-		/* epr = */       2,
-		/* events = */    0
+		/* epr = */       6,
+		/* flag = */      0
 	},
 	/* [1] = */ {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   1,
+		/* cnv = */       0,
 		/* overflows = */ 0,
 		/* period = */    0,
-		/* epr = */       2,
-		/* events = */    0
+		/* epr = */       6,
+		/* flag = */      0
 	}
 };
 CadenceSensor_s* const CadenceSensors = sensors; //"rename" for other files
@@ -64,30 +66,26 @@ void CadenceSensors_Init()
 	enable_irq(INT_TPM2 - 16);
 }
 
-void InitSensor(CadenceSensor_s* sensor)
-{
-	/* Init individual sensors in here! */
-}
-
 void SensorEventHandler(CadenceSensor_s* sensor)
 {
 	/* If sensor X event flag is set */
 	if (sensor->TPM->CONTROLS[sensor->channel].CnSC & TPM_CnSC_CHF_MASK)
 	{
+		/* Calculate period since last event */
+		sensor->period = (uint16_t)(sensor->TPM->CONTROLS[sensor->channel].CnV + ((uint16_t)0xFFFF - sensor->cnv));
+		sensor->cnv = sensor->TPM->CONTROLS[sensor->channel].CnV;
+
 		/* Clear event flag */
 		sensor->TPM->CONTROLS[sensor->channel].CnSC |= TPM_CnSC_CHF_MASK;
-		sensor->event = 1; //signal to other modules new data
-
-		/* Calculate period since last event */
-		sensor->period = (uint16_t)sensor->TPM->CONTROLS[sensor->channel].CnV + ( (uint16_t)0xFFFF - (uint16_t)sensor->period );
+		sensor->flag = 1; //signal to other modules new data
 
 		/* Account for LPTPM overflows */
 		if (sensor->overflows) {
 			sensor->period += ((uint32_t)0xFFFF * (sensor->overflows - 1)); //Add period equal to complete LPTPM period * # overflows.
 			sensor->overflows = 0; //Reset overflow counter.
 		}
-		
-		//sensor->period *= sensor->epr; //Adjust period to represent complete revolution
+
+		sensor->period *= sensor->epr; //adjust to represent complete revolution
 	}
 }
 
