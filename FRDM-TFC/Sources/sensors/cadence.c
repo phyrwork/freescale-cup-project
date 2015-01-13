@@ -37,14 +37,14 @@ void CadenceSensors_Init()
 {
 	disable_irq(INT_TPM2 - 16);
 	
-	SIM_SCGC5 |= SIM_SCGC5_PORTA_MASK;
+	SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK;
 
-	GPIOA_PDDR &= 0xFFFFFFF9; //Configure PTA1 and PTA2 as inputs
+	GPIOB_PDDR &= 0xFFFFFFF3; //Configure PTB2 and PTB3 as inputs
 
-	PORTA_PCR1 &= 0xFFFFF8FF;
-	PORTA_PCR1 |= 0x00000300;
-	PORTA_PCR2 &= 0xFFFFF8FF;
-	PORTA_PCR2 |= 0x00000300; //Mux
+	PORTB_PCR2 &= 0xFFFFF8FF;
+	PORTB_PCR2 |= 0x00000300;
+	PORTB_PCR3 &= 0xFFFFF8FF;
+	PORTB_PCR3 |= 0x00000300; //Mux
 
 	SIM_SCGC6 |= SIM_SCGC6_TPM2_MASK; //Enable clock gate to TPM2 module
 

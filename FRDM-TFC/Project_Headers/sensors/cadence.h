@@ -21,6 +21,8 @@ typedef struct {
 } CadenceSensor_s;
 
 extern CadenceSensor_s* const CadenceSensors;
+//debug
+extern CadenceSensor_s sensors[];
 
 void InitCadenceSensors();
 void FTM2_IRQHandler();
