@@ -44,7 +44,7 @@ void CadenceSensors_Init()
 	PORTA_PCR1 &= 0xFFFFF8FF;
 	PORTA_PCR1 |= 0x00000300;
 	PORTA_PCR2 &= 0xFFFFF8FF;
-	PORTA_PCR2 |= 0x00000300;
+	PORTA_PCR2 |= 0x00000300; //Mux
 
 	SIM_SCGC6 |= SIM_SCGC6_TPM2_MASK; //Enable clock gate to TPM2 module
 
@@ -53,16 +53,15 @@ void CadenceSensors_Init()
 	TPM2_C0SC = 0x0000 | 0b1001100; //Channel interrupts enabled, input capture mode, both edges
 	TPM2_C1SC = 0x0000 | 0b1001100; //Channel interrupts enabled, input capture mode, both edges
 
-	/* Pause timer when debug paused */
-	TPM2_CONF |= 0x00000000;
+	TPM2_CONF |= TPM_CONF_DBGMODE(3);
 
 	/* Clear event flags */
 	TPM2_C0SC |= 0x0080;
 	TPM2_C1SC |= 0x0080;
 
 	/* Configure and enable TPM2 interrupts */
-	set_irq_priority(INT_TPM2, 3); //Set to lowest priority
-	enable_irq(INT_TPM2);
+	set_irq_priority(INT_TPM2 - 16, 3); //Set to lowest priority
+	enable_irq(INT_TPM2 - 16);
 }
 
 void InitSensor(CadenceSensor_s* sensor)
@@ -92,9 +91,7 @@ void SensorEventHandler(CadenceSensor_s* sensor)
 }
 
 void FTM2_IRQHandler()
-{
-	uint8_t br = 0;
-	
+{	
 	for(uint8_t i = 0; i < NUM_SENSORS; ++i)
 	{
 		/* Select Hall sensor */
