@@ -28,7 +28,7 @@ CadenceSensor_s sensors[] = {
 		/* events = */    0
 	}
 };
-CadenceSensor_s *CadenceSensors = sensors; //"rename" for other files
+CadenceSensor_s* const CadenceSensors = sensors; //"rename" for other files
 
 /* Sensor count macro */
 #define NUM_SENSORS (sizeof(sensors) / sizeof(CadenceSensor_s))

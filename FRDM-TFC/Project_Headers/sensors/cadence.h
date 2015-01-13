@@ -20,7 +20,7 @@ typedef struct {
   uint8_t             event;     //flag to signal new period available
 } CadenceSensor_s;
 
-extern CadenceSensor_s *CadenceSensors;
+extern CadenceSensor_s* const CadenceSensors;
 
 void InitCadenceSensors();
 void FTM2_IRQHandler();
