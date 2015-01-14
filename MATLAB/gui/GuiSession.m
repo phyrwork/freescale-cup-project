@@ -48,6 +48,26 @@ classdef GuiSession
                 obj.views{length(obj.views) + 1} = varargin{i};
             end
         end
+        
+        % addLayout
+        function obj = addLayouts(obj, varargin)
+            % for all arguments
+            for i = 1:length(varargin)
+                % get a unique figure handle
+                fh = findall(0,'type','figure');
+                if (isempty(fh))
+                    fh = 0;
+                end
+                nf = max(fh(find(fh == fix(fh))));
+
+                % call layout function
+                layout = varargin{i};
+                obj = layout(obj, nf + 1);
+
+                % layout function contains appropriate calls to addViews to
+                % generate the desired window
+            end
+        end
     end
 end
 

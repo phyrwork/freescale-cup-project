@@ -20,9 +20,9 @@
 #include "devices/TFC_SHIELD.h"
 #include <math.h>
 
-static Edge             edgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
-static Line             lineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
-       Line             targetLine;
+static Edge             EdgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
+static Line             LineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
+       Line             TargetLine;
 static StopLine         stop;
        PositioningState positioningState;
        int8_t           trackPosition;
@@ -33,36 +33,50 @@ static StopLine         stop;
 #define finish edges[1].pos //...start/finish.
 
 void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
-	
+
 	/* See findPosition() for details about what this lot does */
-	static int16_t dI[128]; derivative(linescan, dI, 128);
-	static uint8_t numFeatures;
-	               numFeatures = findEdges(dI, dI_threshold);
-	               numFeatures = findLines(edgeBuffer, numFeatures);
+	int16_t dI[128]; derivative(linescan, dI, 128);
 
-	weightLines(&targetLine, lineBuffer, numFeatures);
-	uint8_t best = 0;
-    #define bestLine lineBuffer[best]
+	uint8_t numFeatures = findEdges(dI, dI_threshold);
+	        numFeatures = findLines(EdgeBuffer, numFeatures);
+
+	weightLines(&TargetLine, LineBuffer, numFeatures);
+
+
+	//////////////////////////////////////////////
+	// Identify target line based only on width //
+	//////////////////////////////////////////////
 	
-	/* Identify correct 'line' */
-	for (uint8_t k = 1; k < numFeatures; k++)
-		if (lineBuffer[k].P_width > bestLine.P_width &&
-			lineBuffer[k].edges[L].type != EDGE_TYPE_VIRTUAL &&
-			lineBuffer[k].edges[R].type != EDGE_TYPE_VIRTUAL )
-				best = k;
+	Line *best = LineBuffer;
+	for (uint8_t k = 1; k < numFeatures; ++k)
+	{
+		Line *candidate = &LineBuffer[k];
+		                              
+		if (candidate->edges[L].type != EDGE_TYPE_VIRTUAL &&
+		    candidate->edges[R].type != EDGE_TYPE_VIRTUAL &&
+		    candidate->P_width > best->P_width)
+		{
+			//Candidate is both fully visible and best match so far
+			best = candidate;
+		}
+	}
 
-	targetLine = bestLine;
+	TargetLine = *best; //best match becomes target line
 	return;
-
-    #undef bestLine	
 }
 
 void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold)
 {
 	/* If car has 'stopped', nothing to do; return */
+	// To-do: Move this check to main()
 	if (carState->lineDetectionState == STOPLINE_DETECTED) return;
 
-	/* Get derivative of linescan image */
+
+	//////////////////////////////////////////
+	// Analyse most recently captured image //
+	//////////////////////////////////////////
+
+	/* Get derivative of image */
 	static int16_t dI[128];
 	derivative(linescan, dI, 128);
 
@@ -70,114 +84,161 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	static uint8_t numFeatures = 0;
 	numFeatures = findEdges(dI, dI_threshold);
 	
-	/* Generate possible lines for analysis */
-	numFeatures = findLines(edgeBuffer, numFeatures);
+	/* Generate lines and analyse */
+	numFeatures = findLines(EdgeBuffer, numFeatures);
+	weightLines(&TargetLine, LineBuffer, numFeatures);
 
-	/* Find best match for target line */
-	weightLines(&targetLine, lineBuffer, numFeatures);
-	uint8_t best = 0;
-	#define bestLine lineBuffer[best]
-	
-	for (uint8_t k = 1; k < numFeatures; k++)
-		if (lineBuffer[k].P_line > bestLine.P_line) best = k;
 
-	/* Decide what to do with the result */
-	if (bestLine.P_line > MIN_CERTAINTY) {
+	///////////////////////////////////
+	// Look for absolute match first //
+	///////////////////////////////////
 
-		/* Determine if detected line spans the whole track:
-		 * if neither of the edges are EDGE_TYPE_VIRTUAL then yes */
-		if (bestLine.edges[L].type != EDGE_TYPE_VIRTUAL &&
-			bestLine.edges[R].type != EDGE_TYPE_VIRTUAL) {
-
-			positioningState = POSITIONING_STATE_FULL;
-			TFC_ClearLED(2);
-			TFC_ClearLED(3);
-			TFC_SetLED(1);
-
-			/* Calculate car's road position */
-			int8_t center = ((bestLine.start + bestLine.finish)/2) - 64;
-			carState->lineCenter = center;
-			//This is the offset of the center of the track from the car's
-			//perspective, -not- the offset of the car (i.e. the track position)
-			
-			trackPosition = carState->lineCenter; //Local copy of road position for telemetry.
+	Line *best = LineBuffer;
+	for (uint8_t k = 1; k < numFeatures; ++k) //select best absolute match
+	{
+		Line *candidate = &LineBuffer[k];
+		                              
+		if (candidate->P_absLine > best->P_absLine)
+		{
+			//Candidate is best absolute match so far
+			best = candidate;
 		}
-		else {
-			/* We have detected a track partial - we cannot calculate
-			 * the absolute center of the track without edges at both sides:
-			 * instead must estimate new position of car using change in edge
-			 * positions */
-			int8_t offset = 0;
+	}
 
-			/* Choose non-'EDGE_TYPE_VIRTUAL' edge to use to calculate offset */
-			if (bestLine.edges[L].type != EDGE_TYPE_VIRTUAL) {
-				/* Edge at RHS; RHS partial */
-				positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
-				TFC_SetLED(1);
-				TFC_ClearLED(2);
-				TFC_ClearLED(3);
-				
-				offset = bestLine.edges[L].pos - targetLine.edges[L].pos;
-			}
-			else if (bestLine.edges[R].type != EDGE_TYPE_VIRTUAL) {
-				/* Edge at LHS; LHS partial */
-				positioningState = POSITIONING_STATE_PARTIAL_LEFT;
-				TFC_SetLED(1);
-				TFC_ClearLED(2);
-				TFC_ClearLED(3);
-				
-				offset = bestLine.edges[R].pos - targetLine.edges[R].pos;
-			}
-			/* Apply offset to position */
-			carState->lineCenter += offset;
-			//This is the offset of the center of the track from the car's
-			//perspective, -not- the offset of the car (i.e. the track position)
-			
-			trackPosition = carState->lineCenter; //Local copy of road position for telemetry.
-		}
+	if (best->P_absLine > MIN_CERTAINTY) {
+		//Found an absolute match - i.e. a complete line.
 
-		/* Store best line as the new target line */
-		targetLine = bestLine;
+		/* Calculate car's track position */
+		int8_t center = ((best->start + best->finish)/2) - 64;
+		carState->lineCenter = center; //this is offset from car's perspective
+		trackPosition = carState->lineCenter; //local copy of track position for telemetry
+
+		TargetLine = *best; //matched line becomes new target line
 
 		/* Update car status; reset timeout counter */
 		carState->lineDetectionState = LINE_FOUND;
 		TFC_Ticker[3] = 0;
-	}
-	else {
-		
-		/* Look for stop line */
-		/*
-		if ( findStop(lineBuffer, numFeatures) ) {
-		 	carState->lineDetectionState = STOPLINE_DETECTED;
-		 	TFC_ClearLED(1);
-		 	TFC_SetLED(2);
-		 	TFC_SetLED(3);
-		 	return;
-		}
-		*/
-		
-		
-		/* And if not this then probably just noise or car
-		 * is traversing a cross-over section
-		 */
-		if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION) {
-			 carState->lineDetectionState = LINE_LOST;
-			 TFC_ClearLED(1);
-			 TFC_ClearLED(2);
-			 TFC_SetLED(3);
-		}
-	 	else {
-	 		carState->lineDetectionState = LINE_TEMPORARILY_LOST;
-	 		TFC_ClearLED(1);
-	 		TFC_SetLED(2);
-	 		TFC_ClearLED(3);
-	 	}
+
+		return;
 	}
 
+
+	////////////////////////////////////
+	// Next look for a relative match //
+	////////////////////////////////////
 	
-	return;
+	//Line *best = LineBuffer;
+	best = LineBuffer;
+	for (uint8_t k = 1; k < numFeatures; ++k) //select best relative match
+	{
+		Line *candidate = &LineBuffer[k];
+		
+		if (candidate->P_relLine > best->P_relLine)
+		{
+			//Candidate is best relative match so far
+			best = candidate;
+		}
+	}
 
-	#undef bestLine
+	if (best->P_relLine > MIN_CERTAINTY) {
+		//Found a relative match - i.e. a partial line similar to the target line
+
+		int8_t offset = 0; //New position estimated by change in position of visible edge
+
+		if (best->edges[L].type != EDGE_TYPE_VIRTUAL) {
+			//Left edge is not virtual i.e. visible
+			positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
+			offset = best->edges[L].pos - TargetLine.edges[L].pos;
+		}
+		else if (best->edges[R].type != EDGE_TYPE_VIRTUAL) {
+			//Right edge is not virtual i.e. visible
+			positioningState = POSITIONING_STATE_PARTIAL_LEFT;
+			offset = best->edges[R].pos - TargetLine.edges[R].pos;
+		}
+
+		/* Apply offset to position */
+		carState->lineCenter += offset;
+		trackPosition = carState->lineCenter; //local copy of road position for telemetry.
+
+		TargetLine = *best; //matched line becomes new target line
+
+		/* Update car status; reset timeout counter */
+		carState->lineDetectionState = LINE_FOUND;
+		TFC_Ticker[3] = 0;
+
+		return;
+	}
+
+	/////////////////////////////////
+	// Next look for the stop line //
+	/////////////////////////////////
+
+	/*
+	if ( findStop(LineBuffer, numFeatures) )
+	{
+	 	carState->lineDetectionState = STOPLINE_DETECTED;
+	 	TFC_ClearLED(1);
+	 	TFC_SetLED(2);
+	 	TFC_SetLED(3);
+	 	return;
+	}
+	*/
+	
+	/////////////////////////////////////////////////////////////
+	// Before giving up try and re-find the line if it is lost //
+	/////////////////////////////////////////////////////////////
+	
+	//Line *best = LineBuffer;
+	best = LineBuffer;
+	for (uint8_t k = 1; k < numFeatures; ++k) //select best new match
+	{
+		Line *candidate = &LineBuffer[k];
+									  
+		if (candidate->P_newLine > best->P_newLine)
+		{
+			//Candidate is best absolute match so far
+			best = candidate;
+		}
+	}
+
+	if (best->P_newLine > MIN_CERTAINTY) {
+		//Found an absolute match - i.e. a complete line.
+
+		/* Calculate car's track position */
+		int8_t center = ((best->start + best->finish)/2) - 64;
+		carState->lineCenter = center; //this is offset from car's perspective
+		trackPosition = carState->lineCenter; //local copy of track position for telemetry
+
+		TargetLine = *best; //matched line becomes new target line
+
+		/* Update car status; reset timeout counter */
+		carState->lineDetectionState = LINE_FOUND;
+		TFC_Ticker[3] = 0;
+
+		return;
+	}
+	
+	
+
+	/////////////////////////////////////////////////////	
+	// And if not this then probably just noise or car //
+	// is traversing a cross-over section              //
+	/////////////////////////////////////////////////////
+
+	if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION) {
+		 carState->lineDetectionState = LINE_LOST;
+		 TFC_ClearLED(1);
+		 TFC_ClearLED(2);
+		 TFC_SetLED(3);
+	}
+ 	else {
+ 		carState->lineDetectionState = LINE_TEMPORARILY_LOST;
+ 		TFC_ClearLED(1);
+ 		TFC_SetLED(2);
+ 		TFC_ClearLED(3);
+ 	}
+
+	return;
 }
 
 uint8_t findEdges(int16_t* derivative, uint16_t threshold)
@@ -189,97 +250,132 @@ uint8_t findEdges(int16_t* derivative, uint16_t threshold)
 		 k < 128 && numEdges < MAX_NUMBER_OF_TRANSITIONS;
 		 k++) {
 
-		/* If large, +ve derivative: EDGE_TYPE_RISING edge */
+		Edge *edge = &EdgeBuffer[numEdges]; //pointer to next slot in edge buffer
+
+		/* If large, +ve derivative then rising edge */
 		if (derivative[k] >= threshold)
 		{
-			edgeBuffer[numEdges].pos = k;
-			edgeBuffer[numEdges].type = EDGE_TYPE_RISING;
+			edge->pos = k;
+			edge->type = EDGE_TYPE_RISING;
 			numEdges++;
 		}
-		/* If large, -ve derivative: white->black edge */
+		/* If large, -ve derivative then falling edge */
 		else if (derivative[k] <= -threshold)
 		{
-			edgeBuffer[numEdges].pos = k;
-			edgeBuffer[numEdges].type = EDGE_TYPE_FALLING;
+			edge->pos = k;
+			edge->type = EDGE_TYPE_FALLING;
 			numEdges++;
 		}
 	}
 	return numEdges;
 }
 
-uint8_t findLines(Edge* edges, uint8_t numEdges)
+uint8_t findLines(Edge *edges, uint8_t numEdges)
 {
-	uint8_t l = 0; //Number of pairs generated
+	uint8_t numLines = 1; //Number of pairs generated
 
 	/* Start constructing first line */
-	lineBuffer[l].edges[L].pos = 0;
-	lineBuffer[l].edges[L].type = EDGE_TYPE_VIRTUAL;
+	LineBuffer->edges[L].pos = 0;
+	LineBuffer->edges[L].type = EDGE_TYPE_VIRTUAL;
 	
 	/* A line potentially exists between every pair of edges */
-	for (uint8_t e = 0; e < numEdges; e++) {
+	Line *line = LineBuffer;
+	for (uint8_t e = 0; e < numEdges; ++e) {
+		
+		Edge *edge = &edges[e];
 
 		/* Make sure we only capture the next edge of a different type */
-		
-		if (edges[e].type == lineBuffer[l].edges[L].type) continue;
+		if (edge->type == line->edges[L].type) continue;
 
 		/* Finish constructing previous line */
-		lineBuffer[l].edges[R] = edges[e];
-		lineBuffer[l].width = //Calculate width of line
-			lineBuffer[l].finish - lineBuffer[l].start;
+		line->edges[R] = *edge;
+		line->width = line->finish - line->start; //Calculate width of line
 
 		/* Start constructing next line */
-		lineBuffer[++l].edges[L] = edges[e];
+		(++line)->edges[L] = *edge;
+		++numLines;
 	}
 
 	/* Finish constructing final line */
-	lineBuffer[l].edges[R].pos = 127;
-	lineBuffer[l].edges[R].type = EDGE_TYPE_VIRTUAL;
-	lineBuffer[l].width = //Calculate width of line
-				lineBuffer[l].finish - lineBuffer[l].start;
+	line->edges[R].pos = 127;
+	line->edges[R].type = EDGE_TYPE_VIRTUAL;
+	line->width = line->finish - line->start; //Calculate width of line
 
-	return ++l;
+	return numLines;
 }
 
-void weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges) {
+void weightEdges(Edge* targets, Edge* edges, uint8_t size) {
 	
 	/* Test each edge against both target edges */
 	for (uint8_t t = 0; t < 2; t++)
-		for (uint8_t e = 0; e < numEdges; e++) {
-			/* Calculate probability of edge being edge based on change in
-			 * position only
-			 */
-			int16_t dPos = edges[e].pos - targetEdges[t].pos;
-			edges[e].P_dPos[t] = getProbability(dPos, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+		for (uint8_t e = 0; e < size; ++e)
+		{
+			Edge *edge = &edges[e];
+			Edge *target = &targets[t];
+
+			//Calculate probability of edge being edge based on change in position
+			int16_t dPos = edge->pos - target->pos;
+			edge->P_dPos[t] = getProbability(dPos, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
 	
-			/* Calculate combined probability */
-			edges[e].P_edge[t]  = 1;
-			edges[e].P_edge[t] *= edges[e].P_dPos[t];
+			//Calculate probability
+			edge->P_edge[t]  = 1;
+			edge->P_edge[t] *= edge->P_dPos[t];
 		}
 	
 	return;
 }
 
-int8_t weightLines(Line* targetLine, Line* lines, uint8_t numLines)
+int8_t weightLines(Line* target, Line* lines, uint8_t size)
 {
-	for (uint8_t k = 0; k < numLines; k++) {
+	for (uint8_t k = 0; k < size; ++k) {
 
-		/* Calculate probability line is line based on width */
-		lines[k].P_width = getProbability( lines[k].width,
-								             LINE_WIDTH_SD, LINE_WIDTH_MEAN );
+		Line *line = &lines[k]; //pointer to candidate line
 
-		/* Calculate probabilty line is line based on change in width */
-		uint8_t dWidth = lines[k].width - targetLine->width;
-		lines[k].P_dWidth = getProbability( dWidth,
-								             LINE_DWIDTH_SD, LINE_DWIDTH_MEAN );
+		////////////////////////////////////////
+		// Calculate individual probabilities //
+		////////////////////////////////////////
 
-		/* Factor likelihood of correct edges */
-		weightEdges(targetLine->edges, lines[k].edges, 2);
+		line->P_width = getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN); //P based on abs width
 
-		/* Calculate combined probability */
-		lines[k].P_line  = 1;
-		//lines[k].P_line *= lines[k].P_dWidth
-		lines[k].P_line *= lines[k].edges[L].P_edge[L];
-		lines[k].P_line *= lines[k].edges[R].P_edge[R];
+		uint8_t dWidth = line->width - target->width;
+		line->P_dWidth = getProbability(dWidth, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN); //P based on change in width
+
+		weightEdges(target->edges, line->edges, 2); //P of constituent edges
+
+
+		//////////////////////////////////////
+		// Calculate combined probabilities //
+		//////////////////////////////////////
+		
+		//New line
+		line->P_newLine  = 1;
+		line->P_newLine *= line->P_width;
+		if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
+			line->edges[R].type == EDGE_TYPE_VIRTUAL)
+		{
+			//One or both edges isn't visible, so despite width cannot be absolute match
+			line->P_newLine = 0;
+		}
+
+		//Shared component
+		float P_shared  = 1;
+		      P_shared *= line->edges[L].P_edge[L];
+		      P_shared *= line->edges[R].P_edge[R];
+
+		//Relative line
+		line->P_relLine  = P_shared;
+		line->P_relLine *= line->P_dWidth;
+
+		//Absolute line
+		line->P_absLine  = P_shared;
+		line->P_absLine *= line->P_width;
+		if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
+			line->edges[R].type == EDGE_TYPE_VIRTUAL)
+		{
+			//One or both edges isn't visible, so despite width cannot be absolute match
+			line->P_absLine = 0;
+		}
+
 	}
 	return 0;
 }
