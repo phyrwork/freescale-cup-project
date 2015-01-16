@@ -28,6 +28,9 @@
 #define MOTOR_CURRENT_1_SAMPLE_FREQUENCY 2400
 #define BATTERY_SAMPLE_FREQUENCY 1
 
+/* Cadence sensor config */
+#define NUM_CADENCE_SENSORS 2
+
 /* Powertrain config */
 #define NUM_MOTORS 2
 #define REAR_LEFT 0

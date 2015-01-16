@@ -10,6 +10,7 @@
 #define HALL_SENSORS_H_
 
 #include "devices/MKL25Z4.h"
+#include "config.h"
 
 typedef struct {
   const TPM_MemMapPtr TPM;       //pointer to TPM module struct
@@ -21,9 +22,7 @@ typedef struct {
   uint8_t             flag;     //flag to signal new period available
 } CadenceSensor_s;
 
-extern CadenceSensor_s* const CadenceSensors;
-//debug
-extern CadenceSensor_s sensors[];
+extern CadenceSensor_s CadenceSensors[NUM_CADENCE_SENSORS];
 
 void InitCadenceSensors();
 void FTM2_IRQHandler();

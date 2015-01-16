@@ -1,5 +1,5 @@
 /*
- * sensors.c
+ * cadence.c
  *
  *  Created: Nov 6, 2014
  *  Updated: Jan 7, 2015
@@ -10,7 +10,11 @@
 #include "devices/arm_cm0.h"
 
 /* Sensor configurations and data */
-CadenceSensor_s sensors[] = {
+/* Sensor count macro */
+//#define NUM_SENSORS (sizeof(CadenceSensors) / sizeof(CadenceSensor_s))
+#define NUM_SENSORS NUM_CADENCE_SENSORS
+
+CadenceSensor_s CadenceSensors[NUM_SENSORS] = {
 	/* [0] = */  {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   0,
@@ -30,10 +34,6 @@ CadenceSensor_s sensors[] = {
 		/* flag = */      0
 	}
 };
-CadenceSensor_s* const CadenceSensors = sensors; //"rename" for other files
-
-/* Sensor count macro */
-#define NUM_SENSORS (sizeof(sensors) / sizeof(CadenceSensor_s))
 
 void CadenceSensors_Init()
 {
@@ -94,7 +94,7 @@ void FTM2_IRQHandler()
 	for(uint8_t i = 0; i < NUM_SENSORS; ++i)
 	{
 		/* Select Hall sensor */
-		CadenceSensor_s *sensor = &sensors[i];
+		CadenceSensor_s *sensor = &CadenceSensors[i];
 
 		/* If TPM module doesn't belong to this interrupt routine */
 		if (sensor->TPM != TPM2_BASE_PTR) continue;
