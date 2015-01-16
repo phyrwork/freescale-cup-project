@@ -1,4 +1,5 @@
 #include "main.h"
+#include "sensors/cadence.h"
 
 #define TARGET_TOTAL_INTENSITY 300000//300000
 #define CHANNEL_0 0
@@ -55,7 +56,7 @@ int main(void)
 			#endif
 
 			/* Update car state before main control routine */
-			evaluateUARTorSpeed(&carState);
+			//evaluateUARTorSpeed(&carState);
 			evaluateMotorState(&carState);
 
 			/* Perform main control routine */

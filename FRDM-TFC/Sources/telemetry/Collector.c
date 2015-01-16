@@ -30,6 +30,7 @@
 #include "sensors/camera/LineScanCamera.h"
 #include "sensors/camera/LineDetection.h"
 #include "sensors/motor/current.h"
+#include "sensors/cadence.h"
 #include "control/motor/pwm.h"
 #include "control/motor/torque.h"
 #include "io/ADC.h"
