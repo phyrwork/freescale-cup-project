@@ -47,8 +47,13 @@ classdef LinescanView < LineChartView
         function obj = update(obj)
             % set up data
             [x,y] = obj.record.peek();
+            y = transpose(y);
+            
             if (~isempty(y))
-                x = 1:128;
+                x = 1:1:128;
+            else
+                x = [];
+                y = [];
             end
             
             % draw chart
