@@ -65,7 +65,9 @@ typedef struct {
 	uint8_t width;
 	float   P_width;
 	float   P_dWidth;
-	float   P_line;
+	float   P_newLine;
+	float   P_absLine;
+	float   P_relLine;
 } Line;
 
 typedef uint8_t PositioningState;
@@ -97,7 +99,7 @@ void    derivative(volatile uint16_t* input, int16_t* output, uint8_t length);
 
 /* Data sharing for telemetry */
 extern PositioningState positioningState; // Line tracking status
-extern Line             targetLine;	// Current model line
+extern Line             TargetLine;	// Current model line
 extern int8_t           trackPosition;     // Current detected road position
 
 #endif /* LINEDETECTION_H_ */

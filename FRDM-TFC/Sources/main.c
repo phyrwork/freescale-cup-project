@@ -1,4 +1,5 @@
 #include "main.h"
+#include "sensors/cadence.h"
 
 #define TARGET_TOTAL_INTENSITY 300000//300000
 #define CHANNEL_0 0
@@ -26,7 +27,8 @@ void TFC_Init(carState_s* carState)
 	DMA0_Init();
 	TFC_HBRIDGE_DISABLE;
 	TFC_SetMotorPWM(0, 0);
-	TFC_InitSpeedSensor();
+	//TFC_InitSpeedSensor();
+	CadenceSensors_Init();
 	preloadProbabilityTables(); //Prevents probability tables for stop line evaluation from being created too late
 	Collector_Init(); // Initialise telemetry
 }
@@ -39,7 +41,7 @@ int main(void)
 	TFC_Init(&carState);
 	
 	while (carState.lineScanState != LINESCAN_IMAGE_READY){};
-	InitTracking(LineScanImage0, 350);
+	//InitTracking(LineScanImage0, 350);
 	TFC_SetLED(0);
 
 	while (1)
@@ -54,7 +56,7 @@ int main(void)
 			#endif
 
 			/* Update car state before main control routine */
-			evaluateUARTorSpeed(&carState);
+			//evaluateUARTorSpeed(&carState);
 			evaluateMotorState(&carState);
 
 			/* Perform main control routine */
@@ -297,9 +299,11 @@ void lineFollowingMode(carState_s* carState)
 					getDesiredMotorPWM(targetSpeed, speedMeasurement[0], isANewmeasurementAvailable(CHANNEL_0), CHANNEL_0),
 					getDesiredMotorPWM(targetSpeed, speedMeasurement[1], isANewmeasurementAvailable(CHANNEL_1), CHANNEL_1));
 			*/
-			//TFC_SetMotorPWM(0.2,0.2);
-			SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);
-			SetMotorTorque(&MotorTorque[REAR_RIGHT], 0.0012);
+			TFC_SetMotorPWM(0.3,0.3);
+			UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
+			UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
+			//SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);
+			//SetMotorTorque(&MotorTorque[REAR_RIGHT], 0.0012);
 		}
 		else if (carState->UARTSpeedState == DUAL_SPEED_NO_UART)
 		{

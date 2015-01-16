@@ -14,21 +14,23 @@ CadenceSensor_s sensors[] = {
 	/* [0] = */  {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   0,
+		/* cnv = */       0,
 		/* overflows = */ 0,
 		/* period = */    0,
-		/* events = */    0,
-		/* epr = */       2
+		/* epr = */       6,
+		/* flag = */      0
 	},
 	/* [1] = */ {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   1,
+		/* cnv = */       0,
 		/* overflows = */ 0,
 		/* period = */    0,
-		/* events = */    0,
-		/* epr = */       2
+		/* epr = */       6,
+		/* flag = */      0
 	}
 };
-CadenceSensor_s *CadenceSensors = sensors; //"rename" for other files
+CadenceSensor_s* const CadenceSensors = sensors; //"rename" for other files
 
 /* Sensor count macro */
 #define NUM_SENSORS (sizeof(sensors) / sizeof(CadenceSensor_s))
@@ -36,13 +38,15 @@ CadenceSensor_s *CadenceSensors = sensors; //"rename" for other files
 void CadenceSensors_Init()
 {
 	disable_irq(INT_TPM2 - 16);
+	
+	SIM_SCGC5 |= SIM_SCGC5_PORTB_MASK;
 
-	GPIOA_PDDR &= 0xFFFFFFF9; //Configure PTA1 and PTA2 as inputs
+	GPIOB_PDDR &= 0xFFFFFFF3; //Configure PTB2 and PTB3 as inputs
 
-	PORTA_PCR1 &= 0xFFFFF8FF;
-	PORTA_PCR1 |= 0x00000300;
-	PORTA_PCR2 &= 0xFFFFF8FF;
-	PORTA_PCR2 |= 0x00000300;
+	PORTB_PCR2 &= 0xFFFFF8FF;
+	PORTB_PCR2 |= 0x00000300;
+	PORTB_PCR3 &= 0xFFFFF8FF;
+	PORTB_PCR3 |= 0x00000300; //Mux
 
 	SIM_SCGC6 |= SIM_SCGC6_TPM2_MASK; //Enable clock gate to TPM2 module
 
@@ -51,21 +55,15 @@ void CadenceSensors_Init()
 	TPM2_C0SC = 0x0000 | 0b1001100; //Channel interrupts enabled, input capture mode, both edges
 	TPM2_C1SC = 0x0000 | 0b1001100; //Channel interrupts enabled, input capture mode, both edges
 
-	/* Pause timer when debug paused */
-	TPM2_CONF |= 0x00000000;
+	TPM2_CONF |= TPM_CONF_DBGMODE(3);
 
 	/* Clear event flags */
 	TPM2_C0SC |= 0x0080;
 	TPM2_C1SC |= 0x0080;
 
 	/* Configure and enable TPM2 interrupts */
-	set_irq_priority(INT_TPM2, 3); //Set to lowest priority
-	enable_irq(INT_TPM2);
-}
-
-void InitSensor(CadenceSensor_s* sensor)
-{
-	/* Init individual sensors in here! */
+	set_irq_priority(INT_TPM2 - 16, 3); //Set to lowest priority
+	enable_irq(INT_TPM2 - 16);
 }
 
 void SensorEventHandler(CadenceSensor_s* sensor)
@@ -73,23 +71,26 @@ void SensorEventHandler(CadenceSensor_s* sensor)
 	/* If sensor X event flag is set */
 	if (sensor->TPM->CONTROLS[sensor->channel].CnSC & TPM_CnSC_CHF_MASK)
 	{
+		/* Calculate period since last event */
+		sensor->period = (uint16_t)(sensor->TPM->CONTROLS[sensor->channel].CnV + ((uint16_t)0xFFFF - sensor->cnv));
+		sensor->cnv = sensor->TPM->CONTROLS[sensor->channel].CnV;
+
 		/* Clear event flag */
 		sensor->TPM->CONTROLS[sensor->channel].CnSC |= TPM_CnSC_CHF_MASK;
-
-		/* Calculate period since last event */
-		sensor->period = (uint32_t)sensor->TPM->CONTROLS[sensor->channel].CnV + ((uint32_t)0xFFFF - sensor->period);
+		sensor->flag = 1; //signal to other modules new data
 
 		/* Account for LPTPM overflows */
 		if (sensor->overflows) {
 			sensor->period += ((uint32_t)0xFFFF * (sensor->overflows - 1)); //Add period equal to complete LPTPM period * # overflows.
-			sensor->period *= sensor->epr; //Adjust period to represent complete revolution
 			sensor->overflows = 0; //Reset overflow counter.
 		}
+
+		sensor->period *= sensor->epr; //adjust to represent complete revolution
 	}
 }
 
 void FTM2_IRQHandler()
-{
+{	
 	for(uint8_t i = 0; i < NUM_SENSORS; ++i)
 	{
 		/* Select Hall sensor */

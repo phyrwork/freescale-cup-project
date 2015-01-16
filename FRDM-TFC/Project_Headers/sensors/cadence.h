@@ -12,15 +12,18 @@
 #include "devices/MKL25Z4.h"
 
 typedef struct {
-  TPM_MemMapPtr TPM;       //pointer to TPM module struct
-  uint8_t       channel;   //channel occupied by sensor
-  uint32_t      overflows; //number of times parent timer has overflowed during current period
-  uint32_t      period;     //most recent event period in ticks
-  uint32_t      events;    //events counter
-  uint8_t		epr;       //events per revolution
+  const TPM_MemMapPtr TPM;       //pointer to TPM module struct
+  const uint8_t       channel;   //channel occupied by sensor
+  uint16_t            cnv;       //timer value at last capture used for calculating next period
+  uint32_t            overflows; //number of times parent timer has overflowed during current period
+  uint32_t            period;    //most recent event period in ticks
+  const uint8_t       epr;       //events per revolution
+  uint8_t             flag;     //flag to signal new period available
 } CadenceSensor_s;
 
-extern CadenceSensor_s *CadenceSensors;
+extern CadenceSensor_s* const CadenceSensors;
+//debug
+extern CadenceSensor_s sensors[];
 
 void InitCadenceSensors();
 void FTM2_IRQHandler();
