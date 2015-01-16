@@ -5,7 +5,8 @@ function [ edges ] = findEdges( image )
     edges = [];
     
     % start first edge
-    edge.start = 1;
+    edge.start.pos = 1;
+    edge.start.dy  = 0;
     edge.sum   = 0;
     
     % scan image
@@ -22,9 +23,10 @@ function [ edges ] = findEdges( image )
         if (this_dy > 0 && last_dy < 0) || (this_dy < 0 && last_dy > 0)
             
             % save edge and start a new one
-            edge.finish = i - 1;
+            edge.finish.pos = i - 1;
+            edge.finish.dy  = this_dy;
             edges = [edges, edge];
-            edge.start = i;
+            edge.start.pos = i;
             edge.sum = 0;
         end
         
@@ -34,7 +36,8 @@ function [ edges ] = findEdges( image )
     end
     
     % finish final edge
-    edge.finish = i;
+    edge.finish.pos = i;
+    edge.finish.dy  = this_dy;
     edges = [edges, edge];
     
     % find qualifying edges
@@ -48,7 +51,17 @@ function [ edges ] = findEdges( image )
         end
     end
     
-    % return qualifying edges
+    % complete and return qualifying edges
     edges = edges(ind);
+    
+    for i = 1:length(edges)
+    
+        % choose steepest side of edge
+        if edges(i).start.dy > edges(i).finish.dy
+            edges(i).pos = edges(i).start.pos;
+        else
+            edges(i).pos = edges(i).finish.pos;
+        end
+    end
 end
 
