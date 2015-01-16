@@ -20,7 +20,7 @@ classdef LinescanAttribute < TftpAttribute
             value = decode@TftpAttribute(obj, value);
             
             % normalise
-            value = value/65535;
+            value = value;
             value = transpose(value); % rotate to fit in TftpRecord properly
         end
         
@@ -28,7 +28,7 @@ classdef LinescanAttribute < TftpAttribute
         function value = encode(obj, value)
             % denormalise
             value = transpose(value); % derotate
-            value = value*65535;
+            value = value;
             
             % cast to byte stream
             value = encode@TftpAttribute(obj, value);

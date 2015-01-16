@@ -1,5 +1,5 @@
-classdef LinescanView < LineChartView
-    %LinescanView
+classdef LinescanDerivativeView < LineChartView
+    %LinescanDerivativeView
     
     properties
         % attribute = char.empty; % attribute id
@@ -15,8 +15,8 @@ classdef LinescanView < LineChartView
     end
     
     methods
-        % LinescanView constructor
-        function obj = LinescanView(session, attribute, varargin)
+        % LinescanDerivativeView constructor
+        function obj = LinescanDerivativeView(session, attribute, varargin)
             % parse input
             p = inputParser;
             addRequired (p, 'session');
@@ -34,9 +34,9 @@ classdef LinescanView < LineChartView
                 p.Results.attribute,...
                 'figure', p.Results.figure,...
                 'position', p.Results.position,... 
-                'title', ['Linescan Camera Image: ', strrep(attribute, '_', '\_')],...
+                'title', ['Linescan Camera Image (Derivative): ', strrep(attribute, '_', '\_')],...
                 'xlabel', 'Position (px)',...
-                'ylabel', 'Intensity (Raw 16-bit)'...
+                'ylabel', 'Intensity (%/100)'...
             );
         end
     end
@@ -46,18 +46,19 @@ classdef LinescanView < LineChartView
         % update chart - overload update@LineChartView
         function obj = update(obj)
             % set up data
-            [x,y] = obj.record.peek();
+            [~,y] = obj.record.peek();
             y = transpose(y);
+            dy = y(2:end) - y(1:end-1);
             
             if (~isempty(y))
-                x = 1:1:128;
+                x = 1:1:127;
             else
                 x = [];
-                y = [];
+                dy = [];
             end
             
             % draw chart
-            obj = obj.draw(x,y);
+            obj = obj.draw(x,dy);
         end
     end
     

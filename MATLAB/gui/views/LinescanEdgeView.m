@@ -1,5 +1,5 @@
-classdef LinescanView < LineChartView
-    %LinescanView
+classdef LinescanEdgeView < ScatterChartView
+    %LinescanEdgeView
     
     properties
         % attribute = char.empty; % attribute id
@@ -15,8 +15,8 @@ classdef LinescanView < LineChartView
     end
     
     methods
-        % LinescanView constructor
-        function obj = LinescanView(session, attribute, varargin)
+        % LinescanEdgeView constructor
+        function obj = LinescanEdgeView(session, attribute, varargin)
             % parse input
             p = inputParser;
             addRequired (p, 'session');
@@ -28,36 +28,39 @@ classdef LinescanView < LineChartView
             % addParameter(p, 'ylabel', char.empty, @ischar);
             parse(p, session, attribute, varargin{:});
             
-            % initialise LineChartView
-            obj = obj@LineChartView(...
+            % initialise ScatterChartView
+            obj = obj@ScatterChartView(...
                 p.Results.session,...
                 p.Results.attribute,...
                 'figure', p.Results.figure,...
                 'position', p.Results.position,... 
-                'title', ['Linescan Camera Image: ', strrep(attribute, '_', '\_')],...
+                'title', ['Detected Edges: ', strrep(attribute, '_', '\_')],...
                 'xlabel', 'Position (px)',...
-                'ylabel', 'Intensity (Raw 16-bit)'...
+                'ylabel', 'Intensity (%/100)'...
             );
         end
     end
     
     % View update methods
     methods
-        % update chart - overload update@LineChartView
+        % update chart - overload update@ScatterChartView
         function obj = update(obj)
             % set up data
-            [x,y] = obj.record.peek();
+            [~,y] = obj.record.peek();
             y = transpose(y);
+            dy = y(2:end) - y(1:end-1);
+            dya = abs(dy);
+            edges = dya > 300;
             
             if (~isempty(y))
-                x = 1:1:128;
+                x = 1:1:127;
             else
                 x = [];
-                y = [];
+                edges = [];
             end
             
             % draw chart
-            obj = obj.draw(x,y);
+            obj = obj.draw(x,edges);
         end
     end
     
