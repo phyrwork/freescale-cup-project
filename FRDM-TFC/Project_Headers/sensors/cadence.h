@@ -24,7 +24,7 @@ typedef struct {
 
 extern CadenceSensor_s CadenceSensors[NUM_CADENCE_SENSORS];
 
-void InitCadenceSensors();
+void CadenceSensors_Init();
 void FTM2_IRQHandler();
 
 #endif /* HALL_SENSORS_H_ */

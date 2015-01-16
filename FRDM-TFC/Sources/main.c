@@ -1,5 +1,7 @@
 #include "main.h"
 #include "sensors/cadence.h"
+#include "sensors/wheel/speed.h"
+
 
 #define TARGET_TOTAL_INTENSITY 300000//300000
 #define CHANNEL_0 0
@@ -29,6 +31,7 @@ void TFC_Init(carState_s* carState)
 	TFC_SetMotorPWM(0, 0);
 	//TFC_InitSpeedSensor();
 	CadenceSensors_Init();
+	InitWheelSpeedSensors();
 	preloadProbabilityTables(); //Prevents probability tables for stop line evaluation from being created too late
 	Collector_Init(); // Initialise telemetry
 }
@@ -292,27 +295,14 @@ void lineFollowingMode(carState_s* carState)
 		{ getActiveDifferentialModifier(carState, CHANNEL_0), getActiveDifferentialModifier(carState, CHANNEL_1) };
 		float speedMeasurement[] = { getSpeed(CHANNEL_0), getSpeed(CHANNEL_1) };
 
-		if (carState->UARTSpeedState == SINGLE_SPEED_SINGLE_UART)
-		{
-			/*
-			TFC_SetMotorPWM(
-					getDesiredMotorPWM(targetSpeed, speedMeasurement[0], isANewmeasurementAvailable(CHANNEL_0), CHANNEL_0),
-					getDesiredMotorPWM(targetSpeed, speedMeasurement[1], isANewmeasurementAvailable(CHANNEL_1), CHANNEL_1));
-			*/
-			TFC_SetMotorPWM(0.3,0.3);
-			UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
-			UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
-			//SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);
-			//SetMotorTorque(&MotorTorque[REAR_RIGHT], 0.0012);
-		}
-		else if (carState->UARTSpeedState == DUAL_SPEED_NO_UART)
-		{
-			TFC_SetMotorPWM(
-					getDesiredMotorPWM(targetSpeed * activeDifferentialModifier[0], speedMeasurement[0], isANewmeasurementAvailable(CHANNEL_0), CHANNEL_0),
-					getDesiredMotorPWM(targetSpeed * activeDifferentialModifier[1], speedMeasurement[1], isANewmeasurementAvailable(CHANNEL_1), CHANNEL_1));
-		}
-//		TFC_ClearLED(2);
-
+		//TFC_SetMotorPWM(0.3,0.3);
+		UpdateWheelSpeed(&WheelSpeeds[0]);
+		UpdateWheelSpeed(&WheelSpeeds[1]);
+		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
+		UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
+		//SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);
+		//SetMotorTorque(&MotorTorque[REAR_RIGHT], 0.0012);
+			
 		if (carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 		{
 //			TFC_SetLED(1);
