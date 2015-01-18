@@ -43,21 +43,51 @@ classdef LinescanView < LineChartView
     
     % View update methods
     methods
+        % draw chart - overload draw@LineChartView
+        function obj = draw(obj, lx, ly, sx, sy)
+            % draw
+            if (isempty(obj.hplot)) % initialise plot
+                obj.hplot = plot(obj.haxis, lx, ly); % plot linescan image
+                hold on
+                obj.hplot = [obj.hplot, scatter(obj.haxis, sx, sy)]; % plot model detected edges
+                hold off
+                obj = label(obj);
+                if (~isempty(obj.hplot)) % only call legend if plot exists to surpress warnings
+                    obj.clegend('on');
+                end
+            else % replace plot data
+                set(obj.hplot(1), 'XData', lx, 'YData', ly); % replace linescan image
+                set(obj.hplot(2), 'XData', sx, 'YData', sy); % replace model detected edges
+            end
+        end
+        
         % update chart - overload update@LineChartView
         function obj = update(obj)
-            % set up data
-            [x,y] = obj.record.peek();
-            y = transpose(y);
             
-            if (~isempty(y))
-                x = 1:1:128;
+            % set up data
+            [~,ly] = obj.record.peek();
+            ly = transpose(ly);
+            
+            if (~isempty(ly))
+                % prep linescan x-axis
+                lx = 1:1:128;
+                
+                % prep model detected edges
+                edges = findEdges(ly);
+                sx = [];
+                for i = 1:length(edges)
+                    sx = [sx, edges(i).pos];
+                end
+                sy = ly(sx);
             else
-                x = [];
-                y = [];
+                lx = [];
+                ly = [];
+                sx = [];
+                sy = [];
             end
             
             % draw chart
-            obj = obj.draw(x,y);
+            obj = obj.draw(lx,ly,sx,sy);
         end
     end
     

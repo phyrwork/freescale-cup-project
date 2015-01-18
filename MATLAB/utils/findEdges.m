@@ -6,7 +6,7 @@ function [ edges ] = findEdges( y )
     
     % SETUP
     dy = y(2:end) - y(1:end-1); % find image derivative
-    dy = [0;dy]; % sync y, dy
+    dy = [0,dy]; % sync y, dy
     
     % initialise edges array
     edges = [];
