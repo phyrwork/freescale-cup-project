@@ -89,6 +89,8 @@ classdef LinescanView < LineChartView
             
             % draw chart
             obj = obj.draw(lx,ly,sx,sy);
+            ylim(obj.haxis, [0, 4095]);
+            xlim(obj.haxis, [1, length(ly)]); % adjust y-axis limits
         end
     end
     
