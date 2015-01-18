@@ -19,6 +19,7 @@
 #include "support/ARM_SysTick.h"
 #include "devices/TFC_SHIELD.h"
 #include <math.h>
+#include <stdlib.h>
 
 static Edge             EdgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
 static Line             LineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
@@ -241,33 +242,76 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	return;
 }
 
-uint8_t findEdges(int16_t* derivative, uint16_t threshold)
+uint8_t findEdges(int16_t* dy, uint16_t threshold)
 {
-	uint8_t numEdges = 0; //Number of edges found.
+	uint8_t detected = 0; //number of edges found.
+	uint8_t start = 0;    //start of current transition region
+	int16_t height = 0;   //height of current transition
+	Edge   *edge = &EdgeBuffer[detected]; //pointer to next slot in edge buffer
 
-	/* Find and log positions of all transitions and their directions */
-	for (uint8_t k = 0;
-		 k < 128 && numEdges < MAX_NUMBER_OF_TRANSITIONS;
-		 k++) {
-
-		Edge *edge = &EdgeBuffer[numEdges]; //pointer to next slot in edge buffer
-
-		/* If large, +ve derivative then rising edge */
-		if (derivative[k] >= threshold)
+	for (uint8_t k = 1;
+		 k < 128 && detected < MAX_NUMBER_OF_TRANSITIONS;
+		 k++)
+	{
+		//look for inflection points
+		if ( (dy[k] > 0 && dy[k-1] < 0) ||
+			 (dy[k] < 0 && dy[k-1] > 0) )
 		{
-			edge->pos = k;
-			edge->type = EDGE_TYPE_RISING;
-			numEdges++;
+			//filter edges with sufficient amplitude
+			if ( abs(height) > HEIGHT_THRESHOLD )
+			{
+				uint8_t finish = k - 1; //complete region
+				
+				//pinpoint edge location
+				edge->pos = start;
+				for (uint8_t c = start; c < finish; ++c)
+				{
+					//search for steepest point in region
+					if ( abs(dy[c]) > abs(dy[edge->pos]) )
+					{
+						edge->pos = c;
+					}
+				}
+
+				edge->type = edge->type > 0 ? //determine edge type
+					EDGE_TYPE_RISING : EDGE_TYPE_FALLING;
+
+				//'store' edge
+				edge = &EdgeBuffer[++detected];
+			}
+
+			//start a new edge
+			start = k;
+			height = 0;
 		}
-		/* If large, -ve derivative then falling edge */
-		else if (derivative[k] <= -threshold)
-		{
-			edge->pos = k;
-			edge->type = EDGE_TYPE_FALLING;
-			numEdges++;
-		}
+
+		height += dy[k]; //accumulate change in height
 	}
-	return numEdges;
+
+	//handle final region
+	if ( abs(height) > HEIGHT_THRESHOLD )
+	{
+		uint8_t finish = k; //complete region
+		
+		//pinpoint edge location
+		edge->pos = start;
+		for (uint8_t c = start; c < finish; ++c)
+		{
+			//search for steepest point in region
+			if ( abs(dy[c]) > abs(dy[edge->pos]) )
+			{
+				edge->pos = c;
+			}
+		}
+
+		edge->type = edge->type > 0 ? //determine edge type
+			EDGE_TYPE_RISING : EDGE_TYPE_FALLING;
+
+		//'store' edge
+		++detected;
+	}
+
+	return detected;
 }
 
 uint8_t findLines(Edge *edges, uint8_t numEdges)

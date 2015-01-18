@@ -58,7 +58,7 @@ function [ edges ] = findEdges( y )
     if abs(edge.height) > threshold
 
          % complete edge
-         edge.finish = i - 1;
+         edge.finish = i;
          edge.pos = edge.start;
 
          % pinpoint edge location
