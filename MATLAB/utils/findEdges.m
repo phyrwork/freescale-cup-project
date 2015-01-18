@@ -1,67 +1,79 @@
-function [ edges ] = findEdges( image )
+function [ edges ] = findEdges( y )
 %findEdges Experimental edge detection for FRDM-TFC
+
+    % SETTINGS
+    threshold = 600;
     
-    % array of edge objects
+    % SETUP
+    dy = y(2:end) - y(1:end-1); % find image derivative
+    dy = [0;dy]; % sync y, dy
+    
+    % initialise edges array
     edges = [];
     
     % start first edge
-    edge.start.pos = 1;
-    edge.start.dy  = 0;
-    edge.sum   = 0;
+    edge = [];
+    edge.start  = 1;
+    edge.height = 0;
     
-    % scan image
-    last_dy = 0;
-    
-    for i = 2:length(image);
+    % ANALYSE
+    for i = 2:length(dy)
         
-        % check dy
-        this    = image(i);
-        last    = image(i - 1);
-        this_dy = this - last;
-        
-        % detect change in direction
-        if (this_dy > 0 && last_dy < 0) || (this_dy < 0 && last_dy > 0)
-            
-            % save edge and start a new one
-            edge.finish.pos = i - 1;
-            edge.finish.dy  = this_dy;
-            edges = [edges, edge];
-            edge.start.pos = i;
-            edge.sum = 0;
-        end
-        
-        % sum dy and prep next
-        edge.sum = edge.sum + this_dy;
-        last_dy = this_dy;
+         % detect inflection points
+         if (dy(i) > 0 && dy(i-1) < 0) || (dy(i) < 0 && dy(i-1) > 0)
+             
+             % filter qualifying edges
+             if abs(edge.height) > threshold
+                 
+                 % complete edge
+                 edge.finish = i - 1;
+                 edge.pos = edge.start;
+                 
+                 % pinpoint edge location
+                 for c = edge.start:edge.finish
+                     
+                     % look for steepest point in region
+                     if abs(dy(c)) > abs(dy(edge.pos))
+                         
+                         % assign new edge position
+                         edge.pos = c;
+                     end
+                 end
+                 
+                 % save edge
+                 edges = [edges, edge];
+             end
+             
+             % start new edge
+             edge = [];
+             edge.start = i;
+             edge.height = 0;
+         end
+         
+         % sum height
+         edge.height = edge.height + dy(i);
     end
     
-    % finish final edge
-    edge.finish.pos = i;
-    edge.finish.dy  = this_dy;
-    edges = [edges, edge];
-    
-    % find qualifying edges
-    ind = [];
-    
-    for i = 1:length(edges)
-        
-        % choose edges over summation threshold
-        if abs(edges(i).sum) > 1000
-            ind = [ind, i];
-        end
-    end
-    
-    % complete and return qualifying edges
-    edges = edges(ind);
-    
-    for i = 1:length(edges)
-    
-        % choose steepest side of edge
-        if edges(i).start.dy > edges(i).finish.dy
-            edges(i).pos = edges(i).start.pos;
-        else
-            edges(i).pos = edges(i).finish.pos;
-        end
+    % filter qualifying edges
+    if abs(edge.height) > threshold
+
+         % complete edge
+         edge.finish = i - 1;
+         edge.pos = edge.start;
+
+         % pinpoint edge location
+         for c = edge.start:edge.finish
+
+             % look for steepest point in region
+             if abs(dy(c)) > abs(dy(edge.pos))
+
+                 % assign new edge position
+                 edge.pos = c;
+             end
+         end
+         
+         % save edge
+         edges = [edges, edge];
     end
 end
 
