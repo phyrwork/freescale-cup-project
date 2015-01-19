@@ -30,8 +30,6 @@ static StopLine         stop;
 
 #define L 0
 #define R 1
-#define start  edges[0].pos //Macros for easy/readable access to line...
-#define finish edges[1].pos //...start/finish.
 
 void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
 
@@ -68,6 +66,9 @@ void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
 
 void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold)
 {
+	#define start  edges[0].pos //Macros for easy/readable access to line...
+	#define finish edges[1].pos //...start/finish.
+	
 	/* If car has 'stopped', nothing to do; return */
 	// To-do: Move this check to main()
 	if (carState->lineDetectionState == STOPLINE_DETECTED) return;
@@ -240,6 +241,9 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
  	}
 
 	return;
+	
+	#undef start
+	#undef finish
 }
 
 uint8_t findEdges(int16_t* dy, uint16_t threshold)
@@ -273,7 +277,7 @@ uint8_t findEdges(int16_t* dy, uint16_t threshold)
 					}
 				}
 
-				edge->type = edge->type > 0 ? //determine edge type
+				edge->type = dy[edge->pos] > 0 ? //determine edge type
 					EDGE_TYPE_RISING : EDGE_TYPE_FALLING;
 
 				//'store' edge
@@ -291,7 +295,7 @@ uint8_t findEdges(int16_t* dy, uint16_t threshold)
 	//handle final region
 	if ( abs(height) > HEIGHT_THRESHOLD )
 	{
-		uint8_t finish = k; //complete region
+		uint8_t finish = 128; //complete region
 		
 		//pinpoint edge location
 		edge->pos = start;
@@ -316,6 +320,9 @@ uint8_t findEdges(int16_t* dy, uint16_t threshold)
 
 uint8_t findLines(Edge *edges, uint8_t numEdges)
 {
+	#define start  edges[0].pos //Macros for easy/readable access to line...
+	#define finish edges[1].pos //...start/finish.
+	
 	uint8_t numLines = 1; //Number of pairs generated
 
 	/* Start constructing first line */
@@ -328,8 +335,8 @@ uint8_t findLines(Edge *edges, uint8_t numEdges)
 		
 		Edge *edge = &edges[e];
 
-		/* Make sure we only capture the next edge of a different type */
-		if (edge->type == line->edges[L].type) continue;
+		//Make sure we only capture the next edge of a different type
+		//if (edge->type == line->edges[L].type) continue;
 
 		/* Finish constructing previous line */
 		line->edges[R] = *edge;
@@ -346,6 +353,9 @@ uint8_t findLines(Edge *edges, uint8_t numEdges)
 	line->width = line->finish - line->start; //Calculate width of line
 
 	return numLines;
+	
+	#undef start
+	#undef finish
 }
 
 void weightEdges(Edge* targets, Edge* edges, uint8_t size) {

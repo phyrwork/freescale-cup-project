@@ -295,7 +295,7 @@ void lineFollowingMode(carState_s* carState)
 		{ getActiveDifferentialModifier(carState, CHANNEL_0), getActiveDifferentialModifier(carState, CHANNEL_1) };
 		float speedMeasurement[] = { getSpeed(CHANNEL_0), getSpeed(CHANNEL_1) };
 
-		//TFC_SetMotorPWM(0.3,0.3);
+		TFC_SetMotorPWM(0.3,0.3);
 		UpdateWheelSpeed(&WheelSpeeds[0]);
 		UpdateWheelSpeed(&WheelSpeeds[1]);
 		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
