@@ -48,10 +48,10 @@ classdef LinescanView < LineChartView
         function obj = draw(obj, lx, ly, sx, sy)
             % draw
             if (isempty(obj.hplot)) % initialise plot
-                obj.hplot = plot(obj.haxis, lx, ly); % plot linescan image
-                hold on
-                obj.hplot = [obj.hplot, scatter(obj.haxis, sx, sy, 'r', '*')]; % plot model detected edges
-                hold off
+                obj.hplot(1) = plot(obj.haxis, lx, ly); % plot linescan image
+                hold(obj.haxis, 'on');
+                obj.hplot(2) = scatter(obj.haxis, sx, sy, 'r', '*'); % plot model detected edges
+                hold(obj.haxis, 'off');
                 obj = label(obj);
                 if (~isempty(obj.hplot)) % only call legend if plot exists to surpress warnings
                     obj.clegend('on');
