@@ -277,7 +277,7 @@ uint8_t findEdges(int16_t* dy, uint16_t threshold)
 					}
 				}
 
-				edge->type = edge->type > 0 ? //determine edge type
+				edge->type = dy[edge->pos] > 0 ? //determine edge type
 					EDGE_TYPE_RISING : EDGE_TYPE_FALLING;
 
 				//'store' edge
@@ -335,8 +335,8 @@ uint8_t findLines(Edge *edges, uint8_t numEdges)
 		
 		Edge *edge = &edges[e];
 
-		/* Make sure we only capture the next edge of a different type */
-		if (edge->type == line->edges[L].type) continue;
+		//Make sure we only capture the next edge of a different type
+		//if (edge->type == line->edges[L].type) continue;
 
 		/* Finish constructing previous line */
 		line->edges[R] = *edge;
