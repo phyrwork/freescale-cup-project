@@ -2,17 +2,113 @@
 #include "sensors/cadence.h"
 #include "sensors/wheel/speed.h"
 
+///////////////////////////////////////
+// Main Routine Task Request Handler //
+///////////////////////////////////////
+
+#define SIZEOF_FLAGS ( ((REQUESTS_MAX_TASKS - 1) / 32) + 1 )
+uint32_t flags[SIZEOF_FLAGS];
+//#define SIZEOF_FLAGS ( (sizeof flags) / (sizeof (uint32_t)) )
+
+#define TR_INDEX (index >> 5)   //divide by 32 to get index in task requests array
+#define TR_BIT   (index & 0x1F) //isolate bit number
+
+uint32_t AnyTaskRequest()
+{
+	for (uint32_t i = 0; i < SIZEOF_FLAGS; ++i) //for each set of 32 flags
+	if (flags[i]) return 1;                     //if any flags set return true
+	
+	return 0; //if execution reaches here no flags set, return false
+}
+
+uint32_t PollTaskRequest(uint32_t index)
+{
+	return (flags[TR_INDEX] & 1 << TR_BIT); //isolate task request bit
+}
+
+void SetTaskRequest(uint32_t index)
+{
+	flags[TR_INDEX] |= 1 << TR_BIT; //set task request bit
+}
+
+void ClearTaskRequest(uint32_t index)
+{
+	flags[TR_INDEX] &= ~(1 << TR_BIT); //clear task request bit
+}
+
+typedef struct {
+	uint32_t index;     //index of task request bit
+	float    frequency; //frequency, in seconds
+	uint32_t period;    //period, in ticks
+	uint32_t counter;   //time elapsed since last run, in ticks
+} PeriodicTask_s;
+
+#define SET_BY_INITIALIZATION 0
+PeriodicTask_s tasks[] =
+{
+	/* [0] = */ {
+        /* index = */     CONTROL_REQUEST_INDEX,
+        /* frequency = */ CONTROL_REQUEST_FREQUENCY,
+        /* period = */    SET_BY_INITIALIZATION,
+        /* counter = */   SET_BY_INITIALIZATION
+    },
+    /* [0] = */ {
+        /* index = */     TELEMETRY_REQUEST_INDEX,
+        /* frequency = */ TELEMETRY_REQUEST_FREQUENCY,
+        /* period = */    SET_BY_INITIALIZATION,
+        /* counter = */   SET_BY_INITIALIZATION
+    }
+};
+#define SIZEOF_TASKS ( (sizeof tasks) / (sizeof (PeriodicTask_s)) )
+
+void TaskRequest_Init()
+{ 
+    //initialize schedule objects
+    for (uint32_t i = 0; i < SIZEOF_TASKS; ++i )
+    {
+        PeriodicTask_s *item = &tasks[i];
+
+        if (item->frequency != 0)
+        {
+            // Set sampling period if frequency > 0
+            item->period = SYSTICK_FREQUENCY/item->frequency;
+            item->counter = 0;
+        }
+    }
+}
+
+//#include "support/ARM_SysTick.h"
+#define REQUESTS_TICKER TFC_Ticker[TASK_REQUEST_TICKER]
+
+void UpdateTaskRequests()
+{
+	uint32_t ticker = REQUESTS_TICKER; //"freeze" timer
+	REQUESTS_TICKER = 0;               //reset timer for accurate sampling
+	
+    for (uint32_t i = 0; i < SIZEOF_TASKS; ++i)
+    {
+        PeriodicTask_s *item = &tasks[i];
+
+        item->counter += ticker; //update item counter
+
+        if (item->frequency == 0) continue; //skip if frequency = 0
+        if (item->counter >= item->period)
+        {
+            //item counter has exceeded sampling period
+            item->counter = 0; //reset the counter
+
+            SetTaskRequest(item->index); //set the task request flag
+        }
+    }
+}
+
+/////////////
+// MAIN!!! //
+/////////////
 
 #define TARGET_TOTAL_INTENSITY 300000//300000
 #define CHANNEL_0 0
 #define CHANNEL_1 1
-
-/* Control trigger definitions */
-//#include "support/ARM_SysTick.h"
-#define TRIGGER_TICKER TFC_Ticker[MAIN_TRIGGER_TICKER]
-//Might have to hard code these ticks value if compiler doesn't optimise the division out
-#define CONTROL_TRIGGER_TICKS ( SYSTICK_FREQUENCY / CONTROL_TRIGGER_FREQUENCY )
-#define TELEMETRY_TRIGGER_TICKS ( SYSTICK_FREQUENCY / TELEMETRY_TRIGGER_FREQUENCY )
 
 void TFC_Init(carState_s* carState)
 {
@@ -24,6 +120,7 @@ void TFC_Init(carState_s* carState)
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
 	InitMotorPWMControl();
 	InitMotorTorqueControl();
+	TaskRequest_Init();
 	TFC_InitADCs(carState);
 	UART0_Init();
 	DMA0_Init();
@@ -49,67 +146,61 @@ int main(void)
 
 	while (1)
 	{	
-		/* Trigger main control routine */
-		static uint32_t ControlTriggerCounter = 0;
-		ControlTriggerCounter += TRIGGER_TICKER;
-		if (ControlTriggerCounter > CONTROL_TRIGGER_TICKS)
-		{   ControlTriggerCounter = 0; //Reset trigger counter
+		if ( AnyTaskRequest() )
+		{
+			//disable UART0
 			#ifdef SERIAL_TX_IRQ_ENABLED
 				UART0_DisarmIRQ();
 			#endif
-
-			/* Update car state before main control routine */
-			//evaluateUARTorSpeed(&carState);
-			evaluateMotorState(&carState);
-
-			/* Perform main control routine */
-			//Profiler_Start(CONTROL_PROFILER, PROFILER_SEND);
-			switch ((TFC_GetDIP_Switch() >> 1) & 0x03)
-			{
-				default:
-				case 0:
-					rawFocussingMode(&carState);
-					//TFC_ClearLED(3);
-					break;
+			
+			if ( PollTaskRequest(CONTROL_REQUEST_INDEX) )
+			{    ClearTaskRequest(CONTROL_REQUEST_INDEX);
+			
+				/* Update car state before main control routine */
+				//evaluateUARTorSpeed(&carState);
+				evaluateMotorState(&carState);
 	
-				case 1:
-					servoAlignment();
-					//TFC_ClearLED(3);
-					//speedTestMode(&carState);
-					break;
-	
-				case 2:
-					derivativeFocussingMode(&carState);
-					//TFC_ClearLED(3);
-					break;
-	
-				case 3:
-					lineFollowingMode(&carState);
-					TFC_SetLED(0);
-					break;
-			}
-			//Profiler_Stop(CONTROL_PROFILER, PROFILER_SEND);
-		}
-		//End main control routine trigger
-
-		/* Trigger telemetry routine */
-		static uint32_t TelemetryTriggerCounter = 0;
-		TelemetryTriggerCounter += TRIGGER_TICKER;
-		if (TelemetryTriggerCounter > TELEMETRY_TRIGGER_TICKS)
-		{   TelemetryTriggerCounter = 0; //Reset trigger counter
-			#ifdef SERIAL_TX_IRQ_ENABLED
-				UART0_DisarmIRQ();
-			#endif
-
-			/* Run data collection routine */
-			Collector();
-		}
+				/* Perform main control routine */
+				//Profiler_Start(CONTROL_PROFILER, PROFILER_SEND);
+				switch ((TFC_GetDIP_Switch() >> 1) & 0x03)
+				{
+					default:
+					case 0:
+						rawFocussingMode(&carState);
+						//TFC_ClearLED(3);
+						break;
 		
-		/* Nothing to be done - enable UART0 */
-		#ifdef SERIAL_TX_IRQ_ENABLED
-			UART0_ArmIRQ();
-		#endif
-		TRIGGER_TICKER = 0;
+					case 1:
+						servoAlignment();
+						//TFC_ClearLED(3);
+						//speedTestMode(&carState);
+						break;
+		
+					case 2:
+						derivativeFocussingMode(&carState);
+						//TFC_ClearLED(3);
+						break;
+		
+					case 3:
+						lineFollowingMode(&carState);
+						TFC_SetLED(0);
+						break;
+				}
+			}
+			
+			if ( PollTaskRequest(TELEMETRY_REQUEST_INDEX) )
+			{    ClearTaskRequest(TELEMETRY_REQUEST_INDEX);
+
+				/* Run data collection routine */
+				Collector();
+			}
+		}
+		else
+		{
+			#ifdef SERIAL_TX_IRQ_ENABLED
+				UART0_ArmIRQ();
+			#endif
+		}
 	}
 	return 0;
 }

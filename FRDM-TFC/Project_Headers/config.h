@@ -8,19 +8,24 @@
 
 /* Ticker configuration and index definitions */
 //#define SYSTICK_FREQUENCY /* To do: Move #define here and remove hard coded dependencies on this value */
-#define NUM_TFC_TICKERS 8
+#define NUM_TFC_TICKERS 9
 #define UPTIME_TICKER 4
 #define COLLECTOR_TICKER 5
 #define MAIN_TRIGGER_TICKER 6
 #define ADC_SAMPLE_TICKER 7
+#define TASK_REQUEST_TICKER 8
+
+/* PIT1 config */
+#define PIT1_POLLING_FREQUENCY 2400
 
 /* Trigger configuration */
-#define MAIN_TRIGGER_POLLLING_INTERVAL 50
-#define CONTROL_TRIGGER_FREQUENCY 300
-#define TELEMETRY_TRIGGER_FREQUENCY 200
+#define REQUESTS_MAX_TASKS 32
+#define CONTROL_REQUEST_INDEX 0
+#define CONTROL_REQUEST_FREQUENCY 300
+#define TELEMETRY_REQUEST_INDEX 1
+#define TELEMETRY_REQUEST_FREQUENCY 100
 
 /* ADC sampling configuration - n.b. these are target sampling frequencies only */
-#define SAMPLER_POLLING_FREQUENCY 2400
 #define SAMPLER_QUEUE_LENGTH 16
 #define POT_0_SAMPLE_FREQUENCY 0
 #define POT_1_SAMPLE_FREQUENCY 0

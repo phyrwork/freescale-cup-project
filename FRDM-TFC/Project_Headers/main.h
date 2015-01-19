@@ -36,6 +36,13 @@
 #include "support/Profiler.h"
 #include "config.h"
 
+uint32_t AnyTaskRequest();
+uint32_t PollTaskRequest(uint32_t index);
+void SetTaskRequest(uint32_t index);
+void ClearTaskRequest(uint32_t index);
+void TaskRequest_Init();
+void UpdateTaskRequests();
+
 void TFC_Init(carState_s* carState);
 void TFC_Task();
 int main(void);

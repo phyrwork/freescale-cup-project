@@ -5,6 +5,7 @@
 #include "sensors/camera/LineScanCamera.h"
 #include "support/rbuf_voidptr.h"
 #include "config.h"
+#include "main.h"
 
 #define TFC_MOTOR_CURRENT_0_CHANNEL 7 //7a
 #define TFC_MOTOR_CURRENT_1_CHANNEL 3
@@ -702,7 +703,7 @@ void Sampler_Init()
     PIT_TCTRL1 = PIT_TCTRL_TEN_MASK | //enable timer
                  PIT_TCTRL_TIE_MASK;  //enable interrupts
 
-    PIT_LDVAL1 = (uint32_t) PERIPHERAL_BUS_CLOCK / SAMPLER_POLLING_FREQUENCY; //set polling period
+    PIT_LDVAL1 = (uint32_t) PERIPHERAL_BUS_CLOCK / PIT1_POLLING_FREQUENCY; //set polling period
 
     //initialize schedule objects
     for (uint32_t i = 0; i < SIZEOF_SCHEDULE; ++i )
@@ -792,6 +793,8 @@ void PIT_IRQHandler()
 
         Sampler_Update(); //poll schedule and add samples to queue
         if (focus == 0) Sampler_Dispatch(); //if no active conversions attempt to re-prime the ADC
+        
+        UpdateTaskRequests();
     }
 }
 
