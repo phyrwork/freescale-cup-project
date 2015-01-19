@@ -50,6 +50,8 @@ classdef TrackPositionView < LineChartView
             
             % draw chart - swap x/y to "rotate" chart
             obj = obj.draw(values, times);
+            ylim(obj.haxis, [times(1), times(end)]);
+            xlim(obj.haxis, [-64, 64]); % adjust y-axis limits
         end
     end
     
