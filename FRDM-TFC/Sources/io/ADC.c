@@ -452,24 +452,12 @@ void TFC_InitADCs(carState_s* carStateInputPointer)
 #define ADC_TICKER TFC_Ticker[ADC_SAMPLE_TICKER]
 #define UPTIME TFC_Ticker[UPTIME_TICKER]
 
-typedef int8_t (*AdcPrime_f)(void);
-typedef int8_t (*AdcComplete_f)(void);
-
-typedef struct {
-    AdcPrime_f    primer;
-    AdcComplete_f completer;
-} AdcConfig_s;
-
-
 //////////////////////////////////
 // Linescan-related definitions //
 // and ADC configuration        //
 //////////////////////////////////
 
-#define LINESCAN_WAITING 0
-#define LINESCAN_HOLD 1
-#define LINESCAN_SCANNING 2
-#define LINESCAN_DONE 3
+#include "sensors/camera/LineScanCamera.h"
 
 typedef struct {
     //uint16_t __data[2][128];
@@ -498,12 +486,11 @@ int8_t AdcCompleteLinescan0 ()
         LineScanImage0WorkingBuffer[linescan0.pixel++] = ADC0_RA; //store pixel
 
         AdcConfig_s *config = &AdcConfigLinescan0;      //To-do separate push into push and push_array
-        rbuf_voidptr_push(&queue, (void**) &config, 1); //Queue conversion
+        Sampler_Push(config); //Queue conversion
         
         TAOS_CLK_LOW;               
         for(uint8_t j = 0; j < 10; ++j) {}
         TAOS_CLK_HIGH; //shift in next pixel
-
     }
     else
     {
@@ -698,6 +685,11 @@ rbuf_voidptr_s queue;                           //buffer struct
 
 AdcConfig_s *focus = 0; //pointer to ongoing sample, used for communication between methods
 
+int8_t Sampler_Push(AdcConfig_s *config)
+{
+    return rbuf_voidptr_push(&queue, (void**) &config, 1);
+}
+
 void Sampler_Init()
 { 
     PIT_TCTRL1 = PIT_TCTRL_TEN_MASK | //enable timer
@@ -739,7 +731,7 @@ void Sampler_Update()
 
             item->counter = 0; //reset the counter
 
-            rbuf_voidptr_push(&queue, (void**) &item->AdcConfig, 1); //add sample to queue
+            Sampler_Push(item->AdcConfig); //add sample to queue
         }
     }
 }
@@ -780,7 +772,7 @@ void PIT_IRQHandler()
 		TAOS_SI_LOW;                       //SI needs to fall at some point before next capture
 
 		AdcConfig_s *config = &AdcConfigLinescan0;      //To-do separate push into push and push_array
-		rbuf_voidptr_push(&queue, (void**) &config, 1); //Queue conversion
+		Sampler_Push(config); //Queue conversion
     }
 
 

@@ -3,7 +3,17 @@
 #ifndef TFC_ADC_H_
 #define TFC_ADC_H_
 
+typedef int8_t (*AdcPrime_f)(void);
+typedef int8_t (*AdcComplete_f)(void);
+
+typedef struct {
+    AdcPrime_f    primer;
+    AdcComplete_f completer;
+} AdcConfig_s;
+
 void TFC_InitADCs();
+
+int8_t Sampler_Push(AdcConfig_s *config);
 
 void PIT0_IRQ();
 void ADC0_IRQ();
