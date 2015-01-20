@@ -3,13 +3,18 @@
 #ifndef TFC_ADC_H_
 #define TFC_ADC_H_
 
-typedef int8_t (*AdcPrime_f)(void);
-typedef int8_t (*AdcComplete_f)(void);
+#define NULL_CALLBACK 0
+typedef int8_t (*AdcCallback_f)(void);
+
+typedef enum { MUX_A, MUX_B } AdcMux_e;
 
 typedef struct {
-    AdcPrime_f    primer;
-    AdcComplete_f completer;
+	uint8_t channel;
+	AdcMux_e mux;
+	uint16_t *data;
+	AdcCallback_f callback;
 } AdcConfig_s;
+
 
 void TFC_InitADCs();
 

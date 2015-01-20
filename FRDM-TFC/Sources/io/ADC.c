@@ -452,6 +452,18 @@ void TFC_InitADCs(carState_s* carStateInputPointer)
 #define ADC_TICKER TFC_Ticker[ADC_SAMPLE_TICKER]
 #define UPTIME TFC_Ticker[UPTIME_TICKER]
 
+uint16_t AdcBuffer;
+
+void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
+{
+    //select correct side of the mux
+    if (mux == MUX_A) ADC0_CFG2 |=  ADC_CFG2_MUXSEL_MASK;
+    else              ADC0_CFG2 &= ~ADC_CFG2_MUXSEL_MASK;
+
+    //configure conversion
+    ADC0_SC1A  = channel |          //select channel
+                 ADC_SC1_AIEN_MASK; //initiate conversion
+}
 //////////////////////////////////
 // Linescan-related definitions //
 // and ADC configuration        //
@@ -470,20 +482,13 @@ LinescanImage  linescan0;
 AdcConfig_s    AdcConfigLinescan0;
 rbuf_voidptr_s queue;
 
-int8_t AdcPrimeLinescan0 ()
-{
-    ADC0_CFG2 |= ADC_CFG2_MUXSEL_MASK; //mux B
-    ADC0_SC1A  = TFC_LINESCAN0_ADC_CHANNEL | ADC_SC1_AIEN_MASK; //initiate conversion
-    return 0;
-}
-
-int8_t AdcCompleteLinescan0 ()
+int8_t Linescan0Callback ()
 {
     if (linescan0.pixel < 128)
     {
         //image capture sequence ongoing...
 
-        LineScanImage0WorkingBuffer[linescan0.pixel++] = ADC0_RA; //store pixel
+        LineScanImage0WorkingBuffer[linescan0.pixel++] = AdcBuffer; //store pixel
 
         AdcConfig_s *config = &AdcConfigLinescan0;      //To-do separate push into push and push_array
         Sampler_Push(config); //Queue conversion
@@ -520,8 +525,10 @@ int8_t AdcCompleteLinescan0 ()
 }
 
 AdcConfig_s AdcConfigLinescan0 = { //linescan0 ADC config
-    /* primer = */ &AdcPrimeLinescan0,
-    /* completer = */ &AdcCompleteLinescan0
+    /* channel = */  6,
+    /* mux = */      MUX_B,
+    /* *data = */    &pixelBuffer,
+    /* callback = */ &Linescan0Callback
 };
 
 LinescanImage linescan0 = { //linescan0 struct
@@ -549,40 +556,18 @@ float TFC_ReadPot(uint8_t Channel)
         return ((float)PotADC_Value[1]/-((float)ADC_MAX_CODE/2.0))+1.0;
 }
 
-int8_t AdcPrimePotentiometer0 ()
-{
-    ADC0_CFG2 &= ~ADC_CFG2_MUXSEL_MASK; //mux A
-    ADC0_SC1A  =  TFC_POT_0_ADC_CHANNEL | ADC_SC1_AIEN_MASK; //initiate conversion
-    return 0;
-}
-
-int8_t AdcCompletePotentiometer0 ()
-{
-    PotADC_Value[0] = ADC0_RA; //store sample
-    return 0;
-}
-
-int8_t AdcPrimePotentiometer1 ()
-{
-    ADC0_CFG2 &= ~ADC_CFG2_MUXSEL_MASK; //mux A
-    ADC0_SC1A  =  TFC_POT_1_ADC_CHANNEL | ADC_SC1_AIEN_MASK; //initiate conversion
-    return 0;
-}
-
-int8_t AdcCompletePotentiometer1 ()
-{
-    PotADC_Value[1] = ADC0_RA; //store sample
-    return 0;
-}
-
 AdcConfig_s AdcConfigPotentiometer0 = { //potentiometer0 ADC config
-    /* primer = */ &AdcPrimePotentiometer0,
-    /* completer = */ &AdcCompletePotentiometer0
+    /* channel = */  13,
+    /* mux = */      MUX_A,
+    /* *data = */    &PotADC_Value[0],
+    /* callback = */ 0
 };
 
 AdcConfig_s AdcConfigPotentiometer1 = { //potentiometer1 ADC config
-    /* primer = */ &AdcPrimePotentiometer1,
-    /* completer = */ &AdcCompletePotentiometer1
+    /* channel = */  12,
+    /* mux = */      MUX_A,
+    /* *data = */    &PotADC_Value[1],
+    /* callback = */ 0
 };
 
 
@@ -594,40 +579,30 @@ AdcConfig_s AdcConfigPotentiometer1 = { //potentiometer1 ADC config
 #include "sensors/motor/current.h"
 extern MotorCurrent_s MotorCurrent[NUM_MOTORS];
 
-int8_t AdcPrimeMotorCurrent0 ()
+int8_t MotorCurrent0Callback ()
 {
-    ADC0_CFG2 &= ~ADC_CFG2_MUXSEL_MASK; //mux A
-    ADC0_SC1A  =  TFC_MOTOR_CURRENT_0_CHANNEL | ADC_SC1_AIEN_MASK; //initiate conversion
+    rbuf_uint16_write(&MotorCurrent[REAR_RIGHT].buffer, (uint16_t*) &AdcBuffer, 1); //push sample onto signal buffer
     return 0;
 }
 
-int8_t AdcCompleteMotorCurrent0 ()
+int8_t MotorCurrent1Callback ()
 {
-    rbuf_uint16_write(&MotorCurrent[REAR_RIGHT].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
-    return 0;
-}
-
-int8_t AdcPrimeMotorCurrent1 ()
-{
-    ADC0_CFG2 &= ~ADC_CFG2_MUXSEL_MASK; //mux A
-    ADC0_SC1A  =  TFC_MOTOR_CURRENT_1_CHANNEL | ADC_SC1_AIEN_MASK; //initiate conversion
-    return 0;
-}
-
-int8_t AdcCompleteMotorCurrent1 ()
-{
-    rbuf_uint16_write(&MotorCurrent[REAR_LEFT].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
+    rbuf_uint16_write(&MotorCurrent[REAR_LEFT].buffer, (uint16_t*) &AdcBuffer, 1); //push sample onto signal buffer
     return 0;
 }
 
 AdcConfig_s AdcConfigMotorCurrent0 = { //MotorCurrent0 ADC config
-    /* primer = */ &AdcPrimeMotorCurrent0,
-    /* completer = */ &AdcCompleteMotorCurrent0
+    /* channel = */  7,
+    /* mux = */      MUX_A,
+    /* *data = */    &AdcBuffer,
+    /* callback = */ &MotorCurrent0Callback;
 };
 
 AdcConfig_s AdcConfigMotorCurrent1 = { //MotorCurrent1 ADC config
-    /* primer = */ &AdcPrimeMotorCurrent1,
-    /* completer = */ &AdcCompleteMotorCurrent1
+    /* channel = */  3,
+    /* mux = */      MUX_A,
+    /* *data = */    &AdcBuffer,
+    /* callback = */ &MotorCurrent1Callback;
 };
 
 
@@ -740,8 +715,6 @@ void Sampler_Dispatch()
 {	
     if (rbuf_voidptr_used(&queue) == 0) return;        //if queue empty, no samples to dispatch
     else rbuf_voidptr_pop(&queue, (void**) &focus, 1); //otherwise pop a queued sample
-
-    (*(focus->primer))(); //call the specified priming method
 }
 
 
@@ -801,12 +774,19 @@ void PIT_IRQHandler()
 
 void ADC0_IRQHandler()
 {
-    if (focus != 0) (*(focus->completer))();
+    if (focus != 0)
+    {
+        *(focus->data) = ADC0_RA;   //store sample
+        if (focus->callback)
+        {
+            (*(focus->callback))(); //callback
+        }
+        focus = 0; //signal sample complete
+    }
     else
     {
         uint16_t tmp = ADC0_RA; //clear an orphaned sample?
     }
-
-    focus = 0;          //signal sample complete
+    
     Sampler_Dispatch(); //attempt to re-arm ADC
 }
