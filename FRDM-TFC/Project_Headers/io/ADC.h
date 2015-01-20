@@ -9,10 +9,10 @@ typedef int8_t (*AdcCallback_f)(void);
 typedef enum { MUX_A, MUX_B } AdcMux_e;
 
 typedef struct {
-	uint8_t channel;
-	AdcMux_e mux;
+	const uint8_t channel;
+	const AdcMux_e mux;
 	uint16_t *data;
-	AdcCallback_f callback;
+	const AdcCallback_f callback;
 } AdcConfig_s;
 
 
