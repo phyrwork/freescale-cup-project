@@ -8,7 +8,7 @@
 #define FTM0_CLOCK                                   	      (CORE_CLOCK/2)
 #define FTM0_CLK_PRESCALE                                 	   0  // Prescale Selector value - see comments in Status Control (SC) section for more details
 #define FTM0_OVERFLOW_FREQUENCY 5000							  //
-#define MAX_DUTY 0.6
+#define MAX_DUTY 1
 
 /* Define motor structs */
 const MotorTPM_s MotorTPM[NUM_MOTORS] = {

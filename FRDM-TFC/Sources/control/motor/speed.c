@@ -7,114 +7,68 @@
 
 #include "control/motor/speed.h"
 #include "support/ARM_SysTick.h"
+#include "config.h"
 
-#define KP 0.3f
-#define KI 0.5f
-#define KD 0.0f
-#define BREAK_KP 0.005f
-#define MIN_BREAK_SPEED 10.0f
-#define MAX_PWM 1.0f
-#define MIN_PWM -0.6f
-#define MIN_SPEED 4.0f //Minimum to maintain control / avoid stalling
+/*
+typedef struct {
+	float value;
+	CadenceSensor_s *sensor;
+	float ratio;
+	MotorPWM_s *pwm;
+	PID_s *pid;
+} MotorSpeed_s;
+*/
 
-#define INCLUDE_INTEGRAL 1
-#define NO_INTEGRAL 0
+#define MSPEED_KP 0.020f
+#define MSPEED_KI 0.028f
+#define MSPEED_KD 0.0f
 
-float getMinPWM(float measurement)
+static PID_s pid[NUM_MOTORS];
+MotorSpeed_s MotorSpeeds[NUM_MOTORS];
+
+void InitMotorSpeedControl()
 {
-	measurement -= MIN_BREAK_SPEED;
-	if(measurement < 0.0f)
-		measurement = 0.0f;
-	float minPWM = - (measurement * BREAK_KP);
-	if(minPWM < MIN_PWM)
-		minPWM = MIN_PWM;
+	MotorSpeeds[REAR_LEFT].value = 0.0f;
+	MotorSpeeds[REAR_LEFT].sensor = &CadenceSensors[1];
+	MotorSpeeds[REAR_LEFT].ratio = 1.0f;
+	MotorSpeeds[REAR_LEFT].pwm = &MotorPWM[REAR_LEFT];
+	MotorSpeeds[REAR_LEFT].pid = &pid[REAR_LEFT];
 	
-	return minPWM;
-}
-
-float getSpeedEstimate(float measurement, volatile isNewMeasurementAvailable_t* isNewMeasurementAvailable, float acceleration, float dt)
-{
-	static float speed = 0;
-	if (*isNewMeasurementAvailable == NEW_MEASUREMENT_AVAILABLE)
+	MotorSpeeds[REAR_RIGHT].value = 0.0f;
+	MotorSpeeds[REAR_RIGHT].sensor = &CadenceSensors[0];
+	MotorSpeeds[REAR_RIGHT].ratio = 1.0f;
+	MotorSpeeds[REAR_RIGHT].pwm = &MotorPWM[REAR_RIGHT];
+	MotorSpeeds[REAR_RIGHT].pid = &pid[REAR_RIGHT];
+	
+	for (uint8_t i = 0; i < NUM_MOTORS; ++i)
 	{
-		*isNewMeasurementAvailable = NO_NEW_MEASUREMENT_AVAILABLE;
-		speed = measurement;
-	}
-	else
-	{
-//		speed += acceleration * dt * (1 / ACCEL_SCALER);
-	}
-	return speed;
-}
-
-float getDesiredMotorPWM(float setpoint, float measurement, volatile isNewMeasurementAvailable_t* isNewMeasurementAvailable, uint8_t channel)
-{
-	static struct persistantPIDVariables_s PIDVariables[] =
-	{
-	{ 0, 0, 0, 0, 0 },
-	{ 0, 0, 0, 0, 0 } };
-//	static float lastSetpoint = 0;
-
-//	float dSetpoint = setpoint - lastSetpoint;
-//	
-//	if(dSetpoint > MAX_DSETPOINT)
-//		dSetpoint = MAX_DSETPOINT;
-//	else if(dSetpoint < -MAX_DSETPOINT)
-//		dSetpoint = -MAX_DSETPOINT;
-//	
-//	setpoint = lastSetpoint + dSetpoint;
-
-	if (*isNewMeasurementAvailable == NEW_MEASUREMENT_AVAILABLE)
-	{
-		*isNewMeasurementAvailable = NO_NEW_MEASUREMENT_AVAILABLE;
-
-		float dt = (TFC_Ticker[2] / 10000.0f);
-		TFC_Ticker[2] = 0;
-		if(dt > 0.1f)
-		{
-			dt = 0.1f;
-		}
-
+		MotorSpeed_s *speed = &MotorSpeeds[i];
 		
-		float minPWM = -0.8f;//getMinPWM(measurement);
-
-		if (PIDVariables[channel].PWM < MAX_PWM && PIDVariables[channel].PWM > minPWM)
-		{
-			PID(setpoint, measurement, &PIDVariables[channel], INCLUDE_INTEGRAL, dt);
-		}
-		else
-		{
-			PID(setpoint, measurement, &PIDVariables[channel], NO_INTEGRAL, dt);
-		}
-
-		
-		if (PIDVariables[channel].PWM < minPWM)
-			PIDVariables[channel].PWM = minPWM;
-		else if (PIDVariables[channel].PWM > MAX_PWM)
-			PIDVariables[channel].PWM = MAX_PWM;
+		/* Initialise PID controllers */
+		speed->pid = &pid[i];
+		speed->pid->Kp = MSPEED_KP;
+		speed->pid->Ki = MSPEED_KI;
+		speed->pid->Kd = MSPEED_KD;
+		speed->pid->time = 0;
+		speed->pid->value = 0;
+		speed->pid->value_max = 1;
+		speed->pid->value_min = 0;
 	}
-	return PIDVariables[channel].PWM;
 }
 
-void PID(float setpoint, float measurement, struct persistantPIDVariables_s* PIDVariables, uint8_t incrementIntegral, float dt)
+void UpdateMotorSpeed(MotorSpeed_s *speed)
 {
-	PIDVariables->previousError = PIDVariables->error;
-	PIDVariables->previousPWM = PIDVariables->PWM;
-	PIDVariables->error = setpoint - measurement;
-	PIDVariables->errorSum += PIDVariables->error * incrementIntegral * dt;
-	PIDVariables->dError = (PIDVariables->error - PIDVariables->previousError) / dt;
-	PIDVariables->PWM = (PIDVariables->error * KP) + (PIDVariables->errorSum * KI); // + (PIDVariables->dError * KD);
-//	float dPWM = (PIDVariables->PWM - PIDVariables->previousPWM); // / dt;
-//
-//	if (dPWM > MAX_DPWM)
-//	{
-//		dPWM = MAX_DPWM;
-//	}
-//	else if (dPWM < -MAX_DPWM)
-//	{
-//		dPWM = -MAX_DPWM;
-//	}
-//
-//	PIDVariables->PWM = PIDVariables->previousPWM + dPWM;
+	//if (speed->sensor->flag == 0) return; //no new measurement available
+	//else speed->sensor->flag = 0;         //clear flag
+	
+	uint32_t period = speed->sensor->period * speed->ratio; //revolution period in TPM ticks	
+	speed->value = period ? ( (float) speed->sensor->TPM->MOD / (float) period ) : 0; //revolution frequency in seconds
 }
 
+void SetMotorSpeed(MotorSpeed_s *speed, float command)
+{
+	speed->cmd = command; //Store command for telemetry purposes.
+	UpdateMotorSpeed(speed);
+	UpdatePID(speed->pid, command, speed->value);
+	SetMotorPWM(speed->pwm, speed->pid->value);
+}

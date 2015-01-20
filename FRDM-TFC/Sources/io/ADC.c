@@ -581,13 +581,13 @@ extern MotorCurrent_s MotorCurrent[NUM_MOTORS];
 
 int8_t MotorCurrent0Callback ()
 {
-    rbuf_uint16_write(&MotorCurrent[REAR_RIGHT].buffer, (uint16_t*) &AdcBuffer, 1); //push sample onto signal buffer
+    rbuf_uint16_write(&MotorCurrent[1].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
     return 0;
 }
 
 int8_t MotorCurrent1Callback ()
 {
-    rbuf_uint16_write(&MotorCurrent[REAR_LEFT].buffer, (uint16_t*) &AdcBuffer, 1); //push sample onto signal buffer
+    rbuf_uint16_write(&MotorCurrent[0].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
     return 0;
 }
 
