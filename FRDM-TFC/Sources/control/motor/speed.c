@@ -19,8 +19,8 @@ typedef struct {
 } MotorSpeed_s;
 */
 
-#define MSPEED_KP 0.3f
-#define MSPEED_KI 0.5f
+#define MSPEED_KP 0.005f
+#define MSPEED_KI 0.007f
 #define MSPEED_KD 0.0f
 
 static PID_s pid[NUM_MOTORS];
@@ -29,13 +29,13 @@ MotorSpeed_s MotorSpeeds[NUM_MOTORS];
 void InitMotorSpeedControl()
 {
 	MotorSpeeds[REAR_LEFT].value = 0.0f;
-	MotorSpeeds[REAR_LEFT].sensor = &CadenceSensors[0];
+	MotorSpeeds[REAR_LEFT].sensor = &CadenceSensors[1];
 	MotorSpeeds[REAR_LEFT].ratio = 1.0f;
 	MotorSpeeds[REAR_LEFT].pwm = &MotorPWM[REAR_LEFT];
 	MotorSpeeds[REAR_LEFT].pid = &pid[REAR_LEFT];
 	
 	MotorSpeeds[REAR_RIGHT].value = 0.0f;
-	MotorSpeeds[REAR_RIGHT].sensor = &CadenceSensors[1];
+	MotorSpeeds[REAR_RIGHT].sensor = &CadenceSensors[0];
 	MotorSpeeds[REAR_RIGHT].ratio = 1.0f;
 	MotorSpeeds[REAR_RIGHT].pwm = &MotorPWM[REAR_RIGHT];
 	MotorSpeeds[REAR_RIGHT].pid = &pid[REAR_RIGHT];

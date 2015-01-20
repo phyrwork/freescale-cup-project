@@ -616,7 +616,7 @@ int8_t AdcPrimeMotorCurrent0 ()
 
 int8_t AdcCompleteMotorCurrent0 ()
 {
-    rbuf_uint16_write(&MotorCurrent[REAR_RIGHT].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
+    rbuf_uint16_write(&MotorCurrent[1].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
     return 0;
 }
 
@@ -629,7 +629,7 @@ int8_t AdcPrimeMotorCurrent1 ()
 
 int8_t AdcCompleteMotorCurrent1 ()
 {
-    rbuf_uint16_write(&MotorCurrent[REAR_LEFT].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
+    rbuf_uint16_write(&MotorCurrent[0].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
     return 0;
 }
 
