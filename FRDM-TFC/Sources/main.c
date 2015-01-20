@@ -386,8 +386,8 @@ void lineFollowingMode(carState_s* carState)
 		//TFC_SetMotorPWM(0.3,0.3);
 		UpdateWheelSpeed(&WheelSpeeds[0]);
 		UpdateWheelSpeed(&WheelSpeeds[1]);
-		SetMotorSpeed(&MotorSpeeds[REAR_LEFT], 45);
-		SetMotorSpeed(&MotorSpeeds[REAR_RIGHT], 45);
+		SetMotorSpeed(&MotorSpeeds[REAR_LEFT], 20);
+		SetMotorSpeed(&MotorSpeeds[REAR_RIGHT], 20);
 		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 		UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 		//SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);

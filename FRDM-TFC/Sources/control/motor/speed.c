@@ -19,8 +19,8 @@ typedef struct {
 } MotorSpeed_s;
 */
 
-#define MSPEED_KP 0.005f
-#define MSPEED_KI 0.007f
+#define MSPEED_KP 0.020f
+#define MSPEED_KI 0.028f
 #define MSPEED_KD 0.0f
 
 static PID_s pid[NUM_MOTORS];
