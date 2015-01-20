@@ -6,13 +6,15 @@ WheelSpeedSensor_s WheelSpeedSensors[NUM_CADENCE_SENSORS];
 
 void InitWheelSpeedSensors()
 {
-	WheelSpeedSensors[0].value = 0;
-	WheelSpeedSensors[0].sensor = &CadenceSensors[0];
-	WheelSpeedSensors[0].ratio = 8;
+	//rear left
+	WheelSpeedSensors[REAR_LEFT].value = 0;
+	WheelSpeedSensors[REAR_LEFT].sensor = &CadenceSensors[1];
+	WheelSpeedSensors[REAR_LEFT].ratio = 8;
 	
-	WheelSpeedSensors[1].value = 0;
-	WheelSpeedSensors[1].sensor = &CadenceSensors[1];
-	WheelSpeedSensors[1].ratio = 8;
+	//rear right
+	WheelSpeedSensors[REAR_RIGHT].value = 0;
+	WheelSpeedSensors[REAR_RIGHT].sensor = &CadenceSensors[0];
+	WheelSpeedSensors[REAR_RIGHT].ratio = 8;
 }
 
 void UpdateWheelSpeed(WheelSpeedSensor_s *speed)
