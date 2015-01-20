@@ -457,8 +457,8 @@ uint16_t AdcBuffer;
 void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
 {
     //select correct side of the mux
-    if (mux == MUX_A) ADC0_CFG2 |=  ADC_CFG2_MUXSEL_MASK;
-    else              ADC0_CFG2 &= ~ADC_CFG2_MUXSEL_MASK;
+    if (mux == MUX_A) ADC0_CFG2 &= ~ADC_CFG2_MUXSEL_MASK;
+    else              ADC0_CFG2 |=  ADC_CFG2_MUXSEL_MASK;
 
     //configure conversion
     ADC0_SC1A  = channel |          //select channel
@@ -527,7 +527,7 @@ int8_t Linescan0Callback ()
 AdcConfig_s AdcConfigLinescan0 = { //linescan0 ADC config
     /* channel = */  6,
     /* mux = */      MUX_B,
-    /* *data = */    &pixelBuffer,
+    /* *data = */    &AdcBuffer,
     /* callback = */ &Linescan0Callback
 };
 
@@ -595,14 +595,14 @@ AdcConfig_s AdcConfigMotorCurrent0 = { //MotorCurrent0 ADC config
     /* channel = */  7,
     /* mux = */      MUX_A,
     /* *data = */    &AdcBuffer,
-    /* callback = */ &MotorCurrent0Callback;
+    /* callback = */ &MotorCurrent0Callback
 };
 
 AdcConfig_s AdcConfigMotorCurrent1 = { //MotorCurrent1 ADC config
     /* channel = */  3,
     /* mux = */      MUX_A,
     /* *data = */    &AdcBuffer,
-    /* callback = */ &MotorCurrent1Callback;
+    /* callback = */ &MotorCurrent1Callback
 };
 
 
@@ -714,7 +714,11 @@ void Sampler_Update()
 void Sampler_Dispatch()
 {	
     if (rbuf_voidptr_used(&queue) == 0) return;        //if queue empty, no samples to dispatch
-    else rbuf_voidptr_pop(&queue, (void**) &focus, 1); //otherwise pop a queued sample
+    else
+    {
+    	rbuf_voidptr_pop(&queue, (void**) &focus, 1); //otherwise pop a queued sample
+    	PrimeAdcConversion(focus->channel, focus->mux);
+    }
 }
 
 
