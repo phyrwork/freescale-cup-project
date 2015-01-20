@@ -1,6 +1,7 @@
 #include "main.h"
 #include "sensors/cadence.h"
 #include "sensors/wheel/speed.h"
+#include "control/motor/speed.h"
 
 ///////////////////////////////////////
 // Main Routine Task Request Handler //
@@ -118,17 +119,18 @@ void TFC_Init(carState_s* carState)
 	TFC_InitServos();
 	TFC_InitLineScanCamera();
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
-	InitMotorPWMControl();
-	InitMotorTorqueControl();
 	TaskRequest_Init();
 	TFC_InitADCs(carState);
 	UART0_Init();
 	DMA0_Init();
-	TFC_HBRIDGE_DISABLE;
-	TFC_SetMotorPWM(0, 0);
 	//TFC_InitSpeedSensor();
 	CadenceSensors_Init();
 	InitWheelSpeedSensors();
+	InitMotorPWMControl();
+	InitMotorTorqueControl();
+	InitMotorSpeedControl();
+	TFC_HBRIDGE_DISABLE;
+	TFC_SetMotorPWM(0, 0);
 	preloadProbabilityTables(); //Prevents probability tables for stop line evaluation from being created too late
 	Collector_Init(); // Initialise telemetry
 }
@@ -381,14 +383,11 @@ void lineFollowingMode(carState_s* carState)
 
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 	{
-		float targetSpeed = targetSpeedAverage(getDesiredSpeed(carState, 18.0f + (TFC_ReadPot(0) * 5.0f)));
-		float activeDifferentialModifier[] =
-		{ getActiveDifferentialModifier(carState, CHANNEL_0), getActiveDifferentialModifier(carState, CHANNEL_1) };
-		float speedMeasurement[] = { getSpeed(CHANNEL_0), getSpeed(CHANNEL_1) };
-
-		TFC_SetMotorPWM(0.3,0.3);
+		//TFC_SetMotorPWM(0.3,0.3);
 		UpdateWheelSpeed(&WheelSpeeds[0]);
 		UpdateWheelSpeed(&WheelSpeeds[1]);
+		SetMotorSpeed(&MotorSpeeds[REAR_LEFT], 30);
+		SetMotorSpeed(&MotorSpeeds[REAR_RIGHT], 60);
 		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 		UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 		//SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);
@@ -411,17 +410,7 @@ void lineFollowingMode(carState_s* carState)
 	}
 	else if (carState->lineDetectionState == STOPLINE_DETECTED)
 	{
-		float speedMeasurement[] = { getSpeed(CHANNEL_0), getSpeed(CHANNEL_1) };
-
-		if (speedMeasurement[0] > 2.0f || speedMeasurement[1] > 2.0f)
-		{
-			//TFC_SetMotorPWM(-0.5f, -0.5f);
-			
-		}
-		else
-		{
-			//while(1){TFC_SetMotorPWM(0, 0);}
-		}
+		//STOP!
 	}
 }
 

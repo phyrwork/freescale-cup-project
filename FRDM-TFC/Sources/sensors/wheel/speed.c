@@ -17,9 +17,9 @@ void InitWheelSpeedSensors()
 
 void UpdateWheelSpeed(WheelSpeed_s *speed)
 {
-	if (speed->sensor->flag == 0) return; //no new measurement available
-	else speed->sensor->flag = 0;         //clear flag
+	//if (speed->sensor->flag == 0) return; //no new measurement available
+	//else speed->sensor->flag = 0;         //clear flag
 
-	uint32_t period = speed->sensor->period * speed->ratio;          //revolution period in TPM ticks
-	speed->value = (float) speed->sensor->TPM->MOD / (float) period; //revolution frequency in seconds
+	uint32_t period = speed->sensor->period * speed->ratio; //revolution period in TPM ticks	
+	speed->value = period ? ( (float) speed->sensor->TPM->MOD / (float) period ) : 0; //revolution frequency in seconds
 }
