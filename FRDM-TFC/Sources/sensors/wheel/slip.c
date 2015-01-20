@@ -1,17 +1,4 @@
 #include "sensors/wheel/slip.h"
-#include "sensors/wheel/speed.h"
-#include "config.h"
-
-/*
-typedef struct {
-	float value;
-	WheelSpeedSensor_s  *front;
-	WheelSpeedSensor_s  *rear;
-} WheelSlipSensor_s
-*/
-
-#define WHEEL_SLIP_PAIRS NUM_MOTORS
-WheelSlipSensor_s WheelSlipSensors[WHEEL_SLIP_PAIRS];
 
 void InitWheelSlipSensors()
 {
