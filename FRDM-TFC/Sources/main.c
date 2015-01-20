@@ -384,8 +384,8 @@ void lineFollowingMode(carState_s* carState)
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 	{
 		//TFC_SetMotorPWM(0.3,0.3);
-		UpdateWheelSpeed(&WheelSpeeds[0]);
-		UpdateWheelSpeed(&WheelSpeeds[1]);
+		UpdateWheelSpeed(&WheelSpeedSensors[0]);
+		UpdateWheelSpeed(&WheelSpeedSensors[1]);
 		SetMotorSpeed(&MotorSpeeds[REAR_LEFT], 20);
 		SetMotorSpeed(&MotorSpeeds[REAR_RIGHT], 20);
 		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
