@@ -128,6 +128,7 @@ void TFC_Init(carState_s* carState)
 	InitWheelSpeedSensors();
 	InitMotorPWMControl();
 	InitWheelSpeedControl();
+	InitWheelSlipSensors();
 	InitMotorTorqueControl();
 	TFC_HBRIDGE_DISABLE;
 	TFC_SetMotorPWM(0, 0);
@@ -384,7 +385,7 @@ void lineFollowingMode(carState_s* carState)
 	//if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 	if (1)
 	{
-		UpdateWheelSpeed(&WheelSpeedSensors[REAR_RIGHT]);
+		UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
 		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], WheelSpeedSensors[REAR_RIGHT].value);
 		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 		UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);

@@ -4,7 +4,7 @@ void InitWheelSlipSensors()
 {
 	//rear left
 	WheelSlipSensors[REAR_LEFT].value = 0;
-	//WheelSlipSensors[REAR_LEFT].front = &WheelSpeedSensors[FRONT_LEFT];
+	WheelSlipSensors[REAR_LEFT].front = &WheelSpeedSensors[REAR_RIGHT]; //emulate front wheel
 	WheelSlipSensors[REAR_LEFT].rear  = &WheelSpeedSensors[REAR_LEFT];
 
 	//rear right
