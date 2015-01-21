@@ -9,8 +9,8 @@
 #include "support/ARM_SysTick.h"
 #include "config.h"
 
-#define MSPEED_KP 0.0025f
-#define MSPEED_KI 0.0035f
+#define MSPEED_KP 0.08f
+#define MSPEED_KI 0.07f
 #define MSPEED_KD 0.0f
 
 static PID_s pid[NUM_MOTORS];
