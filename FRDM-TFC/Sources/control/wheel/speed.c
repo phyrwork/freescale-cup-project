@@ -50,6 +50,14 @@ void SetWheelSpeed(WheelSpeedControl_s *speed, float command)
 {
 	speed->cmd = command; //Store command for telemetry purposes.
 	UpdateWheelSpeed(speed->sensor);
-	UpdatePID(speed->pid, command, speed->sensor->value);
-	SetMotorPWM(speed->pwm, speed->pid->value);
+	
+	if (speed->value == 0 && command == 0) //if vehicle is stationary or nearly stationary
+	{
+		*(speed->pwm->tpm->fwdCnVReg) = (uint16_t) (TPM0_MOD * 0xFF);  //complementary 50% PWM to prevent car rolling
+		*(speed->pwm->tpm->bwdCnVReg) = (uint16_t) ~(TPM0_MOD * 0xFF);
+	}
+	else {
+		UpdatePID(speed->pid, command, speed->sensor->value);
+		SetMotorPWM(speed->pwm, speed->pid->value);
+	}
 }
