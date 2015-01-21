@@ -53,7 +53,12 @@ classdef WheelSlipView < LineChartView
             
             % draw chart
             obj = obj.draw(x, y);
-            ylim(obj.haxis, [min(y), max(y)]); % adjust y-axis limits
+            
+            miy = min(y);
+            may = max(y);
+            if (miy ~= 0 && may ~= 0)
+                ylim(obj.haxis, [miy, may]); % adjust y-axis limits
+            end
             xlim(obj.haxis, [x(1), x(end)]); % adjust y-axis limits
         end
     end
