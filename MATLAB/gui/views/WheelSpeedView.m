@@ -36,8 +36,25 @@ classdef WheelSpeedView < LineChartView
                 'position', p.Results.position,... 
                 'title', ['Wheel speed: ', strrep(attribute, '_', '\_')],...
                 'xlabel', 'Time (s)',...
-                'ylabel', 'Speed (RPM)'...
+                'ylabel', 'Speed (RPM)',...
+                'period', 5 ...
             );
+        end
+        
+        % update chart - overload @LineChartView
+        function obj = update(obj)
+            % if no data nothing to do, return
+            if (obj.record.rsize < 1)
+                return;
+            end
+            
+            % fetch data
+            [x,y] = obj.record.latest(obj.period);
+            
+            % draw chart
+            obj = obj.draw(x, y);
+            ylim(obj.haxis, [0, max(y)]); % adjust y-axis limits
+            xlim(obj.haxis, [x(1), x(end)]); % adjust y-axis limits
         end
     end
     
