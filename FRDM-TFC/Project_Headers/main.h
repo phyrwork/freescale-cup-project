@@ -22,7 +22,6 @@
 #include "sensors/camera/AutoExposure.h"
 #include "sensors/camera/LineDetection.h"
 #include "sensors/motor/current.h"
-#include "control/motor/speed.h"
 #include "control/steering/Steering.h"
 #include "control/motor/pwm.h"
 #include "control/motor/torque.h"

@@ -2,20 +2,20 @@
 #include "sensors/cadence.h"
 
 /* Sensor configurations and data */
-WheelSpeed_s WheelSpeeds[NUM_CADENCE_SENSORS];
+WheelSpeedSensor_s WheelSpeedSensors[NUM_CADENCE_SENSORS];
 
 void InitWheelSpeedSensors()
 {
-	WheelSpeeds[0].value = 0;
-	WheelSpeeds[0].sensor = &CadenceSensors[0];
-	WheelSpeeds[0].ratio = 8;
+	WheelSpeedSensors[REAR_LEFT].value = 0;
+	WheelSpeedSensors[REAR_LEFT].sensor = &CadenceSensors[1];
+	WheelSpeedSensors[REAR_LEFT].ratio = 8;
 	
-	WheelSpeeds[1].value = 0;
-	WheelSpeeds[1].sensor = &CadenceSensors[1];
-	WheelSpeeds[1].ratio = 8;
+	WheelSpeedSensors[REAR_RIGHT].value = 0;
+	WheelSpeedSensors[REAR_RIGHT].sensor = &CadenceSensors[0];
+	WheelSpeedSensors[REAR_RIGHT].ratio = 8;
 }
 
-void UpdateWheelSpeed(WheelSpeed_s *speed)
+void UpdateWheelSpeed(WheelSpeedSensor_s *speed)
 {
 	//if (speed->sensor->flag == 0) return; //no new measurement available
 	//else speed->sensor->flag = 0;         //clear flag

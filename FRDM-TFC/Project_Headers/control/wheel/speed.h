@@ -1,8 +1,9 @@
-#ifndef MOTOR_SPEED_CONTROL_H_
-#define MOTOR_SPEED_CONTROL_H_
+#ifndef WHEEL_SPEED_CONTROL_H_
+#define WHEEL_SPEED_CONTROL_H_
 
 #include "sensors/cadence.h"
 #include "control/motor/pwm.h"
+#include "sensors/wheel/speed.h"
 #include "support/PID.h"
 
 typedef struct {
@@ -18,4 +19,4 @@ void SetWheelSpeed(WheelSpeedControl_s *speed, float command);
 
 extern WheelSpeedControl_s WheelSpeedControls[NUM_MOTORS];
 
-#endif /* SPEEDCONTROL_H_ */
+#endif /* WHEEL_SPEED_CONTROL_H_ */

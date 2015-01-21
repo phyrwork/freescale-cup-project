@@ -18,11 +18,13 @@ WheelSpeedControl_s WheelSpeedControls[NUM_MOTORS];
 
 void InitWheelSpeedControl()
 {
+	//rear left
 	WheelSpeedControls[REAR_LEFT].value = 0.0f;
 	WheelSpeedControls[REAR_LEFT].sensor = &WheelSpeedSensors[REAR_LEFT];
 	WheelSpeedControls[REAR_LEFT].pwm = &MotorPWM[REAR_LEFT];
 	WheelSpeedControls[REAR_LEFT].pid = &pid[REAR_LEFT];
 	
+	//rear right
 	WheelSpeedControls[REAR_RIGHT].value = 0.0f;
 	WheelSpeedControls[REAR_RIGHT].sensor = &WheelSpeedSensors[REAR_RIGHT];
 	WheelSpeedControls[REAR_RIGHT].pwm = &MotorPWM[REAR_RIGHT];
