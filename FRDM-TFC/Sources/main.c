@@ -1,7 +1,7 @@
 #include "main.h"
 #include "sensors/cadence.h"
 #include "sensors/wheel/speed.h"
-#include "control/motor/speed.h"
+#include "control/wheel/speed.h"
 
 ///////////////////////////////////////
 // Main Routine Task Request Handler //
@@ -127,8 +127,9 @@ void TFC_Init(carState_s* carState)
 	CadenceSensors_Init();
 	InitWheelSpeedSensors();
 	InitMotorPWMControl();
+	InitWheelSpeedControl();
+	InitWheelSlipSensors();
 	InitMotorTorqueControl();
-	InitMotorSpeedControl();
 	TFC_HBRIDGE_DISABLE;
 	TFC_SetMotorPWM(0, 0);
 	preloadProbabilityTables(); //Prevents probability tables for stop line evaluation from being created too late
@@ -381,17 +382,13 @@ void lineFollowingMode(carState_s* carState)
 		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
 	}
 
-	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
+	//if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
+	if (1)
 	{
-		//TFC_SetMotorPWM(0.3,0.3);
-		UpdateWheelSpeed(&WheelSpeeds[0]);
-		UpdateWheelSpeed(&WheelSpeeds[1]);
-		SetMotorSpeed(&MotorSpeeds[REAR_LEFT], 20);
-		SetMotorSpeed(&MotorSpeeds[REAR_RIGHT], 20);
+		UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
+		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], WheelSpeedSensors[REAR_RIGHT].value);
 		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 		UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
-		//SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0006);
-		//SetMotorTorque(&MotorTorque[REAR_RIGHT], 0.0012);
 			
 		if (carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 		{
