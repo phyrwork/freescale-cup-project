@@ -261,7 +261,7 @@ uint8_t findEdges(int16_t* dy, uint16_t threshold)
 		int16_t height = 0;
 		for (; k < 128 &&
 			   abs(dy[k]) > DIFFERENTIAL_THRESHOLD && //differential threshold
-			   !( (dy[k] > 0 && dy[k-1] < 0) || (dy[k] < 0 && dy[k-1] > 0) ); //inflection points
+			   !( (dy[k] > 0 && dy[k-1] < 0) || (dy[k] < 0 && dy[k-1] > 0) ); //turning points
 			   ++k, height += dy[k]) {} //sum differential
 
 		//test candidate
