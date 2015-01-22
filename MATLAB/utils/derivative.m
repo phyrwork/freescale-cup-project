@@ -3,7 +3,7 @@ function [ dx ] = derivative( x )
 
     % get dims of x
     [r,c] = size(x);
-    if (r == 1 && c ~= 1) || (c == 1 && r ~= 1)
+    if (r == 1 && c ~= 1) && (c == 1 && r ~= 1)
         error('Vector must be 1-dimensional');
     end
     
