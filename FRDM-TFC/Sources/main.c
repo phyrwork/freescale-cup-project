@@ -191,6 +191,14 @@ int main(void)
 				}
 			}
 			
+			if ( PollTaskRequest(WSPEED_REQUEST_INDEX) )
+			{    ClearTaskRequest(WSPEED_REQUEST_INDEX);
+
+				/* Run data collection routine */
+				UpdateWheelSpeed(&WheelSpeedSensors[REAR_LEFT]);
+				UpdateWheelSpeed(&WheelSpeedSensors[REAR_RIGHT]);
+			}
+		
 			if ( PollTaskRequest(TELEMETRY_REQUEST_INDEX) )
 			{    ClearTaskRequest(TELEMETRY_REQUEST_INDEX);
 
@@ -382,11 +390,12 @@ void lineFollowingMode(carState_s* carState)
 		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
 	}
 
-	//if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
-	if (1)
+	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
+	//if (1)
 	{
-		UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
-		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], WheelSpeedSensors[REAR_RIGHT].value);
+		//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
+		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 0.7);
+		SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 0.7);
 		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 		UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 			

@@ -53,8 +53,8 @@ CollectorItem items[] = {
 	/* [5] = */ { /* data = */ &MotorPWM[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RR_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
 	///* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].PID, /* deref = */ 1, /* endpoint = */ &TFTP_PID_T_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
 	///* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].PID, /* deref = */ 1, /* endpoint = */ &TFTP_PID_T_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &WheelSpeedSensors[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_W_RL_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &WheelSpeedSensors[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_W_RR_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &WheelSpeedSensors[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_W_RL_ENDPOINT,    /* frequency = */ 150, /* misc...*/ 0,0 },
+	/* [5] = */ { /* data = */ &WheelSpeedSensors[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_W_RR_ENDPOINT,    /* frequency = */ 150, /* misc...*/ 0,0 },
 	/* [5] = */ { /* data = */ &WheelSlipSensors[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_S_RL_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
 	/* [5] = */ { /* data = */ &WheelSlipSensors[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_S_RR_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 }
 };
