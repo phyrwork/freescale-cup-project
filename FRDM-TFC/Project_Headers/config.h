@@ -10,10 +10,22 @@
 //#define SYSTICK_FREQUENCY /* To do: Move #define here and remove hard coded dependencies on this value */
 #define NUM_TFC_TICKERS 9
 #define UPTIME_TICKER 4
-#define COLLECTOR_TICKER 5
 #define MAIN_TRIGGER_TICKER 6
 #define ADC_SAMPLE_TICKER 7
 #define TASK_REQUEST_TICKER 8
+
+/* Collector config */
+#define COLLECTOR_TLIM_SECONDS 0.0005f //2000Hz
+#define NUM_COLLECTOR_ITEMS 9
+#define LINESCAN0_COLLECTOR_INDEX         0
+#define TRACK_POSITION_COLLECTOR_INDEX    1
+#define POSITIONING_STATE_COLLECTOR_INDEX 2
+#define I_RL_COLLECTOR_INDEX              3
+#define I_RR_COLLECTOR_INDEX              4
+#define D_RL_COLLECTOR_INDEX              5
+#define D_RR_COLLECTOR_INDEX              6
+#define W_RL_COLLECTOR_INDEX              7
+#define W_RR_COLLECTOR_INDEX              8
 
 /* PIT1 config */
 #define PIT1_POLLING_FREQUENCY 2400

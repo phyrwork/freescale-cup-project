@@ -9,30 +9,33 @@
 
 #include <stdint.h>
 
-/* Define endpoint function pointer */
-typedef int8_t (*Endpoint)(void*);
+//Define endpoint function pointer
+typedef int8_t (*CltrEndpoint_f)(void*);
 
-/* Define collector element struct */
+//Define collector element struct
 typedef struct {
-	void*     data;
-	uint8_t   deref; /* Number of deferences required to reach data -
-	                   facilitates access to data behind pointers */
-	Endpoint  endpoint;
-	uint32_t  frequency;
-	uint32_t  period;
-	uint32_t  counter;
-} CollectorItem;
 
-/* Endpoint error reporting */
-typedef struct {
-	uint8_t flag;
-	int8_t* error;
-} CollectorStatus;
+	//data config
+	void* const    data;     //base address of telemetry data to be passed to endpoint
+	uint8_t const  deref;    //number of address 'hops' required to reach actual data (used to access 'moving' data such as linescan)
+	CltrEndpoint_f endpoint; //pointer to data endpoint method (usually Tftp)
 
-#define COLLECTOR_ENDPOINT_OK    0
-#define COLLECTOR_ENDPOINT_ERROR 1
+	//timing config/meta
+	float const fauto;       //when set > 0 data will be pushed to endpoint at this target fauto
+	uint32_t    pauto;       //'fauto' expressed in timer ticks
+	float const flim;        //used to limit how often a 'request' flag can be serviced
+	uint32_t    plim;        //'flim' expressed in timer ticks
+	uint32_t    counter;     //time elapsed (in ticks) since last service
 
-void             Collector_Init();
-CollectorStatus* Collector();
+	//event meta
+	uint8_t request;         //set by an external service to request a data collection event
+	uint8_t pending;         //set internally to schedule a data collection event
+
+} CltrItem_s;
+
+void Collector_Init();
+void CollectorRequest(uint8_t index);
+void CollectorUpdate();
+void CollectorProcess();
 
 #endif //FRDM_COLLECTOR

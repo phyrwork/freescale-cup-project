@@ -194,7 +194,8 @@ int main(void)
 			{    ClearTaskRequest(TELEMETRY_REQUEST_INDEX);
 
 				/* Run data collection routine */
-				Collector();
+				CollectorUpdate();
+				CollectorProcess();
 			}
 		}
 		else
