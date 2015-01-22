@@ -135,18 +135,18 @@ void CollectorRequest(uint8_t index)
 void CollectorUpdate()
 {
 	static uint32_t tref = 0;      //reference ticker value
-	       uint32_t t = TICKER:    //'freeze' the ticker
+	       uint32_t t = TICKER;    //'freeze' the ticker
 	       uint32_t dt = t - tref; //get interval since last call
 
 	for(uint32_t i = 0; i < NUM_COLLECTOR_ITEMS; ++i)
 	{
-		CltrItem_s *item = items[i];
+		CltrItem_s *item = &items[i];
 
 		item->counter += dt; //increment item counter
 		
 		//schedule collection events
 		if (item->counter >= item->plim || //if time elapsed greater than rate-limit period
-			item->plim = 0)                //or if no rate-limit is set
+			item->plim == 0)                //or if no rate-limit is set
 		{
 			//automatic scheduling
 			if (item->pauto != 0 &&          //if automatic scheduling period is set
@@ -187,6 +187,6 @@ void CollectorProcess()
 		uint8_t r = item->deref; //number of times to derefence to reach address of actual data
 
 		while(r--) ptr = (void*)(*((int*) ptr)); //dereference pointer (can't assign 'void', so cast to int)
-		*(item->endpoint))(ptr); //push data onto endpoint
+		(*(item->endpoint))(ptr); //push data onto endpoint
 	}
 }
