@@ -2,7 +2,8 @@ function [ edges ] = findEdges( y )
 %findEdges Experimental edge detection for FRDM-TFC
 
     % SETTINGS
-    threshold = 600;
+    Dy_t = 600;
+    dy_t = 300;
     
     % SETUP
     dy = y(2:end) - y(1:end-1); % find image derivative
@@ -23,7 +24,7 @@ function [ edges ] = findEdges( y )
          if (dy(i) > 0 && dy(i-1) < 0) || (dy(i) < 0 && dy(i-1) > 0)
              
              % filter qualifying edges
-             if abs(edge.height) > threshold
+             if abs(edge.height) > Dy_t
                  
                  % complete edge
                  edge.finish = i - 1;
@@ -55,7 +56,7 @@ function [ edges ] = findEdges( y )
     end
     
     % filter qualifying edges
-    if abs(edge.height) > threshold
+    if abs(edge.height) > Dy_t
 
          % complete edge
          edge.finish = i;
