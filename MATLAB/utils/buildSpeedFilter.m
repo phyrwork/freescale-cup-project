@@ -36,6 +36,9 @@ function [ coeffs ] = buildSpeedFilter( size, sigma, epr )
     dly = 1000*(cs/eps); %delay (ms)
     disp([num2str(dly),'ms @1000RPM']);
     
+    figure;
+    plot(g);
+    
     coeffs = coeffs2csv(g);
 end
 
