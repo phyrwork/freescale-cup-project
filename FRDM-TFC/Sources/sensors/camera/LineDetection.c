@@ -356,6 +356,8 @@ uint8_t findLines(Edge *edge, uint8_t edges)
 		line->width = line->edges[R].pos - line->edges[L].pos;
 		++detected;
 	}
+	
+	return detected;
 }
 
 void weightEdges(Edge* targets, Edge* edges, uint8_t size) {
