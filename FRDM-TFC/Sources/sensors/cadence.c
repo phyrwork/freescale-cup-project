@@ -15,7 +15,7 @@
 #define NUM_SENSORS NUM_CADENCE_SENSORS
 
 CadenceSensor_s CadenceSensors[NUM_SENSORS] = {
-	/* [0] = */  {
+	/* [0] (REAR_RIGHT) = */  {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   0,
 		/* cnv = */       0,
@@ -24,7 +24,7 @@ CadenceSensor_s CadenceSensors[NUM_SENSORS] = {
 		/* epr = */       6,
 		/* flag = */      0
 	},
-	/* [1] = */ {
+	/* [1] (REAR_LEFT) = */ {
 		/* TPM = */       TPM2_BASE_PTR,
 		/* channel = */   1,
 		/* cnv = */       0,

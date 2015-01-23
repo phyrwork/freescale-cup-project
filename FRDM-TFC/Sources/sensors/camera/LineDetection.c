@@ -249,70 +249,41 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 uint8_t findEdges(int16_t* dy, uint16_t threshold)
 {
 	uint8_t detected = 0; //number of edges found.
-	uint8_t start = 0;    //start of current transition region
-	int16_t height = 0;   //height of current transition
 	Edge   *edge = &EdgeBuffer[detected]; //pointer to next slot in edge buffer
 
-	for (uint8_t k = 1;
-		 k < 128 && detected < MAX_NUMBER_OF_TRANSITIONS;
-		 k++)
-	{
-		//look for inflection points
-		if ( (dy[k] > 0 && dy[k-1] < 0) ||
-			 (dy[k] < 0 && dy[k-1] > 0) )
+	for (uint32_t k = 1; k < 128; ++k)
+	{		
+		//first search for the start of a candidate transition
+		for (; k < 128 && !(abs(dy[k]) >= DIFFERENTIAL_THRESHOLD); ++k) {}
+		uint8_t start = k;
+
+		//next search for the end of a candidate transition
+		int16_t height = 0;
+		for (; k < 128 &&
+			   abs(dy[k]) > DIFFERENTIAL_THRESHOLD && //differential threshold
+			   !( (dy[k] > 0 && dy[k-1] < 0) || (dy[k] < 0 && dy[k-1] > 0) ); //turning points
+			   ++k, height += dy[k]) {} //sum differential
+
+		//test candidate
+		if ( abs(height) >= HEIGHT_THRESHOLD )
 		{
-			//filter edges with sufficient amplitude
-			if ( abs(height) > HEIGHT_THRESHOLD )
+			if (height > 0)
 			{
-				uint8_t finish = k - 1; //complete region
-				
-				//pinpoint edge location
+				//rising edge
 				edge->pos = start;
-				for (uint8_t c = start; c < finish; ++c)
-				{
-					//search for steepest point in region
-					if ( abs(dy[c]) > abs(dy[edge->pos]) )
-					{
-						edge->pos = c;
-					}
-				}
-
-				edge->type = dy[edge->pos] > 0 ? //determine edge type
-					EDGE_TYPE_RISING : EDGE_TYPE_FALLING;
-
-				//'store' edge
-				edge = &EdgeBuffer[++detected];
+				edge->type = EDGE_TYPE_RISING;
 			}
-
-			//start a new edge
-			start = k;
-			height = 0;
-		}
-
-		height += dy[k]; //accumulate change in height
-	}
-
-	//handle final region
-	if ( abs(height) > HEIGHT_THRESHOLD )
-	{
-		uint8_t finish = 128; //complete region
-		
-		//pinpoint edge location
-		edge->pos = start;
-		for (uint8_t c = start; c < finish; ++c)
-		{
-			//search for steepest point in region
-			if ( abs(dy[c]) > abs(dy[edge->pos]) )
+			else
 			{
-				edge->pos = c;
+				//falling edge
+				edge->pos = k - 1;
+				edge->type = EDGE_TYPE_FALLING;
 			}
+
+			//'save' edge
+		    ++detected;
+		    ++edge;
 		}
-
-		edge->type = edge->type > 0 ? //determine edge type
-			EDGE_TYPE_RISING : EDGE_TYPE_FALLING;
-
-		//'store' edge
-		++detected;
 	}
 
 	return detected;

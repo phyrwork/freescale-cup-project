@@ -7,11 +7,12 @@ typedef struct {
 	float value;
 	CadenceSensor_s *sensor; //pointer to a cadence sensor
 	float ratio; //period ratio of wheel:sensor (wheel:motor = 8:1??)
-} WheelSpeed_s;
+	uint32_t timeout; //timeout ref
+} WheelSpeedSensor_s;
 
-extern WheelSpeed_s WheelSpeeds[NUM_CADENCE_SENSORS];
+extern WheelSpeedSensor_s WheelSpeedSensors[NUM_CADENCE_SENSORS];
 
 void InitWheelSpeedSensors();
-void UpdateWheelSpeed(WheelSpeed_s *wheel);
+void UpdateWheelSpeed(WheelSpeedSensor_s *wheel);
 
 #endif

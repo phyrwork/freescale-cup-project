@@ -32,6 +32,7 @@
 #include "sensors/motor/current.h"
 #include "sensors/cadence.h"
 #include "sensors/wheel/speed.h"
+#include "sensors/wheel/slip.h"
 #include "control/motor/pwm.h"
 #include "control/motor/torque.h"
 #include "io/ADC.h"
@@ -96,16 +97,30 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	},
 	//[7]
 	{ //w_rl
-		.data = &WheelSpeeds[1].value,
+		.data = &WheelSpeedSensors[REAR_LEFT].value,
 		.deref = 0,
 		.endpoint = &TFTP_W_RL_ENDPOINT,
 		.fauto = 20
 	},
 	//[8]
 	{ //w_rr
-		.data = &WheelSpeeds[0].value,
+		.data = &WheelSpeedSensors[REAR_RIGHT].value,
 		.deref = 0,
 		.endpoint = &TFTP_W_RR_ENDPOINT,
+		.fauto = 20
+	},
+	//[9]
+	{ //s_rl
+		.data = &WheelSlipSensors[REAR_LEFT].value,
+		.deref = 0,
+		.endpoint = &TFTP_S_RL_ENDPOINT,
+		.fauto = 20
+	},
+	//[10]
+	{ //s_rr
+		.data = &WheelSlipSensors[REAR_RIGHT].value,
+		.deref = 0,
+		.endpoint = &TFTP_S_RR_ENDPOINT,
 		.fauto = 20
 	}
 };
