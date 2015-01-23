@@ -289,44 +289,75 @@ uint8_t findEdges(int16_t* dy, uint16_t threshold)
 	return detected;
 }
 
-uint8_t findLines(Edge *edges, uint8_t numEdges)
+uint8_t findLines(Edge *edge, uint8_t edges)
 {
-	#define start  edges[0].pos //Macros for easy/readable access to line...
-	#define finish edges[1].pos //...start/finish.
-	
-	uint8_t numLines = 1; //Number of pairs generated
+	uint8_t detected = 0;
+	Line   *line = LineBuffer;
+	enum {COMPLETE, INCOMPLETE} status;
 
-	/* Start constructing first line */
-	LineBuffer->edges[L].pos = 0;
-	LineBuffer->edges[L].type = EDGE_TYPE_VIRTUAL;
-	
-	/* A line potentially exists between every pair of edges */
-	Line *line = LineBuffer;
-	for (uint8_t e = 0; e < numEdges; ++e) {
-		
-		Edge *edge = &edges[e];
+	//start first line
+	if (edges == 0 || edge->type != EDGE_TYPE_RISING)
+	{
+		//create a virtual edge if no rising edge
+		line->edges[L].pos = 0;
+		line->edges[L].type = EDGE_TYPE_VIRTUAL;
+	}
+	else
+	{
+		//otherwise copy edge and continue
+		line->edges[L] = *(edge++);
+		--edges; //decrement edges counter
+	}
+	status = INCOMPLETE; //signal line incomplete
 
-		//Make sure we only capture the next edge of a different type
-		//if (edge->type == line->edges[L].type) continue;
+	//analyse remaining edges
+	while(edges)
+	{
+		//search for an alternate edge (skip similar edges)
+		while(edges && edge->type == line->edges[L].type)
+		{
+			++edge;
+			--edges;
+		}
+		if (edges) //if still have edges to complete with
+		{
+			//complete a line
+			line->edges[R] = *(edge++);
+			--edges;
 
-		/* Finish constructing previous line */
-		line->edges[R] = *edge;
-		line->width = line->finish - line->start; //Calculate width of line
+			line->width = line->edges[R].pos - line->edges[L].pos;
+			++detected;
 
-		/* Start constructing next line */
-		(++line)->edges[L] = *edge;
-		++numLines;
+			status = COMPLETE;
+		}
+
+		//start search for a new line
+		while(edges && edge->type != EDGE_TYPE_RISING)
+		{
+			++edge;
+			--edges;
+		}
+		if (edges) //if still have edges to start with
+		{
+			//start a line
+			(++line)->edges[L] = *(edge++);
+			--edges;
+
+			status = INCOMPLETE;
+		}
 	}
 
-	/* Finish constructing final line */
-	line->edges[R].pos = 127;
-	line->edges[R].type = EDGE_TYPE_VIRTUAL;
-	line->width = line->finish - line->start; //Calculate width of line
+	//finish last line
+	if (status == INCOMPLETE && line->edges[L].pos < 127)
+	{
+		line->edges[R].pos = 127;
+		line->edges[R].type = EDGE_TYPE_VIRTUAL;
 
-	return numLines;
+		line->width = line->edges[R].pos - line->edges[L].pos;
+		++detected;
+	}
 	
-	#undef start
-	#undef finish
+	return detected;
 }
 
 void weightEdges(Edge* targets, Edge* edges, uint8_t size) {
