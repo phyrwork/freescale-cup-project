@@ -7,7 +7,7 @@
 // Main Routine Task Request Handler //
 ///////////////////////////////////////
 
-#define SIZEOF_FLAGS ( ((REQUESTS_MAX_TASKS - 1) / 32) + 1 )
+#define SIZEOF_FLAGS ( ((NUM_TASK_ITEMS - 1) / 32) + 1 )
 uint32_t pflags[SIZEOF_FLAGS];
 //#define SIZEOF_FLAGS ( (sizeof flags) / (sizeof (uint32_t)) )
 
@@ -38,7 +38,6 @@ void ClearTaskPending(uint32_t index)
 }
 
 typedef struct {
-	uint32_t    index;   //index of task request bit
 	float const fauto;   //when set > 0 data will be pushed to endpoint at this target fauto
 	uint32_t    pauto;   //'fauto' expressed in timer ticks
 	float const flim;    //used to limit how often a 'request' flag can be serviced
@@ -50,18 +49,24 @@ typedef struct {
 #define TASK_IDLE 0
 #define TASK_WAITING 1
 
-MainTask_s tasks[] =
+MainTask_s tasks[NUM_TASK_ITEMS] =
 {
-	/* [0] = */ {
-        .index = CONTROL_REQUEST_INDEX,
-        .fauto = CONTROL_REQUEST_FREQUENCY
+	//[0]
+	{ //control
+        .fauto = 100
     },
-    /* [0] = */ {
-        .index = TELEMETRY_REQUEST_INDEX,
-        .fauto = TELEMETRY_REQUEST_FREQUENCY
-    }
+    //[1]
+    { //telemetry
+        .fauto = 100
+    },
+    //[2]
+	{ //positioning
+	},
+	//[3]
+	{ //steering
+		.fauto = 50
+	}
 };
-#define SIZEOF_TASKS ( (sizeof tasks) / (sizeof (MainTask_s)) )
 
 void SetTaskRequest(uint32_t index) { tasks[index].request = TASK_WAITING; }
 void ClearTaskRequest(uint32_t index) { tasks[index].request = TASK_IDLE; }
@@ -69,7 +74,7 @@ void ClearTaskRequest(uint32_t index) { tasks[index].request = TASK_IDLE; }
 void TaskRequest_Init()
 { 
     //calculate timing information
-    for (uint32_t i = 0; i < SIZEOF_TASKS; ++i )
+    for (uint32_t i = 0; i < NUM_TASK_ITEMS; ++i )
     {
         MainTask_s *item = &tasks[i];
 
@@ -94,7 +99,7 @@ void UpdateTaskRequests()
 		   uint32_t dt = t - tref; //get interval since last call
 		            tref = TICKER; //store time reference
 
-	for(uint32_t i = 0; i < SIZEOF_TASKS; ++i)
+	for(uint32_t i = 0; i < NUM_TASK_ITEMS; ++i)
 	{
 		MainTask_s *item = &tasks[i];
 
@@ -109,7 +114,7 @@ void UpdateTaskRequests()
 				item->counter >= item->pauto) //and time elapsed since last event is sufficient
 			{
 				item->counter = 0;            //restart item timer
-				SetTaskPending(item->index);
+				SetTaskPending(i);
 				continue;
 			}
 
@@ -119,7 +124,7 @@ void UpdateTaskRequests()
 				item->request = TASK_IDLE;    //clear request
 
 				item->counter = 0;            //restart item timer
-				SetTaskPending(item->index);
+				SetTaskPending(i);
 				continue;
 			}
 		}
@@ -166,7 +171,7 @@ int main(void)
 	{ .motorState = FORCED_DISABLED, .UARTSpeedState = UNDEFINED, .lineDetectionState = LINE_LOST, .lineScanState = NO_NEW_LINESCAN_IMAGE };
 	TFC_Init(&carState);
 	
-	while (carState.lineScanState != LINESCAN_IMAGE_READY){};
+	while ( !PollTaskPending(POSITIONING_REQUEST_INDEX) ){};
 	//InitTracking(LineScanImage0, 350);
 	TFC_SetLED(0);
 
@@ -199,6 +204,24 @@ int main(void)
 						TFC_SetLED(0);
 						break;
 				}
+			}
+			
+			//Positioning update tasks
+			if ( PollTaskPending(POSITIONING_REQUEST_INDEX) )
+			{    ClearTaskPending(POSITIONING_REQUEST_INDEX);
+			
+				static uint32_t totalIntensity = 0;
+
+				findPosition(LineScanImage0, &carState, 350);
+				totalIntensity = getTotalIntensity(LineScanImage0);
+				TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
+			}
+			
+			//Steering update tasks
+			if ( PollTaskPending(STEERING_REQUEST_INDEX) )
+			{    ClearTaskPending(STEERING_REQUEST_INDEX);
+				
+				TFC_SetServo(0, getDesiredServoValue(carState.lineCenter, 0));
 			}
 			
 			if ( PollTaskPending(TELEMETRY_REQUEST_INDEX) )
@@ -235,23 +258,6 @@ void evaluateMotorState(carState_s* carState)
 
 void lineFollowingMode(carState_s* carState)
 {
-	static lineScanState_t steeringControlUpdate;
-	static uint32_t totalIntensity = 0;
-	if (carState->lineScanState == LINESCAN_IMAGE_READY)
-	{
-		steeringControlUpdate = LINESCAN_IMAGE_READY;
-		findPosition(LineScanImage0, carState, 350);// ((uint32_t)350*TARGET_TOTAL_INTENSITY) / totalIntensity);
-		totalIntensity = getTotalIntensity(LineScanImage0);
-		TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
-		carState->lineScanState = NO_NEW_LINESCAN_IMAGE;
-	}
-
-	if (TFC_Ticker[0] >= 200)
-	{
-		TFC_Ticker[0] = 0;
-		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
-	}
-
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 	{
 		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 2);

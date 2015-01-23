@@ -11,6 +11,6 @@
 #include "support/Types.h"
 #include "sensors/camera/LineDetection.h"
 
-float getDesiredServoValue(int8_t position, int8_t setpoint, lineScanState_t* lineScanState);
+float getDesiredServoValue(int8_t position, int8_t setpoint);
 
 #endif /* STEERINGCONTROL_H_ */

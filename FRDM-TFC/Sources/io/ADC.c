@@ -521,7 +521,7 @@ int8_t Linescan0Callback ()
         }
 
         CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
-        carState->lineScanState = LINESCAN_IMAGE_READY; //announce image ready
+        SetTaskRequest(POSITIONING_REQUEST_INDEX);
     }
     return 0;
 }

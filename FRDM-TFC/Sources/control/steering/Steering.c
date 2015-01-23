@@ -19,7 +19,7 @@
 #define STEERING_LIMIT_LOWER -0.5f
 #define OFFSET -0.049//-0.062f
 
-float getDesiredServoValue(int8_t position, int8_t setpoint, lineScanState_t* lineScanState)
+float getDesiredServoValue(int8_t position, int8_t setpoint)
 {
 	static float newPosition = 0;
 	static float errorSum = 0;
@@ -27,40 +27,36 @@ float getDesiredServoValue(int8_t position, int8_t setpoint, lineScanState_t* li
 //	float Ki = TFC_ReadPot(1)*0.05f + 0.05f;
 //	float Kd = TFC_ReadPot(1) * 0.0005f + 0.0005f;
 
-	if (*lineScanState == LINESCAN_IMAGE_READY)
+	float error = (float) (setpoint - position);
+
+	if (abs(newPosition) < STEERING_LIMIT_UPPER)
 	{
-		*lineScanState = NO_NEW_LINESCAN_IMAGE;
-		float error = (float) (setpoint - position);
-
-		if (abs(newPosition) < STEERING_LIMIT_UPPER)
-		{
-			errorSum += error * (TFC_Ticker[1] / 10000.0f); //Normally then multiplied by dt, but ignored since we are assuming a constant iteration rate
-		}
-
-		if (errorSum > INTEGRAL_LIMIT)
-		{
-			errorSum = INTEGRAL_LIMIT;
-		}
-		else if (errorSum < -INTEGRAL_LIMIT)
-		{
-			errorSum = -INTEGRAL_LIMIT;
-		}
-
-		float errorDifferential = (error - previousError) / (TFC_Ticker[1] / 10000.0f); //Normally then divided by dt, but ignored since we are assuming a constant iteration rate
-		TFC_Ticker[1] = 0;
-
-		newPosition = (Kp * error) + (Ki * errorSum) + (Kd * errorDifferential);
-
-		if (newPosition > STEERING_LIMIT_UPPER)
-		{
-			newPosition = STEERING_LIMIT_UPPER;
-		}
-		else if (newPosition < STEERING_LIMIT_LOWER)
-		{
-			newPosition = STEERING_LIMIT_LOWER;
-		}
-		previousError = error;
+		errorSum += error * (TFC_Ticker[1] / 10000.0f); //Normally then multiplied by dt, but ignored since we are assuming a constant iteration rate
 	}
+
+	if (errorSum > INTEGRAL_LIMIT)
+	{
+		errorSum = INTEGRAL_LIMIT;
+	}
+	else if (errorSum < -INTEGRAL_LIMIT)
+	{
+		errorSum = -INTEGRAL_LIMIT;
+	}
+
+	float errorDifferential = (error - previousError) / (TFC_Ticker[1] / 10000.0f); //Normally then divided by dt, but ignored since we are assuming a constant iteration rate
+	TFC_Ticker[1] = 0;
+
+	newPosition = (Kp * error) + (Ki * errorSum) + (Kd * errorDifferential);
+
+	if (newPosition > STEERING_LIMIT_UPPER)
+	{
+		newPosition = STEERING_LIMIT_UPPER;
+	}
+	else if (newPosition < STEERING_LIMIT_LOWER)
+	{
+		newPosition = STEERING_LIMIT_LOWER;
+	}
+	previousError = error;
 
 	return -(newPosition - OFFSET);
 }

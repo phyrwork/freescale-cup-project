@@ -33,11 +33,11 @@
 #define PIT1_POLLING_FREQUENCY 2400
 
 /* Trigger configuration */
-#define REQUESTS_MAX_TASKS 32
+#define NUM_TASK_ITEMS 4
 #define CONTROL_REQUEST_INDEX 0
-#define CONTROL_REQUEST_FREQUENCY 100
 #define TELEMETRY_REQUEST_INDEX 1
-#define TELEMETRY_REQUEST_FREQUENCY 100
+#define POSITIONING_REQUEST_INDEX 2
+#define STEERING_REQUEST_INDEX 3
 
 /* ADC sampling configuration - n.b. these are target sampling frequencies only */
 #define SAMPLER_QUEUE_LENGTH 16
