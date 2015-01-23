@@ -38,14 +38,17 @@ function edges = findEdges( image )
             % candidate meets requirements, so choose side of region
             if ry > 0
                 % rising edge, choose start of region
-                pos = start;
+                edge.pos = start;
+                edge.type = 0; % rising edge
             else
                 % falling edge, choose end of region
-                pos = i - 1;
+                edge.pos = i - 1;
+                edge.type = 1; % rising edge
             end
 
             % save edge
-            edges = [edges, pos];
+            edges = [edges, edge];
+            edge = [];
         end
         
         i = i + 1; % advance
