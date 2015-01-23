@@ -5,11 +5,15 @@ function plotEdges( image )
     edges = findEdges(image);
     
     % prep scatter
-    sy = image(edges);
+    sx = [];
+    for i = 1:length(edges)
+        sx = [sx, edges(i).pos];
+    end
+    sy = image(sx);
     
     plot(1:128,image); %plot image
     hold on
-    scatter(edges, sy); %plot edges
+    scatter(sx, sy); %plot edges
     hold off
 end
 
