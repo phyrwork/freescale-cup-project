@@ -6,6 +6,7 @@
 #include "support/rbuf_voidptr.h"
 #include "config.h"
 #include "main.h"
+#include "telemetry/Collector.h"
 
 #define TFC_MOTOR_CURRENT_0_CHANNEL 7 //7a
 #define TFC_MOTOR_CURRENT_1_CHANNEL 3
@@ -519,6 +520,7 @@ int8_t Linescan0Callback ()
             LineScanImage0 = &LineScanImage0Buffer[1][0];
         }
 
+        CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
         carState->lineScanState = LINESCAN_IMAGE_READY; //announce image ready
     }
     return 0;
