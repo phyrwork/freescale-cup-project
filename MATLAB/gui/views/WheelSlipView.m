@@ -1,5 +1,5 @@
-classdef MotorDutyView < LineChartView
-    %MotorDutyView
+classdef WheelSlipView < LineChartView
+    %WheelSlipView
     
     properties
         % attribute = char.empty; % attribute id
@@ -15,8 +15,8 @@ classdef MotorDutyView < LineChartView
     end
     
     methods
-        % MotorDutyView constructor
-        function obj = MotorDutyView(session, attribute, varargin)
+        % WheelSlipView constructor
+        function obj = WheelSlipView(session, attribute, varargin)
             % parse input
             p = inputParser;
             addRequired (p, 'session');
@@ -34,13 +34,14 @@ classdef MotorDutyView < LineChartView
                 p.Results.attribute,...
                 'figure', p.Results.figure,...
                 'position', p.Results.position,... 
-                'title', ['Motor duty: ', strrep(attribute, '_', '\_')],...
+                'title', ['Wheel slip: ', strrep(attribute, '_', '\_')],...
                 'xlabel', 'Time (s)',...
-                'ylabel', 'Duty (ratio)'...
+                'ylabel', 'Slip (ratio)',...
+                'period', 5 ...
             );
         end
         
-        % update chart - overload 
+        % update chart - overload @LineChartView
         function obj = update(obj)
             % if no data nothing to do, return
             if (obj.record.rsize < 1)
@@ -52,7 +53,18 @@ classdef MotorDutyView < LineChartView
             
             % draw chart
             obj = obj.draw(x, y);
-            ylim(obj.haxis, [-1, 1]); % adjust y-axis limits
+            
+            miy = min(y);
+            if miy > -0.3
+                miy = -0.3;
+            end
+            may = max(y);
+            if may < 0.3
+                may = 0.3;
+            end
+            if (miy ~= 0 && may ~= 0)
+                ylim(obj.haxis, [miy, may]); % adjust y-axis limits
+            end
             xlim(obj.haxis, [x(1), x(end)]); % adjust y-axis limits
         end
     end

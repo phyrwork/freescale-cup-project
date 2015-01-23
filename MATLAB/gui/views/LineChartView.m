@@ -28,7 +28,7 @@ classdef LineChartView < AxisView
             addParameter(p, 'ylabel', char.empty, @ischar);
             addParameter(p, 'xlim', 'auto');
             addParameter(p, 'ylim', 'auto');
-            addParameter(p, 'period', 20, @issingle); % default period = 20s
+            addParameter(p, 'period', 20, @isnumeric); % default period = 20s
             addParameter(p, 'legend', []);
             parse(p, session, attribute, varargin{:});
             
