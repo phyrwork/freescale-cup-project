@@ -8,99 +8,122 @@
 ///////////////////////////////////////
 
 #define SIZEOF_FLAGS ( ((REQUESTS_MAX_TASKS - 1) / 32) + 1 )
-uint32_t flags[SIZEOF_FLAGS];
+uint32_t pflags[SIZEOF_FLAGS];
 //#define SIZEOF_FLAGS ( (sizeof flags) / (sizeof (uint32_t)) )
 
 #define TR_INDEX (index >> 5)   //divide by 32 to get index in task requests array
 #define TR_BIT   (index & 0x1F) //isolate bit number
 
-uint32_t AnyTaskRequest()
+uint32_t AnyTaskPending()
 {
 	for (uint32_t i = 0; i < SIZEOF_FLAGS; ++i) //for each set of 32 flags
-	if (flags[i]) return 1;                     //if any flags set return true
+	if (pflags[i]) return 1;                     //if any flags set return true
 	
 	return 0; //if execution reaches here no flags set, return false
 }
 
-uint32_t PollTaskRequest(uint32_t index)
+uint32_t PollTaskPending(uint32_t index)
 {
-	return (flags[TR_INDEX] & 1 << TR_BIT); //isolate task request bit
+	return (pflags[TR_INDEX] & 1 << TR_BIT); //isolate task request bit
 }
 
-void SetTaskRequest(uint32_t index)
+void SetTaskPending(uint32_t index)
 {
-	flags[TR_INDEX] |= 1 << TR_BIT; //set task request bit
+	pflags[TR_INDEX] |= 1 << TR_BIT; //set task request bit
 }
 
-void ClearTaskRequest(uint32_t index)
+void ClearTaskPending(uint32_t index)
 {
-	flags[TR_INDEX] &= ~(1 << TR_BIT); //clear task request bit
+	pflags[TR_INDEX] &= ~(1 << TR_BIT); //clear task request bit
 }
 
 typedef struct {
-	uint32_t index;     //index of task request bit
-	float    frequency; //frequency, in seconds
-	uint32_t period;    //period, in ticks
-	uint32_t counter;   //time elapsed since last run, in ticks
-} PeriodicTask_s;
+	uint32_t    index;   //index of task request bit
+	float const fauto;   //when set > 0 data will be pushed to endpoint at this target fauto
+	uint32_t    pauto;   //'fauto' expressed in timer ticks
+	float const flim;    //used to limit how often a 'request' flag can be serviced
+	uint32_t    plim;    //'flim' expressed in timer ticks
+	uint32_t    counter; //time elapsed (in ticks) since last service
+	uint8_t     request; //task request flag
+} MainTask_s;
 
-#define SET_BY_INITIALIZATION 0
-PeriodicTask_s tasks[] =
+#define TASK_IDLE 0
+#define TASK_WAITING 1
+
+MainTask_s tasks[] =
 {
 	/* [0] = */ {
-        /* index = */     CONTROL_REQUEST_INDEX,
-        /* frequency = */ CONTROL_REQUEST_FREQUENCY,
-        /* period = */    SET_BY_INITIALIZATION,
-        /* counter = */   SET_BY_INITIALIZATION
+        .index = CONTROL_REQUEST_INDEX,
+        .fauto = CONTROL_REQUEST_FREQUENCY
     },
     /* [0] = */ {
-        /* index = */     TELEMETRY_REQUEST_INDEX,
-        /* frequency = */ TELEMETRY_REQUEST_FREQUENCY,
-        /* period = */    SET_BY_INITIALIZATION,
-        /* counter = */   SET_BY_INITIALIZATION
+        .index = TELEMETRY_REQUEST_INDEX,
+        .fauto = TELEMETRY_REQUEST_FREQUENCY
     }
 };
-#define SIZEOF_TASKS ( (sizeof tasks) / (sizeof (PeriodicTask_s)) )
+#define SIZEOF_TASKS ( (sizeof tasks) / (sizeof (MainTask_s)) )
+
+void SetTaskRequest(uint32_t index) { tasks[index].request = TASK_WAITING; }
+void ClearTaskRequest(uint32_t index) { tasks[index].request = TASK_IDLE; }
 
 void TaskRequest_Init()
 { 
-    //initialize schedule objects
+    //calculate timing information
     for (uint32_t i = 0; i < SIZEOF_TASKS; ++i )
     {
-        PeriodicTask_s *item = &tasks[i];
+        MainTask_s *item = &tasks[i];
 
-        if (item->frequency != 0)
-        {
-            // Set sampling period if frequency > 0
-            item->period = SYSTICK_FREQUENCY/item->frequency;
-            item->counter = 0;
-        }
+        if (item->fauto > 0) item->pauto = SYSTICK_FREQUENCY / item->fauto; //auto-scheduling period
+        else item->pauto = 0;
+
+		if (item->flim > 0)  item->plim  = SYSTICK_FREQUENCY / item->flim;  //request period limit
+		else item->plim = 0;
+		
+		//ensure other members initialized correctly
+		item->counter = 0;
     }
 }
 
 //#include "support/ARM_SysTick.h"
-#define REQUESTS_TICKER TFC_Ticker[TASK_REQUEST_TICKER]
+#define TICKER TFC_Ticker[UPTIME_TICKER]
 
 void UpdateTaskRequests()
 {
-	uint32_t ticker = REQUESTS_TICKER; //"freeze" timer
-	REQUESTS_TICKER = 0;               //reset timer for accurate sampling
-	
-    for (uint32_t i = 0; i < SIZEOF_TASKS; ++i)
-    {
-        PeriodicTask_s *item = &tasks[i];
+	static uint32_t tref = 0;      //reference ticker value
+		   uint32_t t = TICKER;    //'freeze' timer
+		   uint32_t dt = t - tref; //get interval since last call
+		            tref = TICKER; //store time reference
 
-        item->counter += ticker; //update item counter
+	for(uint32_t i = 0; i < SIZEOF_TASKS; ++i)
+	{
+		MainTask_s *item = &tasks[i];
 
-        if (item->frequency == 0) continue; //skip if frequency = 0
-        if (item->counter >= item->period)
-        {
-            //item counter has exceeded sampling period
-            item->counter = 0; //reset the counter
+		item->counter += dt; //increment item counter
+		
+		//schedule collection events
+		if (item->counter >= item->plim ||  //if time elapsed greater than rate-limit period
+			item->plim == 0)                //or if no rate-limit is set
+		{
+			//automatic scheduling
+			if (item->pauto != 0 &&           //if automatic scheduling period is set
+				item->counter >= item->pauto) //and time elapsed since last event is sufficient
+			{
+				item->counter = 0;            //restart item timer
+				SetTaskPending(item->index);
+				continue;
+			}
 
-            SetTaskRequest(item->index); //set the task request flag
-        }
-    }
+			//request-based scheduling
+			if (item->request == TASK_WAITING) //if collection requested
+			{
+				item->request = TASK_IDLE;    //clear request
+
+				item->counter = 0;            //restart item timer
+				SetTaskPending(item->index);
+				continue;
+			}
+		}
+	}
 }
 
 /////////////
@@ -149,15 +172,16 @@ int main(void)
 
 	while (1)
 	{	
-		if ( AnyTaskRequest() )
+		UpdateTaskRequests();
+		if ( AnyTaskPending() )
 		{
 			//disable UART0
 			#ifdef SERIAL_TX_IRQ_ENABLED
 				UART0_DisarmIRQ();
 			#endif
 			
-			if ( PollTaskRequest(CONTROL_REQUEST_INDEX) )
-			{    ClearTaskRequest(CONTROL_REQUEST_INDEX);
+			if ( PollTaskPending(CONTROL_REQUEST_INDEX) )
+			{    ClearTaskPending(CONTROL_REQUEST_INDEX);
 			
 				/* Update car state before main control routine */
 				//evaluateUARTorSpeed(&carState);
@@ -177,8 +201,8 @@ int main(void)
 				}
 			}
 			
-			if ( PollTaskRequest(TELEMETRY_REQUEST_INDEX) )
-			{    ClearTaskRequest(TELEMETRY_REQUEST_INDEX);
+			if ( PollTaskPending(TELEMETRY_REQUEST_INDEX) )
+			{    ClearTaskPending(TELEMETRY_REQUEST_INDEX);
 
 				/* Run data collection routine */
 				CollectorUpdate();
