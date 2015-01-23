@@ -385,8 +385,8 @@ void lineFollowingMode(carState_s* carState)
 
 	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 	{
-		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 3);
-		SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 3);
+		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 2);
+		SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 2);
 		//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
 		//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
