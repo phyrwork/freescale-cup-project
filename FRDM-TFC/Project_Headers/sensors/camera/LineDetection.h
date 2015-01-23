@@ -36,7 +36,7 @@
 
 //weightLines
 #define LINE_WIDTH_SD    10
-#define LINE_WIDTH_MEAN  80 //This will need updating to width of track
+#define LINE_WIDTH_MEAN  95 //This will need updating to width of track
 #define LINE_DWIDTH_SD   15
 #define LINE_DWIDTH_MEAN 0
 

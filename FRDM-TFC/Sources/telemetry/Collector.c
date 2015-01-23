@@ -51,7 +51,7 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 		.data = &LineScanImage0,
 		.deref = 1,
 		.endpoint = &TFTP_LINESCAN0_ENDPOINT,
-		.flim = 30;
+		.flim = 30
 	},
 	//[1]
 	{ //TrackPosition
