@@ -42,7 +42,7 @@
 
 //service config
 #include <math.h>
-uint32_t const dtlim = ceil((uint32_t)( (float)SYSTICK_FREQUENCY / COLLECTOR_TLIM_SECONDS ));
+uint32_t const dtlim = ceil( (float)COLLECTOR_TLIM_SECONDS * (float)SYSTICK_FREQUENCY );
 CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 {
 	//[0]
@@ -122,6 +122,11 @@ void Collector_Init()
 
 		if (item->flim > 0)  item->plim  = SYSTICK_FREQUENCY / item->flim;  //event period limit
 		else item->plim = 0;
+		
+		//ensure other members initialized correctly
+		item->counter = 0;
+		item->request = 0;
+		item->pending = 0;
 	}
 }
 
@@ -135,8 +140,9 @@ void CollectorRequest(uint8_t index)
 void CollectorUpdate()
 {
 	static uint32_t tref = 0;      //reference ticker value
-	       uint32_t t = TICKER;    //'freeze' the ticker
+	       uint32_t t = TICKER;    //'freeze' timer
 	       uint32_t dt = t - tref; //get interval since last call
+	                tref = TICKER; //store time reference
 
 	for(uint32_t i = 0; i < NUM_COLLECTOR_ITEMS; ++i)
 	{
@@ -145,16 +151,17 @@ void CollectorUpdate()
 		item->counter += dt; //increment item counter
 		
 		//schedule collection events
-		if (item->counter >= item->plim || //if time elapsed greater than rate-limit period
+		if (item->pending) continue;
+		if (item->counter >= item->plim ||  //if time elapsed greater than rate-limit period
 			item->plim == 0)                //or if no rate-limit is set
 		{
 			//automatic scheduling
-			if (item->pauto != 0 &&          //if automatic scheduling period is set
-			   item->counter >= item->pauto) //and time elapsed since last event is sufficient
+			if (item->pauto != 0 &&           //if automatic scheduling period is set
+			    item->counter >= item->pauto) //and time elapsed since last event is sufficient
 			{
 				item->counter = 0;            //restart item timer
 				item->pending = CLTR_WAITING; //schedule collection
-				return;
+				continue;
 			}
 
 			//request-based scheduling
@@ -164,7 +171,7 @@ void CollectorUpdate()
 
 				item->counter = 0;            //restart item timer
 				item->pending = CLTR_WAITING; //schedule collection
-				return;
+				continue;
 			}
 		}
 	}
@@ -176,17 +183,17 @@ void CollectorProcess()
 	       uint32_t tref = TICKER; //'freeze' the timer
 
 	//process only while still in valid time slice
-	for(uint32_t n = 0; n < NUM_COLLECTOR_ITEMS, TICKER - tref < dtlim; ++n, ++inum )
+	for(uint32_t n = 0; n < NUM_COLLECTOR_ITEMS && TICKER - tref < dtlim; ++n, inum = ++inum >= NUM_COLLECTOR_ITEMS ? 0 : inum)
 	{
 		CltrItem_s *item = &items[inum];
 
-		if (item->pending == CLTR_IDLE) return; //if collection not scheduled, skip
-		item->pending = CLTR_WAITING; //clear flag
+		if (item->pending == CLTR_IDLE) continue; //if collection not scheduled, skip
+		item->pending = CLTR_IDLE;                //clear flag
 
 		void *ptr = item->data;  //base address
 		uint8_t r = item->deref; //number of times to derefence to reach address of actual data
 
 		while(r--) ptr = (void*)(*((int*) ptr)); //dereference pointer (can't assign 'void', so cast to int)
-		(*(item->endpoint))(ptr); //push data onto endpoint
+		(*(item->endpoint))(ptr);                //push data onto endpoint
 	}
 }
