@@ -43,17 +43,9 @@ void TaskRequest_Init();
 void UpdateTaskRequests();
 
 void TFC_Init(carState_s* carState);
-void TFC_Task();
 int main(void);
-void heartbeat();
-void evaluateUARTorSpeed(carState_s* carState);
 void evaluateMotorState(carState_s* carState);
-void rawFocussingMode();
-void derivativeFocussingMode();
-void speedTestMode(carState_s* carState);
-void servoAlignment();;
 void lineFollowingMode(carState_s* carState);
-float targetSpeedAverage(float targetSpeed);
 
 
 #endif /* MAIN_H_ */
