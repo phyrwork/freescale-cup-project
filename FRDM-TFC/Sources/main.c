@@ -383,11 +383,12 @@ void lineFollowingMode(carState_s* carState)
 		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
 	}
 
-	//if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
-	if (1)
+	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
 	{
-		UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
-		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], WheelSpeedSensors[REAR_RIGHT].value);
+		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 3);
+		SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 3);
+		//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
+		//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 		UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 			
