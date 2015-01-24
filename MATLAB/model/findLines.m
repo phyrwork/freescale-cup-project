@@ -1,4 +1,4 @@
-function [ lines ] = findLines( edges )
+function [ lines ] = findLines( edges, type )
 %findLines Version 3:
 
     % SETUP
@@ -6,7 +6,7 @@ function [ lines ] = findLines( edges )
     status = 0;
     
     % start first line
-    if length(edges) == 0 || edges(1).type ~= 0
+    if length(edges) == 0 || edges(1).type ~= type
         % insert a virtual edge
         line.start.pos = 0;
         line.start.type = 2;
@@ -43,7 +43,7 @@ function [ lines ] = findLines( edges )
         
         % start search for a new line
         while i <= length(edges) && ...
-              edges(i).type ~= 0 % rising edge
+              edges(i).type ~= type % edge
           
             i = i + 1; % continue
         end

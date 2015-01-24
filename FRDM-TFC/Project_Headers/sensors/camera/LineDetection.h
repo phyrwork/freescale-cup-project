@@ -52,6 +52,9 @@ typedef uint8_t EdgeType;
 #define EDGE_TYPE_FALLING 1
 #define EDGE_TYPE_VIRTUAL 255
 
+#define LINE_TYPE_WHITE EDGE_TYPE_RISING
+#define LINE_TYPE_BLACK EDGE_TYPE_FALLING
+
 typedef struct {
 	EdgeType type; //Type of edge (i.e. rising/falling)
 	uint8_t  pos;  //Location of edge
@@ -91,7 +94,7 @@ typedef struct {
 void    InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold);
 void    findPosition(volatile uint16_t* linescan_in, carState_s* carState, uint16_t dI_threshold);
 uint8_t findEdges(int16_t* derivative, uint16_t threshold);
-uint8_t findLines(Edge* edges, uint8_t numEdges);
+uint8_t findLines(Edge* edges, uint8_t numEdges, uint8_t const type);
 void    weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges);
 int8_t  weightLines(Line* trackedLine, Line* lines, uint8_t numLines);
 uint8_t findStop(Line* lines, uint8_t numLines);

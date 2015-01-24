@@ -37,7 +37,7 @@ void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
 	int16_t dI[128]; derivative(linescan, dI, 128);
 
 	uint8_t numFeatures = findEdges(dI, dI_threshold);
-	        numFeatures = findLines(EdgeBuffer, numFeatures);
+	        numFeatures = findLines(EdgeBuffer, numFeatures, LINE_TYPE_WHITE);
 
 	weightLines(&TargetLine, LineBuffer, numFeatures);
 
@@ -87,7 +87,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	numFeatures = findEdges(dI, dI_threshold);
 	
 	/* Generate lines and analyse */
-	numFeatures = findLines(EdgeBuffer, numFeatures);
+	numFeatures = findLines(EdgeBuffer, numFeatures, LINE_TYPE_WHITE);
 	weightLines(&TargetLine, LineBuffer, numFeatures);
 
 
@@ -289,14 +289,14 @@ uint8_t findEdges(int16_t* dy, uint16_t threshold)
 	return detected;
 }
 
-uint8_t findLines(Edge *edge, uint8_t edges)
+uint8_t findLines(Edge *edge, uint8_t edges, uint8_t const type)
 {
 	uint8_t detected = 0;
 	Line   *line = LineBuffer;
 	enum {COMPLETE, INCOMPLETE} status;
 
 	//start first line
-	if (edges == 0 || edge->type != EDGE_TYPE_RISING)
+	if (edges == 0 || edge->type != type)
 	{
 		//create a virtual edge if no rising edge
 		line->edges[L].pos = 0;
@@ -332,7 +332,7 @@ uint8_t findLines(Edge *edge, uint8_t edges)
 		}
 
 		//start search for a new line
-		while(edges && edge->type != EDGE_TYPE_RISING)
+		while(edges && edge->type != type)
 		{
 			++edge;
 			--edges;
