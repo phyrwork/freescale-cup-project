@@ -84,7 +84,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 
 	/* Look for edges and classify */
 	static uint8_t numFeatures = 0;
-	numFeatures = findEdges(dI, dI_threshold);
+	numFeatures = findEdges(dI, DERIVATIVE_THRESHOLD, HEIGHT_THRESHOLD);
 	
 	/* Generate lines and analyse */
 	numFeatures = findLines(EdgeBuffer, numFeatures, LINE_TYPE_WHITE);
@@ -246,7 +246,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	#undef finish
 }
 
-uint8_t findEdges(int16_t* dy, uint16_t threshold)
+uint8_t findEdges(int16_t* dy, uint16_t dy_t, uint16_t ry_t)
 {
 	uint8_t detected = 0; //number of edges found.
 	Edge   *edge = &EdgeBuffer[detected]; //pointer to next slot in edge buffer
@@ -254,18 +254,18 @@ uint8_t findEdges(int16_t* dy, uint16_t threshold)
 	for (uint32_t k = 1; k < 128; ++k)
 	{		
 		//first search for the start of a candidate transition
-		for (; k < 128 && !(abs(dy[k]) >= DIFFERENTIAL_THRESHOLD); ++k) {}
+		for (; k < 128 && !(abs(dy[k]) >= dy_t); ++k) {}
 		uint8_t start = k;
 
 		//next search for the end of a candidate transition
 		int16_t height = 0;
 		for (; k < 128 &&
-			   abs(dy[k]) > DIFFERENTIAL_THRESHOLD && //differential threshold
+			   abs(dy[k]) > dy_t && //differential threshold
 			   !( (dy[k] > 0 && dy[k-1] < 0) || (dy[k] < 0 && dy[k-1] > 0) ); //turning points
 			   ++k, height += dy[k]) {} //sum differential
 
 		//test candidate
-		if ( abs(height) >= HEIGHT_THRESHOLD )
+		if ( abs(height) >= ry_t )
 		{
 			if (height > 0)
 			{

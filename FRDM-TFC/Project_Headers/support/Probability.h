@@ -10,7 +10,7 @@
 
 #include <math.h>
 
-#define MAX_NUMBER_OF_PROBABILITY_TABLES 8
+#define MAX_NUMBER_OF_PROBABILITY_TABLES 4
 
 #define pi 3.14159f
 #define nat 2.71828f

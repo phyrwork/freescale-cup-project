@@ -26,8 +26,7 @@
 #define HEIGHT_THRESHOLD          600
 #define MAX_LOST_LINE_DURATION    10000
 #define LOST_LINE_RESET_DURATION  10000
-#define MAX_NUMBER_OF_TRANSITIONS 64
-#define MAX_NUMBER_OF_STOP_LINES  32
+#define MAX_NUMBER_OF_TRANSITIONS 16
 #define MIN_CERTAINTY             0.2f
 
 //weightEdges
@@ -36,16 +35,16 @@
 
 //weightLines
 #define LINE_WIDTH_SD    10
-#define LINE_WIDTH_MEAN  95 //This will need updating to width of track
+#define LINE_WIDTH_MEAN  95
 #define LINE_DWIDTH_SD   15
 #define LINE_DWIDTH_MEAN 0
 
 //findStopLine
 #define STOP_MIN_CERTAINTY   0.6f
-#define STOP_LINE_WIDTH_SD   10
-#define STOP_LINE_WIDTH_MEAN 20
-#define STOP_GAP_WIDTH_SD    4
-#define STOP_GAP_WIDTH_MEAN  4
+#define STOP_LINE_WIDTH_SD   5
+#define STOP_LINE_WIDTH_MEAN 15
+#define STOP_LINE_GAP_SD 5
+#define STOP_LINE_GAP_MEAN 10
 
 typedef uint8_t EdgeType;
 #define EDGE_TYPE_RISING  0
@@ -91,9 +90,8 @@ typedef struct {
 	float   P_stop;
 } StopLine;
 
-void    InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold);
 void    findPosition(volatile uint16_t* linescan_in, carState_s* carState, uint16_t dI_threshold);
-uint8_t findEdges(int16_t* derivative, uint16_t threshold);
+uint8_t findEdges(int16_t* dy, uint16_t dy_t, uint16_t ry_t);
 uint8_t findLines(Edge* edges, uint8_t numEdges, uint8_t const type);
 void    weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges);
 int8_t  weightLines(Line* trackedLine, Line* lines, uint8_t numLines);
