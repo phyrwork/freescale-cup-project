@@ -1,8 +1,5 @@
-function plotEdges( image )
+function plotEdges( image, edges )
 %plotEdges
-    
-    % find edges
-    edges = findEdges(image);
     
     % prep scatter
     sx = [];

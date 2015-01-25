@@ -21,84 +21,42 @@
 #include <math.h>
 #include <stdlib.h>
 
-static Edge             EdgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
-static Line             LineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
-       Line             TargetLine;
-static StopLine         stop;
+       Line_s           TargetLine;
        PositioningState positioningState;
        int8_t           trackPosition;
 
 #define L 0
 #define R 1
 
-void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
-
-	/* See findPosition() for details about what this lot does */
-	int16_t dI[128]; derivative(linescan, dI, 128);
-
-	uint8_t numFeatures = findEdges(dI, dI_threshold);
-	        numFeatures = findLines(EdgeBuffer, numFeatures, LINE_TYPE_WHITE);
-
-	weightLines(&TargetLine, LineBuffer, numFeatures);
-
-
-	//////////////////////////////////////////////
-	// Identify target line based only on width //
-	//////////////////////////////////////////////
-	
-	Line *best = LineBuffer;
-	for (uint8_t k = 1; k < numFeatures; ++k)
-	{
-		Line *candidate = &LineBuffer[k];
-		                              
-		if (candidate->edges[L].type != EDGE_TYPE_VIRTUAL &&
-		    candidate->edges[R].type != EDGE_TYPE_VIRTUAL &&
-		    candidate->P_width > best->P_width)
-		{
-			//Candidate is both fully visible and best match so far
-			best = candidate;
-		}
-	}
-
-	TargetLine = *best; //best match becomes target line
-	return;
-}
-
-void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold)
+void findPosition(int16_t *dy, carState_s* carState)
 {
 	#define start  edges[0].pos //Macros for easy/readable access to line...
 	#define finish edges[1].pos //...start/finish.
-	
-	/* If car has 'stopped', nothing to do; return */
-	// To-do: Move this check to main()
-	if (carState->lineDetectionState == STOPLINE_DETECTED) return;
 
+	Edge_s edges[MAX_NUMBER_OF_TRANSITIONS];
+	Line_s lines[MAX_NUMBER_OF_TRANSITIONS + 1];
 
 	//////////////////////////////////////////
 	// Analyse most recently captured image //
 	//////////////////////////////////////////
 
-	/* Get derivative of image */
-	static int16_t dI[128];
-	derivative(linescan, dI, 128);
-
 	/* Look for edges and classify */
 	static uint8_t numFeatures = 0;
-	numFeatures = findEdges(dI, dI_threshold);
+	numFeatures = findEdges(edges, dy, TRACK_DY_T, TRACK_RY_T);
 	
 	/* Generate lines and analyse */
-	numFeatures = findLines(EdgeBuffer, numFeatures, LINE_TYPE_WHITE);
-	weightLines(&TargetLine, LineBuffer, numFeatures);
+	numFeatures = findLines(lines, edges, numFeatures, LINE_TYPE_WHITE);
+	weightLines(&TargetLine, lines, numFeatures);
 
 
 	///////////////////////////////////
 	// Look for absolute match first //
 	///////////////////////////////////
 
-	Line *best = LineBuffer;
+	Line_s *best = lines;
 	for (uint8_t k = 1; k < numFeatures; ++k) //select best absolute match
 	{
-		Line *candidate = &LineBuffer[k];
+		Line_s *candidate = &lines[k];
 		                              
 		if (candidate->P_absLine > best->P_absLine)
 		{
@@ -129,11 +87,11 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	// Next look for a relative match //
 	////////////////////////////////////
 	
-	//Line *best = LineBuffer;
-	best = LineBuffer;
+	//Line_s *best = lines;
+	best = lines;
 	for (uint8_t k = 1; k < numFeatures; ++k) //select best relative match
 	{
-		Line *candidate = &LineBuffer[k];
+		Line_s *candidate = &lines[k];
 		
 		if (candidate->P_relLine > best->P_relLine)
 		{
@@ -176,7 +134,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	/////////////////////////////////
 
 	/*
-	if ( findStop(LineBuffer, numFeatures) )
+	if ( findStop(lines, numFeatures) )
 	{
 	 	carState->lineDetectionState = STOPLINE_DETECTED;
 	 	TFC_ClearLED(1);
@@ -190,11 +148,11 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	// Before giving up try and re-find the line if it is lost //
 	/////////////////////////////////////////////////////////////
 	
-	//Line *best = LineBuffer;
-	best = LineBuffer;
+	//Line_s *best = lines;
+	best = lines;
 	for (uint8_t k = 1; k < numFeatures; ++k) //select best new match
 	{
-		Line *candidate = &LineBuffer[k];
+		Line_s *candidate = &lines[k];
 									  
 		if (candidate->P_newLine > best->P_newLine)
 		{
@@ -246,26 +204,26 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	#undef finish
 }
 
-uint8_t findEdges(int16_t* dy, uint16_t threshold)
+uint8_t findEdges(Edge_s *edges, int16_t* dy, uint16_t dy_t, uint16_t ry_t)
 {
 	uint8_t detected = 0; //number of edges found.
-	Edge   *edge = &EdgeBuffer[detected]; //pointer to next slot in edge buffer
+	Edge_s   *edge = &edges[detected]; //pointer to next slot in edge buffer
 
 	for (uint32_t k = 1; k < 128; ++k)
 	{		
 		//first search for the start of a candidate transition
-		for (; k < 128 && !(abs(dy[k]) >= DIFFERENTIAL_THRESHOLD); ++k) {}
+		for (; k < 128 && !(abs(dy[k]) >= dy_t); ++k) {}
 		uint8_t start = k;
 
 		//next search for the end of a candidate transition
 		int16_t height = 0;
 		for (; k < 128 &&
-			   abs(dy[k]) > DIFFERENTIAL_THRESHOLD && //differential threshold
+			   abs(dy[k]) > dy_t && //differential threshold
 			   !( (dy[k] > 0 && dy[k-1] < 0) || (dy[k] < 0 && dy[k-1] > 0) ); //turning points
 			   ++k, height += dy[k]) {} //sum differential
 
 		//test candidate
-		if ( abs(height) >= HEIGHT_THRESHOLD )
+		if ( abs(height) >= ry_t )
 		{
 			if (height > 0)
 			{
@@ -289,10 +247,10 @@ uint8_t findEdges(int16_t* dy, uint16_t threshold)
 	return detected;
 }
 
-uint8_t findLines(Edge *edge, uint8_t edges, uint8_t const type)
+uint8_t findLines(Line_s *lines, Edge_s *edge, uint8_t edges, uint8_t const type)
 {
 	uint8_t detected = 0;
-	Line   *line = LineBuffer;
+	Line_s *line = lines;
 	enum {COMPLETE, INCOMPLETE} status;
 
 	//start first line
@@ -360,14 +318,14 @@ uint8_t findLines(Edge *edge, uint8_t edges, uint8_t const type)
 	return detected;
 }
 
-void weightEdges(Edge* targets, Edge* edges, uint8_t size) {
+void weightEdges(Edge_s* targets, Edge_s* edges, uint8_t size) {
 	
 	/* Test each edge against both target edges */
 	for (uint8_t t = 0; t < 2; t++)
 		for (uint8_t e = 0; e < size; ++e)
 		{
-			Edge *edge = &edges[e];
-			Edge *target = &targets[t];
+			Edge_s *edge = &edges[e];
+			Edge_s *target = &targets[t];
 
 			//Calculate probability of edge being edge based on change in position
 			int16_t dPos = edge->pos - target->pos;
@@ -381,11 +339,11 @@ void weightEdges(Edge* targets, Edge* edges, uint8_t size) {
 	return;
 }
 
-int8_t weightLines(Line* target, Line* lines, uint8_t size)
+int8_t weightLines(Line_s* target, Line_s* lines, uint8_t size)
 {
 	for (uint8_t k = 0; k < size; ++k) {
 
-		Line *line = &lines[k]; //pointer to candidate line
+		Line_s *line = &lines[k]; //pointer to candidate line
 
 		////////////////////////////////////////
 		// Calculate individual probabilities //
@@ -436,48 +394,46 @@ int8_t weightLines(Line* target, Line* lines, uint8_t size)
 	return 0;
 }
 
- #define lineA lines[0]
- #define lineB lines[2]
- #define gap   lines[1]
-
-uint8_t findStop(Line* lines, uint8_t numLines)
+int8_t findStop(int16_t *dy)
 {
-	/* Iterate though groups of 3 consecutive lines
-	 * --------------------------------------------
-	 * [0] Line A (Black)
-	 * [1] Gap    (White)
-	 * [2] Line B (Black)
-	 */
-	for (uint8_t i = 0; i < numLines - 3; i++) {
+	//identify edges
+	Edge_s  edges[MAX_NUMBER_OF_TRANSITIONS];
+	uint8_t features = findEdges(edges, dy, STOP_DY_T, STOP_RY_T);
 
-		/* Gather data */
-		for (uint8_t l = 0; l < 3; l++) stop.lines[l] = lines[i + l];
+	//identify lines
+	Line_s  lines[MAX_NUMBER_OF_TRANSITIONS + 1];
+	        features = findLines(lines, edges, features, LINE_TYPE_BLACK);
 
-		/* Calculate probabilities */
-		stop.P_lineA = getProbability(stop.lineA.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-		stop.P_lineB = getProbability(stop.lineB.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-		stop.P_gap   = getProbability(stop.gap.width, STOP_GAP_WIDTH_SD, STOP_GAP_WIDTH_MEAN);
+	//analyse lines
+	if (features < 2) return STOP_LINE_NOT_FOUND;
+	for (uint8_t i = 1; i < features; ++i)
+	{
+		//test separation
+		uint8_t gap = lines[i].edges[L].pos - lines[i-1].edges[R].pos;
+		float p_gap = getProbability(gap, STOP_LINE_GAP_SD, STOP_LINE_GAP_MEAN);
+		if (p_gap < STOP_MIN_CERTAINTY) continue;
 
-		/* Combine probabilities */
-		stop.P_stop  = 1;
-		stop.P_stop *= stop.P_lineA;
-		stop.P_stop *= stop.P_lineB;
-		stop.P_stop *= stop.P_gap;
+		//test widths
+		float p_width = getProbability(lines[i-1].width, STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
+		if (p_width < STOP_MIN_CERTAINTY) continue;
 
-		/* Compare to trust threshold */
-		if (stop.P_stop > STOP_MIN_CERTAINTY) return 1; //Return true; STOP THE CAR!
-		else return 0;
+		p_width = getProbability(lines[i].width, STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
+		if (p_width < STOP_MIN_CERTAINTY) continue;
+
+		//all tests satisfied
+		return STOP_LINE_FOUND;
 	}
-	return 1;
+
+	return STOP_LINE_NOT_FOUND;
 }
 
 void preloadProbabilityTables()
 {
 	getProbability(0, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-	getProbability(0, STOP_GAP_WIDTH_SD, STOP_GAP_WIDTH_MEAN);
+	getProbability(0, STOP_LINE_GAP_SD, STOP_LINE_GAP_MEAN);
 }	
 
-void derivative(volatile uint16_t* input, int16_t* output, uint8_t length)
+void diff(volatile uint16_t* input, int16_t* output, uint8_t length)
 {
 	output[0] = 0;
 

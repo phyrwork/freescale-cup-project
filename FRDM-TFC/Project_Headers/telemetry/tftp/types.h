@@ -45,7 +45,7 @@
 
 /* Line attributes */
 //#include "sensors/camera/LineDetection.h"
-#define TFTP_LINE_TYPE Line
+#define TFTP_LINE_TYPE Line_s
 #define TFTP_LINE_SIZE 1
 
 /* Track position attributes */

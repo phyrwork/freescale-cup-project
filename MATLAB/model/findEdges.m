@@ -1,9 +1,5 @@
-function edges = findEdges( image )
+function edges = findEdges( image, dy_t, ry_t )
 %findEdges Version 3.1:
-
-    % SETTINGS
-    ry_t = 600;
-    dy_t = 350;
     
     % SETUP
     dy = derivative(image);

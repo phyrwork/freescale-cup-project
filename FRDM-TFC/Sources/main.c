@@ -184,37 +184,55 @@ int main(void)
 			#ifdef SERIAL_TX_IRQ_ENABLED
 				UART0_DisarmIRQ();
 			#endif
-			
-			if ( PollTaskPending(CONTROL_REQUEST_INDEX) )
-			{    ClearTaskPending(CONTROL_REQUEST_INDEX);
-			
-				/* Update car state before main control routine */
-				//evaluateUARTorSpeed(&carState);
-				evaluateMotorState(&carState);
-	
-				/* Perform main control routine */
-				//Profiler_Start(CONTROL_PROFILER, PROFILER_SEND);
-				switch ((TFC_GetDIP_Switch() >> 1) & 0x03)
-				{
-					default:
-						break;
-						
-					case 3:
-						lineFollowingMode(&carState);
-						TFC_SetLED(0);
-						break;
-				}
-			}
-			
+
 			//Positioning update tasks
 			if ( PollTaskPending(POSITIONING_REQUEST_INDEX) )
 			{    ClearTaskPending(POSITIONING_REQUEST_INDEX);
 			
-				static uint32_t totalIntensity = 0;
+				uint32_t totalIntensity = 0;
+				int16_t dy[128];
 
-				findPosition(LineScanImage0, &carState, 350);
+				//update position
+				diff(LineScanImage0, dy, 128);
+
+				if (findStop(dy) == STOP_LINE_FOUND)
+				{
+					carState.lineDetectionState = STOPLINE_DETECTED;
+					SetTaskPending(CONTROL_REQUEST_INDEX);
+				}
+
+				findPosition(dy, &carState);
+
+				//adjust camera exposure
 				totalIntensity = getTotalIntensity(LineScanImage0);
 				TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
+			}
+			
+			if ( PollTaskPending(CONTROL_REQUEST_INDEX) )
+			{    ClearTaskPending(CONTROL_REQUEST_INDEX);
+			
+				//enable/disable H-bridge
+				evaluateMotorState(&carState);
+	
+				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
+				{
+					SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 2);
+					SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 2);
+					//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
+					//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
+					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
+					UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
+						
+				}
+				else if (carState.lineDetectionState == LINE_LOST)
+				{
+
+				}
+				else if (carState.lineDetectionState == STOPLINE_DETECTED)
+				{
+					SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 0);
+					SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 0);
+				}
 			}
 			
 			//Steering update tasks
@@ -253,37 +271,5 @@ void evaluateMotorState(carState_s* carState)
 	{
 		TFC_HBRIDGE_DISABLE;
 		TFC_SetMotorPWM(0, 0);
-	}
-}
-
-void lineFollowingMode(carState_s* carState)
-{
-	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
-	{
-		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 2);
-		SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 2);
-		//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
-		//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
-		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
-		UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
-			
-		if (carState->lineDetectionState == LINE_TEMPORARILY_LOST)
-		{
-//			TFC_SetLED(1);
-		}
-		else
-		{
-//			TFC_ClearLED(1);
-		}
-	}
-	else if (carState->lineDetectionState == LINE_LOST)
-	{
-		//TFC_HBRIDGE_DISABLE;
-		//TFC_SetMotorPWM(0, 0);
-//		TFC_SetLED(2);PWM
-	}
-	else if (carState->lineDetectionState == STOPLINE_DETECTED)
-	{
-		//STOP!
 	}
 }
