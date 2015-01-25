@@ -191,7 +191,7 @@ int main(void)
 				//enable/disable H-bridge
 				evaluateMotorState(&carState);
 	
-				if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
+				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
 					SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 2);
 					SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 2);
@@ -201,11 +201,11 @@ int main(void)
 					UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 						
 				}
-				else if (carState->lineDetectionState == LINE_LOST)
+				else if (carState.lineDetectionState == LINE_LOST)
 				{
 
 				}
-				else if (carState->lineDetectionState == STOPLINE_DETECTED)
+				else if (carState.lineDetectionState == STOPLINE_DETECTED)
 				{
 
 				}
