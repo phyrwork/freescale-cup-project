@@ -21,13 +21,14 @@
 #include "support/Probability.h"
 #include "support/carState_s.h"
 
-//findLines
-#define DIFFERENTIAL_THRESHOLD    300
-#define HEIGHT_THRESHOLD          600
+#define MAX_NUMBER_OF_TRANSITIONS 16
+
+//findPosition
+#define TRACK_DY_T                300
+#define TRACK_RY_T                600
 #define MAX_LOST_LINE_DURATION    10000
 #define LOST_LINE_RESET_DURATION  10000
-#define MAX_NUMBER_OF_TRANSITIONS 16
-#define MIN_CERTAINTY             0.2f
+#define MIN_CERTAINTY             0.3f
 
 //weightEdges
 #define EDGE_DPOS_SD   10
@@ -39,12 +40,16 @@
 #define LINE_DWIDTH_SD   15
 #define LINE_DWIDTH_MEAN 0
 
-//findStopLine
+//findStop
+#define STOP_DY_T            150
+#define STOP_RY_T            400
 #define STOP_MIN_CERTAINTY   0.6f
 #define STOP_LINE_WIDTH_SD   5
 #define STOP_LINE_WIDTH_MEAN 15
-#define STOP_LINE_GAP_SD 5
-#define STOP_LINE_GAP_MEAN 10
+#define STOP_LINE_GAP_SD     5
+#define STOP_LINE_GAP_MEAN   10
+#define STOP_LINE_NOT_FOUND  0
+#define STOP_LINE_FOUND      1
 
 typedef uint8_t EdgeType;
 #define EDGE_TYPE_RISING  0
@@ -93,9 +98,9 @@ typedef struct {
 void    findPosition(int16_t *dy, carState_s* carState);
 uint8_t findEdges(Edge_s *edges, int16_t* dy, uint16_t dy_t, uint16_t ry_t);
 uint8_t findLines(Line_s *lines, Edge_s *edges, uint8_t numEdges, uint8_t const type);
-void    weightEdges(Edge_s *targetEdges, Edge_s *edges, uint8_t numEdges);
-int8_t  weightLines(Line_s* trackedLine, Line_s* lines, uint8_t numLines);
-uint8_t findStop(Line_s* lines, uint8_t numLines);
+void    weightEdges(Edge_s *targetEdges, Edge_s *edges, uint8_t numEdges); //to-do: move into find position routine
+int8_t  weightLines(Line_s* trackedLine, Line_s* lines, uint8_t numLines); //to-do: move into find position routine
+uint8_t findStop(int16_t *dy);
 void    preloadProbabilityTables();
 void    diff(volatile uint16_t* input, int16_t* output, uint8_t length);
 

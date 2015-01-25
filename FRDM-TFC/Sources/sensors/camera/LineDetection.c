@@ -43,7 +43,7 @@ void findPosition(int16_t *dy, carState_s* carState)
 
 	/* Look for edges and classify */
 	static uint8_t numFeatures = 0;
-	numFeatures = findEdges(edges, dy, DIFFERENTIAL_THRESHOLD, HEIGHT_THRESHOLD);
+	numFeatures = findEdges(edges, dy, TRACK_DY_T, TRACK_RY_T);
 	
 	/* Generate lines and analyse */
 	numFeatures = findLines(lines, edges, numFeatures, LINE_TYPE_WHITE);
@@ -399,35 +399,37 @@ int8_t weightLines(Line_s* target, Line_s* lines, uint8_t size)
  #define lineB lines[2]
  #define gap   lines[1]
 
-uint8_t findStop(Line_s* lines, uint8_t numLines)
+int8_t findStop(int16_t *dy)
 {
-	/* Iterate though groups of 3 consecutive lines
-	 * --------------------------------------------
-	 * [0] Line_s A (Black)
-	 * [1] Gap    (White)
-	 * [2] Line_s B (Black)
-	 */
-	for (uint8_t i = 0; i < numLines - 3; i++) {
+	//identify edges
+	Edge_s  edges[MAX_NUMBER_OF_TRANSITIONS];
+	uint8_t features = findEdges(edges, dy, STOP_DY_T, STOP_RY_T);
 
-		/* Gather data */
-		for (uint8_t l = 0; l < 3; l++) stop.lines[l] = lines[i + l];
+	//identify lines
+	Line_s  lines[MAX_NUMBER_OF_TRANSITIONS + 1];
+	        features = findLines(lines, edges, numFeatures, LINE_TYPE_BLACK);
 
-		/* Calculate probabilities */
-		stop.P_lineA = getProbability(stop.lineA.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-		stop.P_lineB = getProbability(stop.lineB.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-		stop.P_gap   = getProbability(stop.gap.width, STOP_LINE_GAP_SD, STOP_LINE_GAP_MEAN);
+	//analyse lines
+	if (features < 2) return STOP_LINE_NOT_FOUND;
+	for (uint8_t i = 1; i < features; ++i)
+	{
+		//test separation
+		uint8_t gap = lines[i].edges[L].pos - lines[i-1].edges[R].pos;
+		float p_gap = getProbability(gap, STOP_LINE_GAP_SD, STOP_LINE_GAP_MEAN);
+		if (p_gap < STOP_MIN_CERTAINTY) continue;
 
-		/* Combine probabilities */
-		stop.P_stop  = 1;
-		stop.P_stop *= stop.P_lineA;
-		stop.P_stop *= stop.P_lineB;
-		stop.P_stop *= stop.P_gap;
+		//test widths
+		float p_width = getProbability(lines[i-1], STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
+		if (p_width < STOP_MIN_CERTAINTY) continue;
 
-		/* Compare to trust threshold */
-		if (stop.P_stop > STOP_MIN_CERTAINTY) return 1; //Return true; STOP THE CAR!
-		else return 0;
+		p_width = getProbability(lines[i], STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
+		if (p_width < STOP_MIN_CERTAINTY) continue;
+
+		//all tests satisfied
+		return STOP_LINE_FOUND;
 	}
-	return 1;
+
+	return STOP_LINE_NOT_FOUND;
 }
 
 void preloadProbabilityTables()

@@ -184,6 +184,29 @@ int main(void)
 			#ifdef SERIAL_TX_IRQ_ENABLED
 				UART0_DisarmIRQ();
 			#endif
+
+			//Positioning update tasks
+			if ( PollTaskPending(POSITIONING_REQUEST_INDEX) )
+			{    ClearTaskPending(POSITIONING_REQUEST_INDEX);
+			
+				uint32_t totalIntensity = 0;
+				int16_t dy[128];
+
+				//update position
+				diff(LineScanImage0, dy, 128);
+
+				if (findStop(dy) == STOP_LINE_FOUND)
+				{
+					carState.lineDetectionState = STOPLINE_DETECTED;
+					SetTaskPending(CONTROL_REQUEST_INDEX);
+				}
+
+				findPosition(dy, &carState);
+
+				//adjust camera exposure
+				totalIntensity = getTotalIntensity(LineScanImage0);
+				TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
+			}
 			
 			if ( PollTaskPending(CONTROL_REQUEST_INDEX) )
 			{    ClearTaskPending(CONTROL_REQUEST_INDEX);
@@ -207,24 +230,9 @@ int main(void)
 				}
 				else if (carState.lineDetectionState == STOPLINE_DETECTED)
 				{
-
+					SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 0);
+					SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 0);
 				}
-			}
-			
-			//Positioning update tasks
-			if ( PollTaskPending(POSITIONING_REQUEST_INDEX) )
-			{    ClearTaskPending(POSITIONING_REQUEST_INDEX);
-			
-				uint32_t totalIntensity = 0;
-				int16_t dy[128];
-
-				//update position
-				diff(LineScanImage0, dy, 128);
-				findPosition(dy, &carState);
-
-				//adjust camera exposure
-				totalIntensity = getTotalIntensity(LineScanImage0);
-				TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
 			}
 			
 			//Steering update tasks
