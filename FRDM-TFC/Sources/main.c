@@ -215,9 +215,14 @@ int main(void)
 			if ( PollTaskPending(POSITIONING_REQUEST_INDEX) )
 			{    ClearTaskPending(POSITIONING_REQUEST_INDEX);
 			
-				static uint32_t totalIntensity = 0;
+				uint32_t totalIntensity = 0;
+				int16_t dy[128];
 
-				findPosition(LineScanImage0, &carState, 350);
+				//update position
+				diff(LineScanImage0, dy, 128);
+				findPosition(dy, &carState);
+
+				//adjust camera exposure
 				totalIntensity = getTotalIntensity(LineScanImage0);
 				TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
 			}

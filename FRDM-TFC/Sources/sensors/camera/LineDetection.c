@@ -21,9 +21,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-static Edge             EdgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
-static Line             LineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
-       Line             TargetLine;
+       Line_s           TargetLine;
 static StopLine         stop;
        PositioningState positioningState;
        int8_t           trackPosition;
@@ -31,41 +29,35 @@ static StopLine         stop;
 #define L 0
 #define R 1
 
-void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold)
+void findPosition(int16_t *dy, carState_s* carState)
 {
 	#define start  edges[0].pos //Macros for easy/readable access to line...
 	#define finish edges[1].pos //...start/finish.
-	
-	/* If car has 'stopped', nothing to do; return */
-	// To-do: Move this check to main()
-	if (carState->lineDetectionState == STOPLINE_DETECTED) return;
 
+	Edge_s edges[MAX_NUMBER_OF_TRANSITIONS];
+	Line_s lines[MAX_NUMBER_OF_TRANSITIONS + 1];
 
 	//////////////////////////////////////////
 	// Analyse most recently captured image //
 	//////////////////////////////////////////
 
-	/* Get derivative of image */
-	static int16_t dI[128];
-	derivative(linescan, dI, 128);
-
 	/* Look for edges and classify */
 	static uint8_t numFeatures = 0;
-	numFeatures = findEdges(dI, DIFFERENTIAL_THRESHOLD, HEIGHT_THRESHOLD);
+	numFeatures = findEdges(edges, dy, DIFFERENTIAL_THRESHOLD, HEIGHT_THRESHOLD);
 	
 	/* Generate lines and analyse */
-	numFeatures = findLines(EdgeBuffer, numFeatures, LINE_TYPE_WHITE);
-	weightLines(&TargetLine, LineBuffer, numFeatures);
+	numFeatures = findLines(lines, edges, numFeatures, LINE_TYPE_WHITE);
+	weightLines(&TargetLine, lines, numFeatures);
 
 
 	///////////////////////////////////
 	// Look for absolute match first //
 	///////////////////////////////////
 
-	Line *best = LineBuffer;
+	Line_s *best = lines;
 	for (uint8_t k = 1; k < numFeatures; ++k) //select best absolute match
 	{
-		Line *candidate = &LineBuffer[k];
+		Line_s *candidate = &lines[k];
 		                              
 		if (candidate->P_absLine > best->P_absLine)
 		{
@@ -96,11 +88,11 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	// Next look for a relative match //
 	////////////////////////////////////
 	
-	//Line *best = LineBuffer;
-	best = LineBuffer;
+	//Line_s *best = lines;
+	best = lines;
 	for (uint8_t k = 1; k < numFeatures; ++k) //select best relative match
 	{
-		Line *candidate = &LineBuffer[k];
+		Line_s *candidate = &lines[k];
 		
 		if (candidate->P_relLine > best->P_relLine)
 		{
@@ -143,7 +135,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	/////////////////////////////////
 
 	/*
-	if ( findStop(LineBuffer, numFeatures) )
+	if ( findStop(lines, numFeatures) )
 	{
 	 	carState->lineDetectionState = STOPLINE_DETECTED;
 	 	TFC_ClearLED(1);
@@ -157,11 +149,11 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	// Before giving up try and re-find the line if it is lost //
 	/////////////////////////////////////////////////////////////
 	
-	//Line *best = LineBuffer;
-	best = LineBuffer;
+	//Line_s *best = lines;
+	best = lines;
 	for (uint8_t k = 1; k < numFeatures; ++k) //select best new match
 	{
-		Line *candidate = &LineBuffer[k];
+		Line_s *candidate = &lines[k];
 									  
 		if (candidate->P_newLine > best->P_newLine)
 		{
@@ -213,10 +205,10 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	#undef finish
 }
 
-uint8_t findEdges(int16_t* dy, uint16_t dy_t, uint16_t ry_t)
+uint8_t findEdges(Edge_s *edges, int16_t* dy, uint16_t dy_t, uint16_t ry_t)
 {
 	uint8_t detected = 0; //number of edges found.
-	Edge   *edge = &EdgeBuffer[detected]; //pointer to next slot in edge buffer
+	Edge_s   *edge = &edges[detected]; //pointer to next slot in edge buffer
 
 	for (uint32_t k = 1; k < 128; ++k)
 	{		
@@ -256,10 +248,10 @@ uint8_t findEdges(int16_t* dy, uint16_t dy_t, uint16_t ry_t)
 	return detected;
 }
 
-uint8_t findLines(Edge *edge, uint8_t edges, uint8_t const type)
+uint8_t findLines(Line_s *lines, Edge_s *edge, uint8_t edges, uint8_t const type)
 {
 	uint8_t detected = 0;
-	Line   *line = LineBuffer;
+	Line_s *line = lines;
 	enum {COMPLETE, INCOMPLETE} status;
 
 	//start first line
@@ -327,14 +319,14 @@ uint8_t findLines(Edge *edge, uint8_t edges, uint8_t const type)
 	return detected;
 }
 
-void weightEdges(Edge* targets, Edge* edges, uint8_t size) {
+void weightEdges(Edge_s* targets, Edge_s* edges, uint8_t size) {
 	
 	/* Test each edge against both target edges */
 	for (uint8_t t = 0; t < 2; t++)
 		for (uint8_t e = 0; e < size; ++e)
 		{
-			Edge *edge = &edges[e];
-			Edge *target = &targets[t];
+			Edge_s *edge = &edges[e];
+			Edge_s *target = &targets[t];
 
 			//Calculate probability of edge being edge based on change in position
 			int16_t dPos = edge->pos - target->pos;
@@ -348,11 +340,11 @@ void weightEdges(Edge* targets, Edge* edges, uint8_t size) {
 	return;
 }
 
-int8_t weightLines(Line* target, Line* lines, uint8_t size)
+int8_t weightLines(Line_s* target, Line_s* lines, uint8_t size)
 {
 	for (uint8_t k = 0; k < size; ++k) {
 
-		Line *line = &lines[k]; //pointer to candidate line
+		Line_s *line = &lines[k]; //pointer to candidate line
 
 		////////////////////////////////////////
 		// Calculate individual probabilities //
@@ -407,13 +399,13 @@ int8_t weightLines(Line* target, Line* lines, uint8_t size)
  #define lineB lines[2]
  #define gap   lines[1]
 
-uint8_t findStop(Line* lines, uint8_t numLines)
+uint8_t findStop(Line_s* lines, uint8_t numLines)
 {
 	/* Iterate though groups of 3 consecutive lines
 	 * --------------------------------------------
-	 * [0] Line A (Black)
+	 * [0] Line_s A (Black)
 	 * [1] Gap    (White)
-	 * [2] Line B (Black)
+	 * [2] Line_s B (Black)
 	 */
 	for (uint8_t i = 0; i < numLines - 3; i++) {
 
@@ -444,7 +436,7 @@ void preloadProbabilityTables()
 	getProbability(0, STOP_LINE_GAP_SD, STOP_LINE_GAP_MEAN);
 }	
 
-void derivative(volatile uint16_t* input, int16_t* output, uint8_t length)
+void diff(volatile uint16_t* input, int16_t* output, uint8_t length)
 {
 	output[0] = 0;
 

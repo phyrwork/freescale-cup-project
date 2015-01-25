@@ -59,10 +59,10 @@ typedef struct {
 	uint8_t  pos;  //Location of edge
 	float    P_dPos[2];
 	float    P_edge[2];
-} Edge;
+} Edge_s;
 
 typedef struct {
-	Edge    edges[2];
+	Edge_s    edges[2];
   //#define start  edges[0].pos
   //#define finish edges[1].pos
 	uint8_t width;
@@ -71,7 +71,7 @@ typedef struct {
 	float   P_newLine;
 	float   P_absLine;
 	float   P_relLine;
-} Line;
+} Line_s;
 
 typedef uint8_t PositioningState;
 #define POSITIONING_STATE_FULL 0
@@ -80,7 +80,7 @@ typedef uint8_t PositioningState;
 #define POSITIONING_STATE_PARTIAL_NONE 255
 
 typedef struct {
-	Line    lines[3];
+	Line_s    lines[3];
   //#define lineA lines[0]
   //#define lineB lines[2]
   //#define gap   lines[1]
@@ -90,18 +90,18 @@ typedef struct {
 	float   P_stop;
 } StopLine;
 
-void    findPosition(volatile uint16_t* linescan_in, carState_s* carState, uint16_t dI_threshold);
-uint8_t findEdges(int16_t* dy, uint16_t dy_t, uint16_t ry_t);
-uint8_t findLines(Edge* edges, uint8_t numEdges, uint8_t const type);
-void    weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges);
-int8_t  weightLines(Line* trackedLine, Line* lines, uint8_t numLines);
-uint8_t findStop(Line* lines, uint8_t numLines);
+void    findPosition(int16_t *dy, carState_s* carState);
+uint8_t findEdges(Edge_s *edges, int16_t* dy, uint16_t dy_t, uint16_t ry_t);
+uint8_t findLines(Line_s *lines, Edge_s *edges, uint8_t numEdges, uint8_t const type);
+void    weightEdges(Edge_s *targetEdges, Edge_s *edges, uint8_t numEdges);
+int8_t  weightLines(Line_s* trackedLine, Line_s* lines, uint8_t numLines);
+uint8_t findStop(Line_s* lines, uint8_t numLines);
 void    preloadProbabilityTables();
-void    derivative(volatile uint16_t* input, int16_t* output, uint8_t length);
+void    diff(volatile uint16_t* input, int16_t* output, uint8_t length);
 
 /* Data sharing for telemetry */
-extern PositioningState positioningState; // Line tracking status
-extern Line             TargetLine;	// Current model line
+extern PositioningState positioningState; // Line_s tracking status
+extern Line_s             TargetLine;	// Current model line
 extern int8_t           trackPosition;     // Current detected road position
 
 #endif /* LINEDETECTION_H_ */
