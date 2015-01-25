@@ -31,39 +31,6 @@ static StopLine         stop;
 #define L 0
 #define R 1
 
-void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
-
-	/* See findPosition() for details about what this lot does */
-	int16_t dI[128]; derivative(linescan, dI, 128);
-
-	uint8_t numFeatures = findEdges(dI, dI_threshold);
-	        numFeatures = findLines(EdgeBuffer, numFeatures, LINE_TYPE_WHITE);
-
-	weightLines(&TargetLine, LineBuffer, numFeatures);
-
-
-	//////////////////////////////////////////////
-	// Identify target line based only on width //
-	//////////////////////////////////////////////
-	
-	Line *best = LineBuffer;
-	for (uint8_t k = 1; k < numFeatures; ++k)
-	{
-		Line *candidate = &LineBuffer[k];
-		                              
-		if (candidate->edges[L].type != EDGE_TYPE_VIRTUAL &&
-		    candidate->edges[R].type != EDGE_TYPE_VIRTUAL &&
-		    candidate->P_width > best->P_width)
-		{
-			//Candidate is both fully visible and best match so far
-			best = candidate;
-		}
-	}
-
-	TargetLine = *best; //best match becomes target line
-	return;
-}
-
 void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold)
 {
 	#define start  edges[0].pos //Macros for easy/readable access to line...
@@ -84,7 +51,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 
 	/* Look for edges and classify */
 	static uint8_t numFeatures = 0;
-	numFeatures = findEdges(dI, DERIVATIVE_THRESHOLD, HEIGHT_THRESHOLD);
+	numFeatures = findEdges(dI, DIFFERENTIAL_THRESHOLD, HEIGHT_THRESHOLD);
 	
 	/* Generate lines and analyse */
 	numFeatures = findLines(EdgeBuffer, numFeatures, LINE_TYPE_WHITE);
@@ -456,7 +423,7 @@ uint8_t findStop(Line* lines, uint8_t numLines)
 		/* Calculate probabilities */
 		stop.P_lineA = getProbability(stop.lineA.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
 		stop.P_lineB = getProbability(stop.lineB.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-		stop.P_gap   = getProbability(stop.gap.width, STOP_GAP_WIDTH_SD, STOP_GAP_WIDTH_MEAN);
+		stop.P_gap   = getProbability(stop.gap.width, STOP_LINE_GAP_SD, STOP_LINE_GAP_MEAN);
 
 		/* Combine probabilities */
 		stop.P_stop  = 1;
@@ -474,7 +441,7 @@ uint8_t findStop(Line* lines, uint8_t numLines)
 void preloadProbabilityTables()
 {
 	getProbability(0, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-	getProbability(0, STOP_GAP_WIDTH_SD, STOP_GAP_WIDTH_MEAN);
+	getProbability(0, STOP_LINE_GAP_SD, STOP_LINE_GAP_MEAN);
 }	
 
 void derivative(volatile uint16_t* input, int16_t* output, uint8_t length)
