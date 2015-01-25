@@ -20,7 +20,7 @@ classdef PidView < LineChartView
             % parse input
             p = inputParser;
             addRequired (p, 'session');
-            addRequired (p, 'attribute', @ischar);
+            addRequired (p, 'attribute', @isattribute);
             addParameter(p, 'figure', double.empty);
             addParameter(p, 'position', double.empty, @isnumeric);
             % addParameter(p, 'title', char.empty, @ischar);
