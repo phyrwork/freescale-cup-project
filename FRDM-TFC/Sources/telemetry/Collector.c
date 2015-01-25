@@ -56,72 +56,68 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	//[1]
 	{ //TrackPosition
 		.data = &trackPosition,
-		.deref = 0,
 		.endpoint = &TFTP_TRACK_POSITION_ENDPOINT,
 		.fauto = 20
 	},
 	//[2]
 	{ //PositioningState
 		.data = &positioningState,
-		.deref = 0,
 		.endpoint = &TFTP_POSITIONING_STATE_ENDPOINT,
 		.fauto = 20
 	},
 	//[3]
 	{ //i_rl
 		.data = &MotorCurrent[REAR_LEFT].value,
-		.deref = 0,
 		.endpoint = &TFTP_I_RL_ENDPOINT,
 		.fauto = 50
 	},
 	//[4]
 	{ //i_rr
 		.data = &MotorCurrent[REAR_RIGHT].value,
-		.deref = 0,
 		.endpoint = &TFTP_I_RR_ENDPOINT,
 		.fauto = 50
 	},
 	//[5]
 	{ //D_rl
 		.data = &MotorPWM[REAR_LEFT].value,
-		.deref = 0,
 		.endpoint = &TFTP_D_RL_ENDPOINT,
 		.fauto = 20
 	},
 	//[6]
 	{ //D_rr
 		.data = &MotorPWM[REAR_RIGHT].value,
-		.deref = 0,
 		.endpoint = &TFTP_D_RR_ENDPOINT,
 		.fauto = 20
 	},
 	//[7]
 	{ //w_rl
 		.data = &WheelSpeedSensors[REAR_LEFT].value,
-		.deref = 0,
 		.endpoint = &TFTP_W_RL_ENDPOINT,
 		.fauto = 20
 	},
 	//[8]
 	{ //w_rr
 		.data = &WheelSpeedSensors[REAR_RIGHT].value,
-		.deref = 0,
 		.endpoint = &TFTP_W_RR_ENDPOINT,
 		.fauto = 20
 	},
 	//[9]
 	{ //s_rl
 		.data = &WheelSlipSensors[REAR_LEFT].value,
-		.deref = 0,
 		.endpoint = &TFTP_S_RL_ENDPOINT,
 		.fauto = 20
 	},
 	//[10]
 	{ //s_rr
 		.data = &WheelSlipSensors[REAR_RIGHT].value,
-		.deref = 0,
 		.endpoint = &TFTP_S_RR_ENDPOINT,
 		.fauto = 20
+	},
+	//[11]
+	{ //TargetLine
+		.data = &TargetLine,
+		.endpoint = &TFTP_TARGET_LINE_ENDPOING,
+		.flim = 10
 	}
 };
 

@@ -28,6 +28,7 @@
 #define W_RR_COLLECTOR_INDEX               8
 #define S_RL_COLLECTOR_INDEX               9
 #define S_RR_COLLECTOR_INDEX              10
+#define TARGET_LINE_COLLECTOR_INDEX       11
 
 /* PIT1 config */
 #define PIT1_POLLING_FREQUENCY 2400
