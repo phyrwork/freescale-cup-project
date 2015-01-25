@@ -53,19 +53,9 @@ void findPosition(int16_t *dy, carState_s* carState)
 	// Look for absolute match first //
 	///////////////////////////////////
 
-	Line_s *best = lines;
-	for (uint8_t k = 1; k < numFeatures; ++k) //select best absolute match
+	Line_s *best = findTrack(lines, numFeatures, TRACK_TYPE_ABS);
+	if (best->match > MIN_CERTAINTY)
 	{
-		Line_s *candidate = &lines[k];
-		                              
-		if (candidate->P_absLine > best->P_absLine)
-		{
-			//Candidate is best absolute match so far
-			best = candidate;
-		}
-	}
-
-	if (best->P_absLine > MIN_CERTAINTY) {
 		//Found an absolute match - i.e. a complete line.
 
 		/* Calculate car's track position */
@@ -87,20 +77,9 @@ void findPosition(int16_t *dy, carState_s* carState)
 	// Next look for a relative match //
 	////////////////////////////////////
 	
-	//Line_s *best = lines;
-	best = lines;
-	for (uint8_t k = 1; k < numFeatures; ++k) //select best relative match
+	best = findTrack(lines, numFeatures, TRACK_TYPE_REL);
+	if (best->match > MIN_CERTAINTY)
 	{
-		Line_s *candidate = &lines[k];
-		
-		if (candidate->P_relLine > best->P_relLine)
-		{
-			//Candidate is best relative match so far
-			best = candidate;
-		}
-	}
-
-	if (best->P_relLine > MIN_CERTAINTY) {
 		//Found a relative match - i.e. a partial line similar to the target line
 
 		int8_t offset = 0; //New position estimated by change in position of visible edge
@@ -148,20 +127,9 @@ void findPosition(int16_t *dy, carState_s* carState)
 	// Before giving up try and re-find the line if it is lost //
 	/////////////////////////////////////////////////////////////
 	
-	//Line_s *best = lines;
-	best = lines;
-	for (uint8_t k = 1; k < numFeatures; ++k) //select best new match
+	best = findTrack(lines, numFeatures, TRACK_TYPE_NEW);
+	if (best->match > MIN_CERTAINTY)
 	{
-		Line_s *candidate = &lines[k];
-									  
-		if (candidate->P_newLine > best->P_newLine)
-		{
-			//Candidate is best absolute match so far
-			best = candidate;
-		}
-	}
-
-	if (best->P_newLine > MIN_CERTAINTY) {
 		//Found an absolute match - i.e. a complete line.
 
 		/* Calculate car's track position */
@@ -318,81 +286,70 @@ uint8_t findLines(Line_s *lines, Edge_s *edge, uint8_t edges, uint8_t const type
 	return detected;
 }
 
-void weightEdges(Edge_s* targets, Edge_s* edges, uint8_t size) {
-	
-	/* Test each edge against both target edges */
-	for (uint8_t t = 0; t < 2; t++)
-		for (uint8_t e = 0; e < size; ++e)
-		{
-			Edge_s *edge = &edges[e];
-			Edge_s *target = &targets[t];
-
-			//Calculate probability of edge being edge based on change in position
-			int16_t dPos = edge->pos - target->pos;
-			edge->P_dPos[t] = getProbability(dPos, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-	
-			//Calculate probability
-			edge->P_edge[t]  = 1;
-			edge->P_edge[t] *= edge->P_dPos[t];
-		}
-	
-	return;
-}
-
-int8_t weightLines(Line_s* target, Line_s* lines, uint8_t size)
+Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t uint8_t type)
 {
-	for (uint8_t k = 0; k < size; ++k) {
+	Line_s *best = line; //best line to return
 
-		Line_s *line = &lines[k]; //pointer to candidate line
-
-		////////////////////////////////////////
-		// Calculate individual probabilities //
-		////////////////////////////////////////
-
-		line->P_width = getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN); //P based on abs width
-
-		uint8_t dWidth = line->width - target->width;
-		line->P_dWidth = getProbability(dWidth, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN); //P based on change in width
-
-		weightEdges(target->edges, line->edges, 2); //P of constituent edges
-
-
-		//////////////////////////////////////
-		// Calculate combined probabilities //
-		//////////////////////////////////////
-		
-		//New line
-		line->P_newLine  = 1;
-		line->P_newLine *= line->P_width;
-		if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
-			line->edges[R].type == EDGE_TYPE_VIRTUAL)
+	for(; lines; --lines)
+	{
+		switch (type)
 		{
-			//One or both edges isn't visible, so despite width cannot be absolute match
-			line->P_newLine = 0;
+			case TRACK_TYPE_NEW: //search for a new match
+
+				//not a full match if one or more virtual edges
+				if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
+					line->edges[R].type == EDGE_TYPE_VIRTUAL)
+				{
+					line->match = 0;
+				}
+				//probability of a new match
+				else
+				{
+					line->match = getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN);
+				}
+				
+				break;
+
+			case TRACK_TYPE_REL: //search for a partial match
+
+				//probability of a full match
+				int8_t dp = TargetLine->edges[L].pos - line->edges[L].pos;
+				line->match  = getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+                       dp = TargetLine->edges[R].pos - line->edges[R].pos;
+                line->match *= getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+                line->match *= getProbability(dWidth, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
+
+				break;
+
+			case TRACK_TYPE_ABS: //search for a full match
+
+				//not a new match if one or more virtual edges
+				if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
+					line->edges[R].type == EDGE_TYPE_VIRTUAL)
+				{
+					line->match = 0;
+				}
+				//probability of a full match
+				else
+				{
+					int8_t dp = TargetLine->edges[L].pos - line->edges[L].pos;
+					line->match  = getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+	                       dp = TargetLine->edges[R].pos - line->edges[R].pos;
+	                line->match *= getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+	                line->match *= getProbability(dWidth, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
+					line->match *= getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN);
+				}
+
+				break;
 		}
 
-		//Shared component
-		float P_shared  = 1;
-		      P_shared *= line->edges[L].P_edge[L];
-		      P_shared *= line->edges[R].P_edge[R];
-
-		//Relative line
-		line->P_relLine  = P_shared;
-		line->P_relLine *= line->P_dWidth;
-
-		//Absolute line
-		line->P_absLine  = P_shared;
-		line->P_absLine *= line->P_width;
-		if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
-			line->edges[R].type == EDGE_TYPE_VIRTUAL)
-		{
-			//One or both edges isn't visible, so despite width cannot be absolute match
-			line->P_absLine = 0;
-		}
-
+		if (line->match > best->match) best = line; //store a superior match
 	}
-	return 0;
+
+	best->type = type; //tag line
+	return best;
 }
+
 
 int8_t findStop(int16_t *dy)
 {

@@ -59,23 +59,20 @@ typedef uint8_t EdgeType;
 #define LINE_TYPE_WHITE EDGE_TYPE_RISING
 #define LINE_TYPE_BLACK EDGE_TYPE_FALLING
 
+#define TRACK_TYPE_ABS 0
+#define TRACK_TYPE_REL 1
+#define TRACK_TYPE_NEW 2
+
 typedef struct {
 	EdgeType type; //Type of edge (i.e. rising/falling)
 	uint8_t  pos;  //Location of edge
-	float    P_dPos[2];
-	float    P_edge[2];
 } Edge_s;
 
 typedef struct {
-	Edge_s    edges[2];
-  //#define start  edges[0].pos
-  //#define finish edges[1].pos
+	Edge_s  edges[2];
 	uint8_t width;
-	float   P_width;
-	float   P_dWidth;
-	float   P_newLine;
-	float   P_absLine;
-	float   P_relLine;
+	float   match;
+	uint8_t type;
 } Line_s;
 
 typedef uint8_t PositioningState;
