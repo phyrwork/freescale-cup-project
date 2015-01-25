@@ -22,7 +22,6 @@
 #include <stdlib.h>
 
        Line_s           TargetLine;
-static StopLine         stop;
        PositioningState positioningState;
        int8_t           trackPosition;
 
@@ -395,10 +394,6 @@ int8_t weightLines(Line_s* target, Line_s* lines, uint8_t size)
 	return 0;
 }
 
- #define lineA lines[0]
- #define lineB lines[2]
- #define gap   lines[1]
-
 int8_t findStop(int16_t *dy)
 {
 	//identify edges
@@ -407,7 +402,7 @@ int8_t findStop(int16_t *dy)
 
 	//identify lines
 	Line_s  lines[MAX_NUMBER_OF_TRANSITIONS + 1];
-	        features = findLines(lines, edges, numFeatures, LINE_TYPE_BLACK);
+	        features = findLines(lines, edges, features, LINE_TYPE_BLACK);
 
 	//analyse lines
 	if (features < 2) return STOP_LINE_NOT_FOUND;
@@ -419,10 +414,10 @@ int8_t findStop(int16_t *dy)
 		if (p_gap < STOP_MIN_CERTAINTY) continue;
 
 		//test widths
-		float p_width = getProbability(lines[i-1], STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
+		float p_width = getProbability(lines[i-1].width, STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
 		if (p_width < STOP_MIN_CERTAINTY) continue;
 
-		p_width = getProbability(lines[i], STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
+		p_width = getProbability(lines[i].width, STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
 		if (p_width < STOP_MIN_CERTAINTY) continue;
 
 		//all tests satisfied
