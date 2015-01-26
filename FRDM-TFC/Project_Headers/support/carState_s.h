@@ -23,4 +23,6 @@ typedef struct {
 	int8_t lineCenter;
 }carState_s;
 
+extern carState_s carState;
+
 #endif /* CARSTATE_S_H_ */

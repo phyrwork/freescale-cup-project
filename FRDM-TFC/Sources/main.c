@@ -148,7 +148,7 @@ void TFC_Init(carState_s* carState)
 	TFC_InitLineScanCamera();
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
 	TaskRequest_Init();
-	TFC_InitADCs(carState);
+	TFC_InitADCs();
 	UART0_Init();
 	DMA0_Init();
 	//TFC_InitSpeedSensor();
@@ -166,9 +166,13 @@ void TFC_Init(carState_s* carState)
 
 int main(void)
 {
-	/* Initialise control routine */
-	static carState_s carState =
-	{ .motorState = FORCED_DISABLED, .UARTSpeedState = UNDEFINED, .lineDetectionState = LINE_LOST, .lineScanState = NO_NEW_LINESCAN_IMAGE };
+	//initialise car state
+	carState.motorState = FORCED_DISABLED;
+	carState.UARTSpeedState = UNDEFINED;
+	carState.lineDetectionState = LINE_LOST;
+	carState.lineScanState = NO_NEW_LINESCAN_IMAGE;
+	
+	//initialise modules
 	TFC_Init(&carState);
 	
 	while ( !PollTaskPending(POSITIONING_REQUEST_INDEX) ){};

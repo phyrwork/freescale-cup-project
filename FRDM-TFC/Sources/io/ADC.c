@@ -229,8 +229,6 @@ void ADC_Read_Cal(ADC_MemMapPtr, tADC_Cal_Blk *);
 #define ADC_STATE_CAPTURE_BATTERY_LEVEL			5
 #define ADC_STATE_CAPTURE_LINE_SCAN		        6
 
-static carState_s* carState;
-
 void InitADC0();
 
 /******************************************************************************
@@ -417,11 +415,9 @@ void InitADC0()
 
 
 void Sampler_Init();
-void TFC_InitADCs(carState_s* carStateInputPointer)
+void TFC_InitADCs()
 {
 	InitADC0();
-
-    carState = carStateInputPointer;
 
   //The pump will be primed with the PIT interrupt.  upon timeout/interrupt it will set the SI signal high
 	//for the camera and then start the conversions for the pots.
