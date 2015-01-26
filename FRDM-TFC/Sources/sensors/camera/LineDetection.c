@@ -20,94 +20,40 @@
 #include "devices/TFC_SHIELD.h"
 #include <math.h>
 #include <stdlib.h>
+#include "telemetry/Collector.h"
 
-static Edge             EdgeBuffer[MAX_NUMBER_OF_TRANSITIONS];
-static Line             LineBuffer[MAX_NUMBER_OF_TRANSITIONS + 1];
-       Line             TargetLine;
-static StopLine         stop;
-       PositioningState positioningState;
-       int8_t           trackPosition;
+Line_s           TargetLine;
+PositioningState positioningState;
+int8_t           trackPosition;
 
 #define L 0
 #define R 1
 
-void InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold) {
-
-	/* See findPosition() for details about what this lot does */
-	int16_t dI[128]; derivative(linescan, dI, 128);
-
-	uint8_t numFeatures = findEdges(dI, dI_threshold);
-	        numFeatures = findLines(EdgeBuffer, numFeatures);
-
-	weightLines(&TargetLine, LineBuffer, numFeatures);
-
-
-	//////////////////////////////////////////////
-	// Identify target line based only on width //
-	//////////////////////////////////////////////
-	
-	Line *best = LineBuffer;
-	for (uint8_t k = 1; k < numFeatures; ++k)
-	{
-		Line *candidate = &LineBuffer[k];
-		                              
-		if (candidate->edges[L].type != EDGE_TYPE_VIRTUAL &&
-		    candidate->edges[R].type != EDGE_TYPE_VIRTUAL &&
-		    candidate->P_width > best->P_width)
-		{
-			//Candidate is both fully visible and best match so far
-			best = candidate;
-		}
-	}
-
-	TargetLine = *best; //best match becomes target line
-	return;
-}
-
-void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI_threshold)
+void findPosition(int16_t *dy, carState_s* carState)
 {
 	#define start  edges[0].pos //Macros for easy/readable access to line...
 	#define finish edges[1].pos //...start/finish.
-	
-	/* If car has 'stopped', nothing to do; return */
-	// To-do: Move this check to main()
-	if (carState->lineDetectionState == STOPLINE_DETECTED) return;
 
+	Edge_s edges[MAX_NUMBER_OF_TRANSITIONS];
+	Line_s lines[MAX_NUMBER_OF_TRANSITIONS + 1];
 
 	//////////////////////////////////////////
 	// Analyse most recently captured image //
 	//////////////////////////////////////////
 
-	/* Get derivative of image */
-	static int16_t dI[128];
-	derivative(linescan, dI, 128);
-
-	/* Look for edges and classify */
+	//look for features
 	static uint8_t numFeatures = 0;
-	numFeatures = findEdges(dI, dI_threshold);
-	
-	/* Generate lines and analyse */
-	numFeatures = findLines(EdgeBuffer, numFeatures);
-	weightLines(&TargetLine, LineBuffer, numFeatures);
+	numFeatures = findEdges(edges, dy, TRACK_DY_T, TRACK_RY_T);
+	numFeatures = findLines(lines, edges, numFeatures, LINE_TYPE_WHITE);
 
 
 	///////////////////////////////////
 	// Look for absolute match first //
 	///////////////////////////////////
 
-	Line *best = LineBuffer;
-	for (uint8_t k = 1; k < numFeatures; ++k) //select best absolute match
+	Line_s *best = findTrack(lines, numFeatures, TRACK_TYPE_ABS);
+	if (best->match > MIN_CERTAINTY)
 	{
-		Line *candidate = &LineBuffer[k];
-		                              
-		if (candidate->P_absLine > best->P_absLine)
-		{
-			//Candidate is best absolute match so far
-			best = candidate;
-		}
-	}
-
-	if (best->P_absLine > MIN_CERTAINTY) {
 		//Found an absolute match - i.e. a complete line.
 
 		/* Calculate car's track position */
@@ -116,6 +62,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 		trackPosition = carState->lineCenter; //local copy of track position for telemetry
 
 		TargetLine = *best; //matched line becomes new target line
+		CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
 
 		/* Update car status; reset timeout counter */
 		carState->lineDetectionState = LINE_FOUND;
@@ -129,20 +76,9 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	// Next look for a relative match //
 	////////////////////////////////////
 	
-	//Line *best = LineBuffer;
-	best = LineBuffer;
-	for (uint8_t k = 1; k < numFeatures; ++k) //select best relative match
+	best = findTrack(lines, numFeatures, TRACK_TYPE_REL);
+	if (best->match > MIN_CERTAINTY)
 	{
-		Line *candidate = &LineBuffer[k];
-		
-		if (candidate->P_relLine > best->P_relLine)
-		{
-			//Candidate is best relative match so far
-			best = candidate;
-		}
-	}
-
-	if (best->P_relLine > MIN_CERTAINTY) {
 		//Found a relative match - i.e. a partial line similar to the target line
 
 		int8_t offset = 0; //New position estimated by change in position of visible edge
@@ -163,6 +99,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 		trackPosition = carState->lineCenter; //local copy of road position for telemetry.
 
 		TargetLine = *best; //matched line becomes new target line
+		CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
 
 		/* Update car status; reset timeout counter */
 		carState->lineDetectionState = LINE_FOUND;
@@ -176,7 +113,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	/////////////////////////////////
 
 	/*
-	if ( findStop(LineBuffer, numFeatures) )
+	if ( findStop(lines, numFeatures) )
 	{
 	 	carState->lineDetectionState = STOPLINE_DETECTED;
 	 	TFC_ClearLED(1);
@@ -190,20 +127,9 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	// Before giving up try and re-find the line if it is lost //
 	/////////////////////////////////////////////////////////////
 	
-	//Line *best = LineBuffer;
-	best = LineBuffer;
-	for (uint8_t k = 1; k < numFeatures; ++k) //select best new match
+	best = findTrack(lines, numFeatures, TRACK_TYPE_NEW);
+	if (best->match > MIN_CERTAINTY)
 	{
-		Line *candidate = &LineBuffer[k];
-									  
-		if (candidate->P_newLine > best->P_newLine)
-		{
-			//Candidate is best absolute match so far
-			best = candidate;
-		}
-	}
-
-	if (best->P_newLine > MIN_CERTAINTY) {
 		//Found an absolute match - i.e. a complete line.
 
 		/* Calculate car's track position */
@@ -212,6 +138,7 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 		trackPosition = carState->lineCenter; //local copy of track position for telemetry
 
 		TargetLine = *best; //matched line becomes new target line
+		CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
 
 		/* Update car status; reset timeout counter */
 		carState->lineDetectionState = LINE_FOUND;
@@ -246,236 +173,226 @@ void findPosition(volatile uint16_t* linescan, carState_s* carState, uint16_t dI
 	#undef finish
 }
 
-uint8_t findEdges(int16_t* dy, uint16_t threshold)
+uint8_t findEdges(Edge_s *edges, int16_t* dy, uint16_t dy_t, uint16_t ry_t)
 {
 	uint8_t detected = 0; //number of edges found.
-	uint8_t start = 0;    //start of current transition region
-	int16_t height = 0;   //height of current transition
-	Edge   *edge = &EdgeBuffer[detected]; //pointer to next slot in edge buffer
+	Edge_s   *edge = &edges[detected]; //pointer to next slot in edge buffer
 
-	for (uint8_t k = 1;
-		 k < 128 && detected < MAX_NUMBER_OF_TRANSITIONS;
-		 k++)
-	{
-		//look for inflection points
-		if ( (dy[k] > 0 && dy[k-1] < 0) ||
-			 (dy[k] < 0 && dy[k-1] > 0) )
+	for (uint32_t k = 1; k < 128; ++k)
+	{		
+		//first search for the start of a candidate transition
+		for (; k < 128 && !(abs(dy[k]) >= dy_t); ++k) {}
+		uint8_t start = k;
+
+		//next search for the end of a candidate transition
+		int16_t height = 0;
+		for (; k < 128 &&
+			   abs(dy[k]) > dy_t && //differential threshold
+			   !( (dy[k] > 0 && dy[k-1] < 0) || (dy[k] < 0 && dy[k-1] > 0) ); //turning points
+			   ++k, height += dy[k]) {} //sum differential
+
+		//test candidate
+		if ( abs(height) >= ry_t )
 		{
-			//filter edges with sufficient amplitude
-			if ( abs(height) > HEIGHT_THRESHOLD )
+			if (height > 0)
 			{
-				uint8_t finish = k - 1; //complete region
-				
-				//pinpoint edge location
+				//rising edge
 				edge->pos = start;
-				for (uint8_t c = start; c < finish; ++c)
-				{
-					//search for steepest point in region
-					if ( abs(dy[c]) > abs(dy[edge->pos]) )
-					{
-						edge->pos = c;
-					}
-				}
-
-				edge->type = dy[edge->pos] > 0 ? //determine edge type
-					EDGE_TYPE_RISING : EDGE_TYPE_FALLING;
-
-				//'store' edge
-				edge = &EdgeBuffer[++detected];
+				edge->type = EDGE_TYPE_RISING;
 			}
-
-			//start a new edge
-			start = k;
-			height = 0;
-		}
-
-		height += dy[k]; //accumulate change in height
-	}
-
-	//handle final region
-	if ( abs(height) > HEIGHT_THRESHOLD )
-	{
-		uint8_t finish = 128; //complete region
-		
-		//pinpoint edge location
-		edge->pos = start;
-		for (uint8_t c = start; c < finish; ++c)
-		{
-			//search for steepest point in region
-			if ( abs(dy[c]) > abs(dy[edge->pos]) )
+			else
 			{
-				edge->pos = c;
+				//falling edge
+				edge->pos = k - 1;
+				edge->type = EDGE_TYPE_FALLING;
 			}
+
+			//'save' edge
+		    ++detected;
+		    ++edge;
 		}
-
-		edge->type = edge->type > 0 ? //determine edge type
-			EDGE_TYPE_RISING : EDGE_TYPE_FALLING;
-
-		//'store' edge
-		++detected;
 	}
 
 	return detected;
 }
 
-uint8_t findLines(Edge *edges, uint8_t numEdges)
+uint8_t findLines(Line_s *lines, Edge_s *edge, uint8_t edges, uint8_t const type)
 {
-	#define start  edges[0].pos //Macros for easy/readable access to line...
-	#define finish edges[1].pos //...start/finish.
-	
-	uint8_t numLines = 1; //Number of pairs generated
+	uint8_t detected = 0;
+	Line_s *line = lines;
+	enum {COMPLETE, INCOMPLETE} status;
 
-	/* Start constructing first line */
-	LineBuffer->edges[L].pos = 0;
-	LineBuffer->edges[L].type = EDGE_TYPE_VIRTUAL;
-	
-	/* A line potentially exists between every pair of edges */
-	Line *line = LineBuffer;
-	for (uint8_t e = 0; e < numEdges; ++e) {
-		
-		Edge *edge = &edges[e];
-
-		//Make sure we only capture the next edge of a different type
-		//if (edge->type == line->edges[L].type) continue;
-
-		/* Finish constructing previous line */
-		line->edges[R] = *edge;
-		line->width = line->finish - line->start; //Calculate width of line
-
-		/* Start constructing next line */
-		(++line)->edges[L] = *edge;
-		++numLines;
+	//start first line
+	if (edges == 0 || edge->type != type)
+	{
+		//create a virtual edge if no rising edge
+		line->edges[L].pos = 0;
+		line->edges[L].type = EDGE_TYPE_VIRTUAL;
 	}
+	else
+	{
+		//otherwise copy edge and continue
+		line->edges[L] = *(edge++);
+		--edges; //decrement edges counter
+	}
+	status = INCOMPLETE; //signal line incomplete
 
-	/* Finish constructing final line */
-	line->edges[R].pos = 127;
-	line->edges[R].type = EDGE_TYPE_VIRTUAL;
-	line->width = line->finish - line->start; //Calculate width of line
-
-	return numLines;
-	
-	#undef start
-	#undef finish
-}
-
-void weightEdges(Edge* targets, Edge* edges, uint8_t size) {
-	
-	/* Test each edge against both target edges */
-	for (uint8_t t = 0; t < 2; t++)
-		for (uint8_t e = 0; e < size; ++e)
+	//analyse remaining edges
+	while(edges)
+	{
+		//search for an alternate edge (skip similar edges)
+		while(edges && edge->type == line->edges[L].type)
 		{
-			Edge *edge = &edges[e];
-			Edge *target = &targets[t];
-
-			//Calculate probability of edge being edge based on change in position
-			int16_t dPos = edge->pos - target->pos;
-			edge->P_dPos[t] = getProbability(dPos, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-	
-			//Calculate probability
-			edge->P_edge[t]  = 1;
-			edge->P_edge[t] *= edge->P_dPos[t];
+			++edge;
+			--edges;
 		}
-	
-	return;
-}
-
-int8_t weightLines(Line* target, Line* lines, uint8_t size)
-{
-	for (uint8_t k = 0; k < size; ++k) {
-
-		Line *line = &lines[k]; //pointer to candidate line
-
-		////////////////////////////////////////
-		// Calculate individual probabilities //
-		////////////////////////////////////////
-
-		line->P_width = getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN); //P based on abs width
-
-		uint8_t dWidth = line->width - target->width;
-		line->P_dWidth = getProbability(dWidth, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN); //P based on change in width
-
-		weightEdges(target->edges, line->edges, 2); //P of constituent edges
-
-
-		//////////////////////////////////////
-		// Calculate combined probabilities //
-		//////////////////////////////////////
-		
-		//New line
-		line->P_newLine  = 1;
-		line->P_newLine *= line->P_width;
-		if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
-			line->edges[R].type == EDGE_TYPE_VIRTUAL)
+		if (edges) //if still have edges to complete with
 		{
-			//One or both edges isn't visible, so despite width cannot be absolute match
-			line->P_newLine = 0;
+			//complete a line
+			line->edges[R] = *(edge++);
+			--edges;
+
+			line->width = line->edges[R].pos - line->edges[L].pos;
+			++detected;
+
+			status = COMPLETE;
 		}
 
-		//Shared component
-		float P_shared  = 1;
-		      P_shared *= line->edges[L].P_edge[L];
-		      P_shared *= line->edges[R].P_edge[R];
-
-		//Relative line
-		line->P_relLine  = P_shared;
-		line->P_relLine *= line->P_dWidth;
-
-		//Absolute line
-		line->P_absLine  = P_shared;
-		line->P_absLine *= line->P_width;
-		if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
-			line->edges[R].type == EDGE_TYPE_VIRTUAL)
+		//start search for a new line
+		while(edges && edge->type != type)
 		{
-			//One or both edges isn't visible, so despite width cannot be absolute match
-			line->P_absLine = 0;
+			++edge;
+			--edges;
 		}
+		if (edges) //if still have edges to start with
+		{
+			//start a line
+			(++line)->edges[L] = *(edge++);
+			--edges;
 
+			status = INCOMPLETE;
+		}
 	}
-	return 0;
+
+	//finish last line
+	if (status == INCOMPLETE && line->edges[L].pos < 127)
+	{
+		line->edges[R].pos = 127;
+		line->edges[R].type = EDGE_TYPE_VIRTUAL;
+
+		line->width = line->edges[R].pos - line->edges[L].pos;
+		++detected;
+	}
+	
+	return detected;
 }
 
- #define lineA lines[0]
- #define lineB lines[2]
- #define gap   lines[1]
-
-uint8_t findStop(Line* lines, uint8_t numLines)
+Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t type)
 {
-	/* Iterate though groups of 3 consecutive lines
-	 * --------------------------------------------
-	 * [0] Line A (Black)
-	 * [1] Gap    (White)
-	 * [2] Line B (Black)
-	 */
-	for (uint8_t i = 0; i < numLines - 3; i++) {
+	Line_s *best = line; //best line to return
 
-		/* Gather data */
-		for (uint8_t l = 0; l < 3; l++) stop.lines[l] = lines[i + l];
+	for(; lines; --lines)
+	{
+		int8_t dp;
+		switch (type)
+		{
+			case TRACK_TYPE_NEW: //search for a new match
 
-		/* Calculate probabilities */
-		stop.P_lineA = getProbability(stop.lineA.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-		stop.P_lineB = getProbability(stop.lineB.width, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-		stop.P_gap   = getProbability(stop.gap.width, STOP_GAP_WIDTH_SD, STOP_GAP_WIDTH_MEAN);
+				//not a full match if one or more virtual edges
+				if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
+					line->edges[R].type == EDGE_TYPE_VIRTUAL)
+				{
+					line->match = 0;
+				}
+				//probability of a new match
+				else
+				{
+					line->match = getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN);
+				}
+				
+				break;
 
-		/* Combine probabilities */
-		stop.P_stop  = 1;
-		stop.P_stop *= stop.P_lineA;
-		stop.P_stop *= stop.P_lineB;
-		stop.P_stop *= stop.P_gap;
+			case TRACK_TYPE_REL: //search for a partial match
 
-		/* Compare to trust threshold */
-		if (stop.P_stop > STOP_MIN_CERTAINTY) return 1; //Return true; STOP THE CAR!
-		else return 0;
+				//probability of a full match
+				dp = TargetLine.edges[L].pos - line->edges[L].pos;
+				line->match  = getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+                dp = TargetLine.edges[R].pos - line->edges[R].pos;
+                line->match *= getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+                line->match *= getProbability(TargetLine.width - line->width, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
+
+				break;
+
+			case TRACK_TYPE_ABS: //search for a full match
+
+				//not a new match if one or more virtual edges
+				if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
+					line->edges[R].type == EDGE_TYPE_VIRTUAL)
+				{
+					line->match = 0;
+				}
+				//probability of a full match
+				else
+				{
+					int8_t dp = TargetLine.edges[L].pos - line->edges[L].pos;
+					line->match  = getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+	                       dp = TargetLine.edges[R].pos - line->edges[R].pos;
+	                line->match *= getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+	                line->match *= getProbability(TargetLine.width - line->width, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
+					line->match *= getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN);
+				}
+
+				break;
+		}
+
+		if (line->match > best->match) best = line; //store a superior match
 	}
-	return 1;
+
+	best->type = type; //tag line
+	return best;
+}
+
+
+int8_t findStop(int16_t *dy)
+{
+	//identify edges
+	Edge_s  edges[MAX_NUMBER_OF_TRANSITIONS];
+	uint8_t features = findEdges(edges, dy, STOP_DY_T, STOP_RY_T);
+
+	//identify lines
+	Line_s  lines[MAX_NUMBER_OF_TRANSITIONS + 1];
+	        features = findLines(lines, edges, features, LINE_TYPE_BLACK);
+
+	//analyse lines
+	if (features < 2) return STOP_LINE_NOT_FOUND;
+	for (uint8_t i = 1; i < features; ++i)
+	{
+		//test separation
+		uint8_t gap = lines[i].edges[L].pos - lines[i-1].edges[R].pos;
+		float p_gap = getProbability(gap, STOP_LINE_GAP_SD, STOP_LINE_GAP_MEAN);
+		if (p_gap < STOP_MIN_CERTAINTY) continue;
+
+		//test widths
+		float p_width = getProbability(lines[i-1].width, STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
+		if (p_width < STOP_MIN_CERTAINTY) continue;
+
+		p_width = getProbability(lines[i].width, STOP_LINE_WIDTH_SD, STOP_LINE_GAP_MEAN);
+		if (p_width < STOP_MIN_CERTAINTY) continue;
+
+		//all tests satisfied
+		return STOP_LINE_FOUND;
+	}
+
+	return STOP_LINE_NOT_FOUND;
 }
 
 void preloadProbabilityTables()
 {
 	getProbability(0, STOP_LINE_WIDTH_SD, STOP_LINE_WIDTH_MEAN);
-	getProbability(0, STOP_GAP_WIDTH_SD, STOP_GAP_WIDTH_MEAN);
+	getProbability(0, STOP_LINE_GAP_SD, STOP_LINE_GAP_MEAN);
 }	
 
-void derivative(volatile uint16_t* input, int16_t* output, uint8_t length)
+void diff(volatile uint16_t* input, int16_t* output, uint8_t length)
 {
 	output[0] = 0;
 

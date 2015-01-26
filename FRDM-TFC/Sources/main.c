@@ -2,105 +2,134 @@
 #include "sensors/cadence.h"
 #include "sensors/wheel/speed.h"
 #include "control/wheel/speed.h"
+#include "control/vehicle/speed.h"
 
 ///////////////////////////////////////
 // Main Routine Task Request Handler //
 ///////////////////////////////////////
 
-#define SIZEOF_FLAGS ( ((REQUESTS_MAX_TASKS - 1) / 32) + 1 )
-uint32_t flags[SIZEOF_FLAGS];
+#define SIZEOF_FLAGS ( ((NUM_TASK_ITEMS - 1) / 32) + 1 )
+uint32_t pflags[SIZEOF_FLAGS];
 //#define SIZEOF_FLAGS ( (sizeof flags) / (sizeof (uint32_t)) )
 
 #define TR_INDEX (index >> 5)   //divide by 32 to get index in task requests array
 #define TR_BIT   (index & 0x1F) //isolate bit number
 
-uint32_t AnyTaskRequest()
+uint32_t AnyTaskPending()
 {
 	for (uint32_t i = 0; i < SIZEOF_FLAGS; ++i) //for each set of 32 flags
-	if (flags[i]) return 1;                     //if any flags set return true
+	if (pflags[i]) return 1;                     //if any flags set return true
 	
 	return 0; //if execution reaches here no flags set, return false
 }
 
-uint32_t PollTaskRequest(uint32_t index)
+uint32_t PollTaskPending(uint32_t index)
 {
-	return (flags[TR_INDEX] & 1 << TR_BIT); //isolate task request bit
+	return (pflags[TR_INDEX] & 1 << TR_BIT); //isolate task request bit
 }
 
-void SetTaskRequest(uint32_t index)
+void SetTaskPending(uint32_t index)
 {
-	flags[TR_INDEX] |= 1 << TR_BIT; //set task request bit
+	pflags[TR_INDEX] |= 1 << TR_BIT; //set task request bit
 }
 
-void ClearTaskRequest(uint32_t index)
+void ClearTaskPending(uint32_t index)
 {
-	flags[TR_INDEX] &= ~(1 << TR_BIT); //clear task request bit
+	pflags[TR_INDEX] &= ~(1 << TR_BIT); //clear task request bit
 }
 
 typedef struct {
-	uint32_t index;     //index of task request bit
-	float    frequency; //frequency, in seconds
-	uint32_t period;    //period, in ticks
-	uint32_t counter;   //time elapsed since last run, in ticks
-} PeriodicTask_s;
+	float const fauto;   //when set > 0 data will be pushed to endpoint at this target fauto
+	uint32_t    pauto;   //'fauto' expressed in timer ticks
+	float const flim;    //used to limit how often a 'request' flag can be serviced
+	uint32_t    plim;    //'flim' expressed in timer ticks
+	uint32_t    counter; //time elapsed (in ticks) since last service
+	uint8_t     request; //task request flag
+} MainTask_s;
 
-#define SET_BY_INITIALIZATION 0
-PeriodicTask_s tasks[] =
+#define TASK_IDLE 0
+#define TASK_WAITING 1
+
+MainTask_s tasks[NUM_TASK_ITEMS] =
 {
-	/* [0] = */ {
-        /* index = */     CONTROL_REQUEST_INDEX,
-        /* frequency = */ CONTROL_REQUEST_FREQUENCY,
-        /* period = */    SET_BY_INITIALIZATION,
-        /* counter = */   SET_BY_INITIALIZATION
+	//[0]
+	{ //control
+        .fauto = 100
     },
-    /* [0] = */ {
-        /* index = */     TELEMETRY_REQUEST_INDEX,
-        /* frequency = */ TELEMETRY_REQUEST_FREQUENCY,
-        /* period = */    SET_BY_INITIALIZATION,
-        /* counter = */   SET_BY_INITIALIZATION
-    }
+    //[1]
+    { //telemetry
+        .fauto = 100
+    },
+    //[2]
+	{ //positioning
+	},
+	//[3]
+	{ //steering
+		.fauto = 50
+	}
 };
-#define SIZEOF_TASKS ( (sizeof tasks) / (sizeof (PeriodicTask_s)) )
+
+void SetTaskRequest(uint32_t index) { tasks[index].request = TASK_WAITING; }
+void ClearTaskRequest(uint32_t index) { tasks[index].request = TASK_IDLE; }
 
 void TaskRequest_Init()
 { 
-    //initialize schedule objects
-    for (uint32_t i = 0; i < SIZEOF_TASKS; ++i )
+    //calculate timing information
+    for (uint32_t i = 0; i < NUM_TASK_ITEMS; ++i )
     {
-        PeriodicTask_s *item = &tasks[i];
+        MainTask_s *item = &tasks[i];
 
-        if (item->frequency != 0)
-        {
-            // Set sampling period if frequency > 0
-            item->period = SYSTICK_FREQUENCY/item->frequency;
-            item->counter = 0;
-        }
+        if (item->fauto > 0) item->pauto = SYSTICK_FREQUENCY / item->fauto; //auto-scheduling period
+        else item->pauto = 0;
+
+		if (item->flim > 0)  item->plim  = SYSTICK_FREQUENCY / item->flim;  //request period limit
+		else item->plim = 0;
+		
+		//ensure other members initialized correctly
+		item->counter = 0;
     }
 }
 
 //#include "support/ARM_SysTick.h"
-#define REQUESTS_TICKER TFC_Ticker[TASK_REQUEST_TICKER]
+#define TICKER TFC_Ticker[UPTIME_TICKER]
 
 void UpdateTaskRequests()
 {
-	uint32_t ticker = REQUESTS_TICKER; //"freeze" timer
-	REQUESTS_TICKER = 0;               //reset timer for accurate sampling
-	
-    for (uint32_t i = 0; i < SIZEOF_TASKS; ++i)
-    {
-        PeriodicTask_s *item = &tasks[i];
+	static uint32_t tref = 0;      //reference ticker value
+		   uint32_t t = TICKER;    //'freeze' timer
+		   uint32_t dt = t - tref; //get interval since last call
+		            tref = TICKER; //store time reference
 
-        item->counter += ticker; //update item counter
+	for(uint32_t i = 0; i < NUM_TASK_ITEMS; ++i)
+	{
+		MainTask_s *item = &tasks[i];
 
-        if (item->frequency == 0) continue; //skip if frequency = 0
-        if (item->counter >= item->period)
-        {
-            //item counter has exceeded sampling period
-            item->counter = 0; //reset the counter
+		item->counter += dt; //increment item counter
+		
+		//schedule collection events
+		if (item->counter >= item->plim ||  //if time elapsed greater than rate-limit period
+			item->plim == 0)                //or if no rate-limit is set
+		{
+			//automatic scheduling
+			if (item->pauto != 0 &&           //if automatic scheduling period is set
+				item->counter >= item->pauto) //and time elapsed since last event is sufficient
+			{
+				item->counter = 0;            //restart item timer
+				SetTaskPending(i);
+				continue;
+			}
 
-            SetTaskRequest(item->index); //set the task request flag
-        }
-    }
+			//request-based scheduling
+			if (item->request == TASK_WAITING) //if collection requested
+			{
+				item->request = TASK_IDLE;    //clear request
+
+				item->counter = 0;            //restart item timer
+				SetTaskPending(i);
+				continue;
+			}
+		}
+	}
 }
 
 /////////////
@@ -120,7 +149,7 @@ void TFC_Init(carState_s* carState)
 	TFC_InitLineScanCamera();
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
 	TaskRequest_Init();
-	TFC_InitADCs(carState);
+	TFC_InitADCs();
 	UART0_Init();
 	DMA0_Init();
 	//TFC_InitSpeedSensor();
@@ -128,6 +157,7 @@ void TFC_Init(carState_s* carState)
 	InitWheelSpeedSensors();
 	InitMotorPWMControl();
 	InitWheelSpeedControl();
+	InitVehicleSpeedControl();
 	InitWheelSlipSensors();
 	InitMotorTorqueControl();
 	TFC_HBRIDGE_DISABLE;
@@ -138,72 +168,91 @@ void TFC_Init(carState_s* carState)
 
 int main(void)
 {
-	/* Initialise control routine */
-	static carState_s carState =
-	{ .motorState = FORCED_DISABLED, .UARTSpeedState = UNDEFINED, .lineDetectionState = LINE_LOST, .lineScanState = NO_NEW_LINESCAN_IMAGE };
+	//initialise car state
+	carState.motorState = FORCED_DISABLED;
+	carState.UARTSpeedState = UNDEFINED;
+	carState.lineDetectionState = LINE_LOST;
+	carState.lineScanState = NO_NEW_LINESCAN_IMAGE;
+	
+	//initialise modules
 	TFC_Init(&carState);
 	
-	while (carState.lineScanState != LINESCAN_IMAGE_READY){};
+	while ( !PollTaskPending(POSITIONING_REQUEST_INDEX) ){};
 	//InitTracking(LineScanImage0, 350);
 	TFC_SetLED(0);
 
 	while (1)
 	{	
-		if ( AnyTaskRequest() )
+		UpdateTaskRequests();
+		if ( AnyTaskPending() )
 		{
 			//disable UART0
 			#ifdef SERIAL_TX_IRQ_ENABLED
 				UART0_DisarmIRQ();
 			#endif
+
+			//Positioning update tasks
+			if ( PollTaskPending(POSITIONING_REQUEST_INDEX) )
+			{    ClearTaskPending(POSITIONING_REQUEST_INDEX);
 			
-			if ( PollTaskRequest(CONTROL_REQUEST_INDEX) )
-			{    ClearTaskRequest(CONTROL_REQUEST_INDEX);
+				uint32_t totalIntensity = 0;
+				int16_t dy[128];
+
+				//update position
+				diff(LineScanImage0, dy, 128);
+
+				if (findStop(dy) == STOP_LINE_FOUND)
+				{
+					carState.lineDetectionState = STOPLINE_DETECTED;
+					SetTaskPending(CONTROL_REQUEST_INDEX);
+				}
+
+				findPosition(dy, &carState);
+
+				//adjust camera exposure
+				totalIntensity = getTotalIntensity(LineScanImage0);
+				TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
+			}
 			
-				/* Update car state before main control routine */
-				//evaluateUARTorSpeed(&carState);
+			//main control
+			if ( PollTaskPending(CONTROL_REQUEST_INDEX) )
+			{    ClearTaskPending(CONTROL_REQUEST_INDEX);
+			
+				//enable/disable H-bridge
 				evaluateMotorState(&carState);
 	
-				/* Perform main control routine */
-				//Profiler_Start(CONTROL_PROFILER, PROFILER_SEND);
-				switch ((TFC_GetDIP_Switch() >> 1) & 0x03)
+				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
-					default:
-					case 0:
-						rawFocussingMode(&carState);
-						//TFC_ClearLED(3);
-						break;
-		
-					case 1:
-						servoAlignment();
-						//TFC_ClearLED(3);
-						//speedTestMode(&carState);
-						break;
-		
-					case 2:
-						derivativeFocussingMode(&carState);
-						//TFC_ClearLED(3);
-						break;
-		
-					case 3:
-						lineFollowingMode(&carState);
-						TFC_SetLED(0);
-						break;
+					SetVehicleSpeed(2); //2 RPS
+					//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
+					//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
+					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
+					UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
+						
+				}
+				else if (carState.lineDetectionState == LINE_LOST)
+				{
+					SetVehicleSpeed(0);
+				}
+				else if (carState.lineDetectionState == STOPLINE_DETECTED)
+				{
+					SetVehicleSpeed(0);
 				}
 			}
 			
-			if ( PollTaskRequest(WSPEED_REQUEST_INDEX) )
-			{    ClearTaskRequest(WSPEED_REQUEST_INDEX);
-
-				/* Run data collection routine */
-				UpdateWheelSpeed(&WheelSpeedSensors[REAR_LEFT]);
-				UpdateWheelSpeed(&WheelSpeedSensors[REAR_RIGHT]);
+			//update steering
+			if ( PollTaskPending(STEERING_REQUEST_INDEX) )
+			{    ClearTaskPending(STEERING_REQUEST_INDEX);
+				
+				TFC_SetServo(0, getDesiredServoValue(carState.lineCenter, 0));
 			}
-		
-			if ( PollTaskRequest(TELEMETRY_REQUEST_INDEX) )
-			{    ClearTaskRequest(TELEMETRY_REQUEST_INDEX);
+			
+			if ( PollTaskPending(TELEMETRY_REQUEST_INDEX) )
+			{    ClearTaskPending(TELEMETRY_REQUEST_INDEX);
 
 				/* Run data collection routine */
-				Collector();
+				CollectorUpdate();
+				CollectorProcess();
 			}
 		}
 		else
@@ -214,41 +263,6 @@ int main(void)
 		}
 	}
 	return 0;
-}
-
-void heartbeat()
-{
-	static uint8_t toggle = 0;
-	toggle = ~toggle;
-	if (toggle == 0)
-	{
-		TFC_SetLED(0);
-	}
-	else
-	{
-		TFC_ClearLED(0);
-	}
-}
-
-void evaluateUARTorSpeed(carState_s* carState)
-{
-	if (((((TFC_GetDIP_Switch() >> 3) & 0x01) == 0x00) && ((PORTA_PCR2 >> 8) & 0x00000007) != 0x00000002) || carState->UARTSpeedState == UNDEFINED) //Single UART single sensor
-	{
-		PORTA_PCR2 &= 0xFFFFF8FF;
-		PORTA_PCR2 |= 0x00000200;
-		enable_irq(INT_UART0-16);
-		carState->UARTSpeedState = SINGLE_SPEED_SINGLE_UART;
-		TERMINAL_PRINTF("\nSwitching to single uart single sensor");
-	}
-
-	else if (((((TFC_GetDIP_Switch() >> 3) & 0x01) == 0x01) && ((PORTA_PCR2 >> 8) & 0x00000007) != 0x00000003) || carState->UARTSpeedState ==UNDEFINED) //Dual sensor no uart
-	{
-		TERMINAL_PRINTF("\nSwitching to dual sensor no uart");
-		PORTA_PCR2 &= 0xFFFFF8FF;
-		PORTA_PCR2 |= 0x00000300;
-		disable_irq(INT_UART0-16);
-		carState->UARTSpeedState = DUAL_SPEED_NO_UART;
-	}
 }
 
 void evaluateMotorState(carState_s* carState)
@@ -263,166 +277,4 @@ void evaluateMotorState(carState_s* carState)
 		TFC_HBRIDGE_DISABLE;
 		TFC_SetMotorPWM(0, 0);
 	}
-}
-
-void rawFocussingMode(carState_s* carState)
-{
-	if (TFC_Ticker[0] >= 200 && carState->lineScanState == LINESCAN_IMAGE_READY)
-	{
-		TFC_Ticker[0] = 0;
-		carState->lineScanState = NO_NEW_LINESCAN_IMAGE;
-
-		TFC_SetServo(0, 0);
-		TFC_HBRIDGE_DISABLE;
-		TFC_SetMotorPWM(0, 0);
-
-		TFC_SetLineScanExposureTime(calculateNewExposure(getTotalIntensity(LineScanImage0), TARGET_TOTAL_INTENSITY));
-
-		for (uint8_t i = 0; i < 128; i++)
-		{
-			TERMINAL_PRINTF("%X,", LineScanImage0[i]);
-		}
-		TERMINAL_PRINTF("\r\n");
-	}
-}
-
-void speedTestMode(carState_s* carState)
-{
-	static uint16_t speedChangeDuration = 0;
-	if (TFC_Ticker[0] >= 200)
-	{
-		speedChangeDuration += TFC_Ticker[0];
-		TFC_Ticker[0] = 0;
-		if (carState->UARTSpeedState == SINGLE_SPEED_SINGLE_UART)
-		{
-//			float speed = getSpeed(CHANNEL_0);
-//			int8_t whole = speed;
-//			int8_t frac = abs((speed - (float) whole) * 100.0f);
-//			TERMINAL_PRINTF("\n%d.%d", whole, frac);
-
-			if (speedChangeDuration <= 6000)
-			{
-//				float PWM = getDesiredMotorPWM(14.0f, getSpeed(0), isANewmeasurementAvailable(0), CHANNEL_0);
-//				TFC_SetMotorPWM(PWM, 0);
-			}
-			else if (speedChangeDuration <= 12000)
-			{
-//				float PWM = getDesiredMotorPWM(20.0f, getSpeed(0), isANewmeasurementAvailable(0), CHANNEL_0);
-//				TFC_SetMotorPWM(PWM, 0);
-			}
-			else
-			{
-				speedChangeDuration = 0;
-			}
-		}
-		else if (carState->UARTSpeedState == DUAL_SPEED_NO_UART)
-		{
-			if (speedChangeDuration <= 6000)
-			{
-//				float PWM0 = getDesiredMotorPWM(7.0f, getSpeed(0), isANewmeasurementAvailable(0), CHANNEL_0);
-//				float PWM1 = getDesiredMotorPWM(7.0f, getSpeed(1), isANewmeasurementAvailable(1), CHANNEL_1);
-//				TFC_SetMotorPWM(PWM0, PWM1);
-			}
-			else if (speedChangeDuration <= 12000)
-			{
-//				float PWM0 = getDesiredMotorPWM(13.0f, getSpeed(0), isANewmeasurementAvailable(0), CHANNEL_0);
-//				float PWM1 = getDesiredMotorPWM(13.0f, getSpeed(1), isANewmeasurementAvailable(1), CHANNEL_1);
-//				TFC_SetMotorPWM(PWM0, PWM1);
-			}
-			else
-			{
-				speedChangeDuration = 0;
-			}
-
-		}
-	}
-}
-
-void derivativeFocussingMode(carState_s* carState)
-{
-	if (TFC_Ticker[0] >= 200 && carState->lineScanState == LINESCAN_IMAGE_READY)
-	{
-		TFC_Ticker[0] = 0;
-		carState->lineScanState = NO_NEW_LINESCAN_IMAGE;
-
-		TFC_SetServo(0, 0);
-		TFC_HBRIDGE_DISABLE;
-		TFC_SetMotorPWM(0, 0);
-
-		TFC_SetLineScanExposureTime(calculateNewExposure(getTotalIntensity(LineScanImage0), TARGET_TOTAL_INTENSITY));
-		int16_t temp[128];
-		derivative(LineScanImage0, temp, 128);
-		//						
-		for (uint8_t i = 0; i < 128; i++)
-		{
-			TERMINAL_PRINTF("%X,", abs(temp[i]));
-		}
-		TERMINAL_PRINTF("\r\n");
-	}
-}
-
-void servoAlignment()
-{
-	if (TFC_Ticker[0] >= 200)
-	{
-		TFC_Ticker[0] = 0;
-		float offset = TFC_ReadPot(0) * 0.1f;
-		TFC_SetServo(0, offset);
-	}
-}
-
-void lineFollowingMode(carState_s* carState)
-{
-	static lineScanState_t steeringControlUpdate;
-	static uint32_t totalIntensity = 0;
-	if (carState->lineScanState == LINESCAN_IMAGE_READY)
-	{
-		steeringControlUpdate = LINESCAN_IMAGE_READY;
-		findPosition(LineScanImage0, carState, 350);// ((uint32_t)350*TARGET_TOTAL_INTENSITY) / totalIntensity);
-		totalIntensity = getTotalIntensity(LineScanImage0);
-		TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
-		carState->lineScanState = NO_NEW_LINESCAN_IMAGE;
-	}
-
-	if (TFC_Ticker[0] >= 200)
-	{
-		TFC_Ticker[0] = 0;
-		TFC_SetServo(0, getDesiredServoValue(carState->lineCenter, 0, &steeringControlUpdate));
-	}
-
-	if (carState->lineDetectionState == LINE_FOUND || carState->lineDetectionState == LINE_TEMPORARILY_LOST)
-	//if (1)
-	{
-		//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
-		SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 0.7);
-		SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 0.7);
-		UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
-		UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
-			
-		if (carState->lineDetectionState == LINE_TEMPORARILY_LOST)
-		{
-//			TFC_SetLED(1);
-		}
-		else
-		{
-//			TFC_ClearLED(1);
-		}
-	}
-	else if (carState->lineDetectionState == LINE_LOST)
-	{
-		//TFC_HBRIDGE_DISABLE;
-		//TFC_SetMotorPWM(0, 0);
-//		TFC_SetLED(2);PWM
-	}
-	else if (carState->lineDetectionState == STOPLINE_DETECTED)
-	{
-		//STOP!
-	}
-}
-
-float targetSpeedAverage(float targetSpeed)
-{
-	static float previousTargetSpeed = 0;
-	previousTargetSpeed = 0.9f*previousTargetSpeed + 0.1*targetSpeed;
-	return previousTargetSpeed;
 }

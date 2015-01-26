@@ -8,7 +8,6 @@
 
 typedef struct {
 	float cmd;
-	float value;
 	WheelSpeedSensor_s *sensor;
 	MotorPWM_s *pwm;
 	PID_s *pid;

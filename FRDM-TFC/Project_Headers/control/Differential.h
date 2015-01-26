@@ -10,6 +10,6 @@
 
 #include "support/carState_s.h"
 
-float getActiveDifferentialModifier(carState_s* carState, int8_t channel);
+float getSpeedDiffModifier(int8_t center);
 
 #endif /* ACTIVEDIFFERENTIAL_H_ */

@@ -1,16 +1,9 @@
 
 #include "control/Differential.h"
 
-#define KP 0.001f
+#define DIFF_KP 0.001f
 
-float getActiveDifferentialModifier(carState_s* carState, int8_t channel)
+float getSpeedDiffModifier(int8_t center)
 {
-	if(channel == 0)
-	{
-		return (1.0f + ((float)carState->lineCenter * KP));
-	}
-	else
-	{
-		return (1.0f - ((float)carState->lineCenter * KP));
-	}
+	return (float)center * DIFF_KP;
 }

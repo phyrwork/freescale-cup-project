@@ -20,7 +20,7 @@ classdef WheelSlipView < LineChartView
             % parse input
             p = inputParser;
             addRequired (p, 'session');
-            addRequired (p, 'attribute', @ischar);
+            addRequired (p, 'attribute', @isattribute);
             addParameter(p, 'figure', double.empty);
             addParameter(p, 'position', double.empty, @isnumeric);
             % addParameter(p, 'title', char.empty, @ischar);
@@ -55,7 +55,13 @@ classdef WheelSlipView < LineChartView
             obj = obj.draw(x, y);
             
             miy = min(y);
+            if miy > -0.3
+                miy = -0.3;
+            end
             may = max(y);
+            if may < 0.3
+                may = 0.3;
+            end
             if (miy ~= 0 && may ~= 0)
                 ylim(obj.haxis, [miy, may]); % adjust y-axis limits
             end

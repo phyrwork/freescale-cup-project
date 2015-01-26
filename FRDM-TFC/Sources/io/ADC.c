@@ -6,6 +6,7 @@
 #include "support/rbuf_voidptr.h"
 #include "config.h"
 #include "main.h"
+#include "telemetry/Collector.h"
 
 #define TFC_MOTOR_CURRENT_0_CHANNEL 7 //7a
 #define TFC_MOTOR_CURRENT_1_CHANNEL 3
@@ -228,8 +229,6 @@ void ADC_Read_Cal(ADC_MemMapPtr, tADC_Cal_Blk *);
 #define ADC_STATE_CAPTURE_BATTERY_LEVEL			5
 #define ADC_STATE_CAPTURE_LINE_SCAN		        6
 
-static carState_s* carState;
-
 void InitADC0();
 
 /******************************************************************************
@@ -416,11 +415,9 @@ void InitADC0()
 
 
 void Sampler_Init();
-void TFC_InitADCs(carState_s* carStateInputPointer)
+void TFC_InitADCs()
 {
 	InitADC0();
-
-    carState = carStateInputPointer;
 
   //The pump will be primed with the PIT interrupt.  upon timeout/interrupt it will set the SI signal high
 	//for the camera and then start the conversions for the pots.
@@ -519,7 +516,8 @@ int8_t Linescan0Callback ()
             LineScanImage0 = &LineScanImage0Buffer[1][0];
         }
 
-        carState->lineScanState = LINESCAN_IMAGE_READY; //announce image ready
+        CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
+        SetTaskRequest(POSITIONING_REQUEST_INDEX);
     }
     return 0;
 }

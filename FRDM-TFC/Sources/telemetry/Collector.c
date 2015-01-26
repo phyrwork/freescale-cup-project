@@ -18,15 +18,15 @@
 
 #include "telemetry/Collector.h"
 
-/* Import Tftp */
+//import endpoints
 #include "telemetry/tftp/tftp.h"
 
-/* Import timer */
+//import timer
 #include "support/ARM_SysTick.h"
 #include "config.h"
-#define TICKER TFC_Ticker[COLLECTOR_TICKER]
+#define TICKER TFC_Ticker[UPTIME_TICKER]
 
-/* Include headers to access shared data */
+//import data
 #include "sensors/camera/LineScanCamera.h"
 #include "sensors/camera/LineDetection.h"
 #include "sensors/motor/current.h"
@@ -37,88 +37,174 @@
 #include "control/motor/torque.h"
 #include "io/ADC.h"
 
-/* Define CollectorItems */
-CollectorItem items[] = {
-	/* [0] = */ { /* data = */ &LineScanImage0,   /* deref = */ 1, /* endpoint = */ &TFTP_LINESCAN0_ENDPOINT,         /* frequency = */ 10, /* misc...*/ 0,0 },
-	/* [1] = */ { /* data = */ &trackPosition,    /* deref = */ 0, /* endpoint = */ &TFTP_TRACK_POSITION_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
-	///* [2] = */ { /* data = */ &TargetLine,       /* deref = */ 0, /* endpoint = */ &TFTP_TARGET_LINE_ENDPOINT,       /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [3] = */ { /* data = */ &positioningState, /* deref = */ 0, /* endpoint = */ &TFTP_POSITIONING_STATE_ENDPOINT, /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [4] = */ { /* data = */ &MotorCurrent[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &MotorCurrent[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_I_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	///* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_T_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	///* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_T_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	///* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].cmd, /* deref = */ 0, /* endpoint = */ &TFTP_TREF_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	///* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].cmd, /* deref = */ 0, /* endpoint = */ &TFTP_TREF_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &MotorPWM[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RL_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &MotorPWM[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_D_RR_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
-	///* [5] = */ { /* data = */ &MotorTorque[REAR_LEFT].PID, /* deref = */ 1, /* endpoint = */ &TFTP_PID_T_RL_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	///* [5] = */ { /* data = */ &MotorTorque[REAR_RIGHT].PID, /* deref = */ 1, /* endpoint = */ &TFTP_PID_T_RR_ENDPOINT,    /* frequency = */ 50, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &WheelSpeedSensors[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_W_RL_ENDPOINT,    /* frequency = */ 150, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &WheelSpeedSensors[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_W_RR_ENDPOINT,    /* frequency = */ 150, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &WheelSlipSensors[REAR_LEFT].value, /* deref = */ 0, /* endpoint = */ &TFTP_S_RL_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 },
-	/* [5] = */ { /* data = */ &WheelSlipSensors[REAR_RIGHT].value, /* deref = */ 0, /* endpoint = */ &TFTP_S_RR_ENDPOINT,    /* frequency = */ 20, /* misc...*/ 0,0 }
-};
-#define NUM_ITEMS ( (sizeof items) / (sizeof (CollectorItem)) )
+//service defines
+#define CLTR_IDLE    0
+#define CLTR_WAITING 1
 
-/* Collector initialization routine */
-void Collector_Init()
-{	
-	/* Initialize CollectorItems */
-	for (uint32_t i = 0; i < NUM_ITEMS; i++ )
-	{
-		/* Calculate period in ticks; initialize counter */
-		if (items[i].frequency != 0) items[i].period = SYSTICK_FREQUENCY/items[i].frequency;
-		else items[i].period = 0xFFFFFFFF;
-		items[i].counter = 0;
+//service config
+#include <math.h>
+uint32_t const dtlim = ceil( (float)COLLECTOR_TLIM_SECONDS * (float)SYSTICK_FREQUENCY );
+CltrItem_s items[NUM_COLLECTOR_ITEMS] =
+{
+	//[0]
+	{ //linescan0
+		.data = &LineScanImage0,
+		.deref = 1,
+		.endpoint = &TFTP_LINESCAN0_ENDPOINT,
+		.flim = 30
+	},
+	//[1]
+	{ //TrackPosition
+		.data = &trackPosition,
+		.endpoint = &TFTP_TRACK_POSITION_ENDPOINT,
+		.fauto = 20
+	},
+	//[2]
+	{ //PositioningState
+		.data = &positioningState,
+		.endpoint = &TFTP_POSITIONING_STATE_ENDPOINT,
+		.fauto = 20
+	},
+	//[3]
+	{ //i_rl
+		.data = &MotorCurrent[REAR_LEFT].value,
+		.endpoint = &TFTP_I_RL_ENDPOINT,
+		.fauto = 50
+	},
+	//[4]
+	{ //i_rr
+		.data = &MotorCurrent[REAR_RIGHT].value,
+		.endpoint = &TFTP_I_RR_ENDPOINT,
+		.fauto = 50
+	},
+	//[5]
+	{ //D_rl
+		.data = &MotorPWM[REAR_LEFT].value,
+		.endpoint = &TFTP_D_RL_ENDPOINT,
+		.fauto = 20
+	},
+	//[6]
+	{ //D_rr
+		.data = &MotorPWM[REAR_RIGHT].value,
+		.endpoint = &TFTP_D_RR_ENDPOINT,
+		.fauto = 20
+	},
+	//[7]
+	{ //w_rl
+		.data = &WheelSpeedSensors[REAR_LEFT].value,
+		.endpoint = &TFTP_W_RL_ENDPOINT,
+		.fauto = 20
+	},
+	//[8]
+	{ //w_rr
+		.data = &WheelSpeedSensors[REAR_RIGHT].value,
+		.endpoint = &TFTP_W_RR_ENDPOINT,
+		.fauto = 20
+	},
+	//[9]
+	{ //s_rl
+		.data = &WheelSlipSensors[REAR_LEFT].value,
+		.endpoint = &TFTP_S_RL_ENDPOINT,
+		.fauto = 20
+	},
+	//[10]
+	{ //s_rr
+		.data = &WheelSlipSensors[REAR_RIGHT].value,
+		.endpoint = &TFTP_S_RR_ENDPOINT,
+		.fauto = 20
+	},
+	//[11]
+	{ //TargetLine
+		.data = &TargetLine,
+		.endpoint = &TFTP_TARGET_LINE_ENDPOINT,
+		.flim = 10
 	}
+};
 
-	/* Initialize PIT1 */
-	// SOMETHING SOMETHING REGISTERS
+void Collector_Init()
+{
+	//calculate timing information
+	for (uint32_t i = 0; i < NUM_COLLECTOR_ITEMS; ++i )
+	{
+		CltrItem_s *item = &items[i];
+
+		if (item->fauto > 0) item->pauto = SYSTICK_FREQUENCY / item->fauto; //auto-scheduling period
+		else item->pauto = 0;
+
+		if (item->flim > 0)  item->plim  = SYSTICK_FREQUENCY / item->flim;  //event period limit
+		else item->plim = 0;
+		
+		//ensure other members initialized correctly
+		item->counter = 0;
+		item->request = 0;
+		item->pending = 0;
+	}
 }
 
-CollectorStatus* Collector()
+void CollectorRequest(uint8_t index)
 {
-	/* Endpoint error reporting */
-	static int8_t errors[NUM_ITEMS];
-	static CollectorStatus status = { COLLECTOR_ENDPOINT_OK, errors };
-	
-	status.flag = COLLECTOR_ENDPOINT_OK; // Reset errors flag
+	CltrItem_s *item = &items[index];
 
-	/* Handle CollectorItems */
-	for (uint32_t i = 0; i < NUM_ITEMS; i++)
+	item->request = CLTR_WAITING; //set request flag
+}
+
+void CollectorUpdate()
+{
+	static uint32_t tref = 0;      //reference ticker value
+	       uint32_t t = TICKER;    //'freeze' timer
+	       uint32_t dt = t - tref; //get interval since last call
+	                tref = TICKER; //store time reference
+
+	for(uint32_t i = 0; i < NUM_COLLECTOR_ITEMS; ++i)
 	{
-		/* Add number of ticks since last epoch to counter */
-		items[i].counter += TICKER;
+		CltrItem_s *item = &items[i];
 
-		/* If CollectorItem counter has reached 
-		   or exceeded period in ticks */
-		if (items[i].frequency == 0) continue;
-		if (items[i].counter >= items[i].period)
+		item->counter += dt; //increment item counter
+		
+		//schedule collection events
+		if (item->pending) continue;
+		if (item->counter >= item->plim ||  //if time elapsed greater than rate-limit period
+			item->plim == 0)                //or if no rate-limit is set
 		{
-			/* Reset counter to zero */
-			items[i].counter = 0;
-			
-			/* Get pointer to data - this step required because
-			 * location of some information (i.e. linescan images
-			 * changes during operation */
-			void* ptr = items[i].data;
-			uint8_t r = items[i].deref;
-			while(r) {
-				ptr = (void*)(*((int*) ptr)); // Get address behind pointer.
-				r--; // Decrement distance to data.
+			//automatic scheduling
+			if (item->pauto != 0 &&           //if automatic scheduling period is set
+			    item->counter >= item->pauto) //and time elapsed since last event is sufficient
+			{
+				item->counter = 0;            //restart item timer
+				item->pending = CLTR_WAITING; //schedule collection
+				continue;
 			}
 
-			/* Push data onto endpoint */
-			errors[i] = (*(items[i].endpoint))(ptr);
+			//request-based scheduling
+			if (item->request == CLTR_WAITING) //if collection requested
+			{
+				item->request = CLTR_IDLE;    //clear request
 
-			/* Set CollectorStatus error flag if appropriate */
-			if (errors[i]) status.flag = COLLECTOR_ENDPOINT_ERROR;
+				item->counter = 0;            //restart item timer
+				item->pending = CLTR_WAITING; //schedule collection
+				continue;
+			}
 		}
 	}
+}
 
-	/* Reset ticker to zero */
-	TICKER = 0;
-	
-	/* Finished; return pointer to endpoint results */
-	return &status;
+void CollectorProcess()
+{
+	static uint32_t inum = 0;      //last item serviced (support halt and resume)
+	       uint32_t tref = TICKER; //'freeze' the timer
+
+	//process only while still in valid time slice
+	for(uint32_t n = 0; n < NUM_COLLECTOR_ITEMS && TICKER - tref < dtlim; ++n, inum = ++inum >= NUM_COLLECTOR_ITEMS ? 0 : inum)
+	{
+		CltrItem_s *item = &items[inum];
+
+		if (item->pending == CLTR_IDLE) continue; //if collection not scheduled, skip
+		item->pending = CLTR_IDLE;                //clear flag
+
+		void *ptr = item->data;  //base address
+		uint8_t r = item->deref; //number of times to derefence to reach address of actual data
+
+		while(r--) ptr = (void*)(*((int*) ptr)); //dereference pointer (can't assign 'void', so cast to int)
+		(*(item->endpoint))(ptr);                //push data onto endpoint
+	}
 }

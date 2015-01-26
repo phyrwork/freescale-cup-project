@@ -21,14 +21,14 @@
 #include "support/Probability.h"
 #include "support/carState_s.h"
 
-//findLines
-#define DIFFERENTIAL_THRESHOLD    300
-#define HEIGHT_THRESHOLD          600
+#define MAX_NUMBER_OF_TRANSITIONS 16
+
+//findPosition
+#define TRACK_DY_T                300
+#define TRACK_RY_T                600
 #define MAX_LOST_LINE_DURATION    10000
 #define LOST_LINE_RESET_DURATION  10000
-#define MAX_NUMBER_OF_TRANSITIONS 64
-#define MAX_NUMBER_OF_STOP_LINES  32
-#define MIN_CERTAINTY             0.2f
+#define MIN_CERTAINTY             0.3f
 
 //weightEdges
 #define EDGE_DPOS_SD   10
@@ -36,40 +36,44 @@
 
 //weightLines
 #define LINE_WIDTH_SD    10
-#define LINE_WIDTH_MEAN  80 //This will need updating to width of track
+#define LINE_WIDTH_MEAN  95
 #define LINE_DWIDTH_SD   15
 #define LINE_DWIDTH_MEAN 0
 
-//findStopLine
+//findStop
+#define STOP_DY_T            150
+#define STOP_RY_T            400
 #define STOP_MIN_CERTAINTY   0.6f
-#define STOP_LINE_WIDTH_SD   10
-#define STOP_LINE_WIDTH_MEAN 20
-#define STOP_GAP_WIDTH_SD    4
-#define STOP_GAP_WIDTH_MEAN  4
+#define STOP_LINE_WIDTH_SD   5
+#define STOP_LINE_WIDTH_MEAN 15
+#define STOP_LINE_GAP_SD     5
+#define STOP_LINE_GAP_MEAN   10
+#define STOP_LINE_NOT_FOUND  0
+#define STOP_LINE_FOUND      1
 
 typedef uint8_t EdgeType;
 #define EDGE_TYPE_RISING  0
 #define EDGE_TYPE_FALLING 1
 #define EDGE_TYPE_VIRTUAL 255
 
+#define LINE_TYPE_WHITE EDGE_TYPE_RISING
+#define LINE_TYPE_BLACK EDGE_TYPE_FALLING
+
+#define TRACK_TYPE_ABS 0
+#define TRACK_TYPE_REL 1
+#define TRACK_TYPE_NEW 2
+
 typedef struct {
 	EdgeType type; //Type of edge (i.e. rising/falling)
 	uint8_t  pos;  //Location of edge
-	float    P_dPos[2];
-	float    P_edge[2];
-} Edge;
+} Edge_s;
 
 typedef struct {
-	Edge    edges[2];
-  //#define start  edges[0].pos
-  //#define finish edges[1].pos
+	Edge_s  edges[2];
 	uint8_t width;
-	float   P_width;
-	float   P_dWidth;
-	float   P_newLine;
-	float   P_absLine;
-	float   P_relLine;
-} Line;
+	float   match;
+	uint8_t type;
+} Line_s;
 
 typedef uint8_t PositioningState;
 #define POSITIONING_STATE_FULL 0
@@ -77,30 +81,17 @@ typedef uint8_t PositioningState;
 #define POSITIONING_STATE_PARTIAL_RIGHT 20
 #define POSITIONING_STATE_PARTIAL_NONE 255
 
-typedef struct {
-	Line    lines[3];
-  //#define lineA lines[0]
-  //#define lineB lines[2]
-  //#define gap   lines[1]
-	float   P_lineA;
-	float   P_lineB;
-	float   P_gap;
-	float   P_stop;
-} StopLine;
-
-void    InitTracking(volatile uint16_t* linescan, uint16_t dI_threshold);
-void    findPosition(volatile uint16_t* linescan_in, carState_s* carState, uint16_t dI_threshold);
-uint8_t findEdges(int16_t* derivative, uint16_t threshold);
-uint8_t findLines(Edge* edges, uint8_t numEdges);
-void    weightEdges(Edge* targetEdges, Edge* edges, uint8_t numEdges);
-int8_t  weightLines(Line* trackedLine, Line* lines, uint8_t numLines);
-uint8_t findStop(Line* lines, uint8_t numLines);
+void    findPosition(int16_t *dy, carState_s* carState);
+uint8_t findEdges(Edge_s *edges, int16_t* dy, uint16_t dy_t, uint16_t ry_t);
+uint8_t findLines(Line_s *lines, Edge_s *edges, uint8_t numEdges, uint8_t const type);
+Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t type);
+int8_t  findStop(int16_t *dy);
 void    preloadProbabilityTables();
-void    derivative(volatile uint16_t* input, int16_t* output, uint8_t length);
+void    diff(volatile uint16_t* input, int16_t* output, uint8_t length);
 
 /* Data sharing for telemetry */
-extern PositioningState positioningState; // Line tracking status
-extern Line             TargetLine;	// Current model line
+extern PositioningState positioningState; // Line_s tracking status
+extern Line_s             TargetLine;	// Current model line
 extern int8_t           trackPosition;     // Current detected road position
 
 #endif /* LINEDETECTION_H_ */
