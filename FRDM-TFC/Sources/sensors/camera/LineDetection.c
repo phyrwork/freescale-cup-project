@@ -20,10 +20,11 @@
 #include "devices/TFC_SHIELD.h"
 #include <math.h>
 #include <stdlib.h>
+#include "telemetry/Collector.h"
 
-       Line_s           TargetLine;
-       PositioningState positioningState;
-       int8_t           trackPosition;
+Line_s           TargetLine;
+PositioningState positioningState;
+int8_t           trackPosition;
 
 #define L 0
 #define R 1
@@ -40,13 +41,10 @@ void findPosition(int16_t *dy, carState_s* carState)
 	// Analyse most recently captured image //
 	//////////////////////////////////////////
 
-	/* Look for edges and classify */
+	//look for features
 	static uint8_t numFeatures = 0;
 	numFeatures = findEdges(edges, dy, TRACK_DY_T, TRACK_RY_T);
-	
-	/* Generate lines and analyse */
 	numFeatures = findLines(lines, edges, numFeatures, LINE_TYPE_WHITE);
-	weightLines(&TargetLine, lines, numFeatures);
 
 
 	///////////////////////////////////
@@ -64,6 +62,7 @@ void findPosition(int16_t *dy, carState_s* carState)
 		trackPosition = carState->lineCenter; //local copy of track position for telemetry
 
 		TargetLine = *best; //matched line becomes new target line
+		CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
 
 		/* Update car status; reset timeout counter */
 		carState->lineDetectionState = LINE_FOUND;
@@ -100,6 +99,7 @@ void findPosition(int16_t *dy, carState_s* carState)
 		trackPosition = carState->lineCenter; //local copy of road position for telemetry.
 
 		TargetLine = *best; //matched line becomes new target line
+		CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
 
 		/* Update car status; reset timeout counter */
 		carState->lineDetectionState = LINE_FOUND;
@@ -138,6 +138,7 @@ void findPosition(int16_t *dy, carState_s* carState)
 		trackPosition = carState->lineCenter; //local copy of track position for telemetry
 
 		TargetLine = *best; //matched line becomes new target line
+		CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
 
 		/* Update car status; reset timeout counter */
 		carState->lineDetectionState = LINE_FOUND;
@@ -286,12 +287,13 @@ uint8_t findLines(Line_s *lines, Edge_s *edge, uint8_t edges, uint8_t const type
 	return detected;
 }
 
-Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t uint8_t type)
+Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t type)
 {
 	Line_s *best = line; //best line to return
 
 	for(; lines; --lines)
 	{
+		int8_t dp;
 		switch (type)
 		{
 			case TRACK_TYPE_NEW: //search for a new match
@@ -313,11 +315,11 @@ Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t uint8_t type)
 			case TRACK_TYPE_REL: //search for a partial match
 
 				//probability of a full match
-				int8_t dp = TargetLine->edges[L].pos - line->edges[L].pos;
+				dp = TargetLine.edges[L].pos - line->edges[L].pos;
 				line->match  = getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-                       dp = TargetLine->edges[R].pos - line->edges[R].pos;
+                dp = TargetLine.edges[R].pos - line->edges[R].pos;
                 line->match *= getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-                line->match *= getProbability(dWidth, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
+                line->match *= getProbability(TargetLine.width - line->width, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
 
 				break;
 
@@ -332,11 +334,11 @@ Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t uint8_t type)
 				//probability of a full match
 				else
 				{
-					int8_t dp = TargetLine->edges[L].pos - line->edges[L].pos;
+					int8_t dp = TargetLine.edges[L].pos - line->edges[L].pos;
 					line->match  = getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-	                       dp = TargetLine->edges[R].pos - line->edges[R].pos;
+	                       dp = TargetLine.edges[R].pos - line->edges[R].pos;
 	                line->match *= getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-	                line->match *= getProbability(dWidth, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
+	                line->match *= getProbability(TargetLine.width - line->width, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
 					line->match *= getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN);
 				}
 

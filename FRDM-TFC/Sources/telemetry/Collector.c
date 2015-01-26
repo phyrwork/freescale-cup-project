@@ -116,7 +116,7 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	//[11]
 	{ //TargetLine
 		.data = &TargetLine,
-		.endpoint = &TFTP_TARGET_LINE_ENDPOING,
+		.endpoint = &TFTP_TARGET_LINE_ENDPOINT,
 		.flim = 10
 	}
 };

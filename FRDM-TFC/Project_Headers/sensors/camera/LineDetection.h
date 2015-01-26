@@ -84,8 +84,7 @@ typedef uint8_t PositioningState;
 void    findPosition(int16_t *dy, carState_s* carState);
 uint8_t findEdges(Edge_s *edges, int16_t* dy, uint16_t dy_t, uint16_t ry_t);
 uint8_t findLines(Line_s *lines, Edge_s *edges, uint8_t numEdges, uint8_t const type);
-void    weightEdges(Edge_s *targetEdges, Edge_s *edges, uint8_t numEdges); //to-do: move into find position routine
-int8_t  weightLines(Line_s* trackedLine, Line_s* lines, uint8_t numLines); //to-do: move into find position routine
+Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t type);
 int8_t  findStop(int16_t *dy);
 void    preloadProbabilityTables();
 void    diff(volatile uint16_t* input, int16_t* output, uint8_t length);
