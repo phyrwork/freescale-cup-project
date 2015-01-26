@@ -28,7 +28,7 @@
 #include "control/motor/torque.h"
 #include "control/steering/Servo.h"
 #include "control/TargetSpeed.h"
-#include "control/Differential.h"
+#include "control/differential.h"
 #include "support/ARM_SysTick.h"
 #include "support/carState_s.h"
 #include "telemetry/Collector.h"

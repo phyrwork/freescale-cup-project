@@ -216,8 +216,9 @@ int main(void)
 	
 				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
-					SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 2);
-					SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 2);
+					float diffMod = getSpeedDiffModifier(carState.lineCenter);
+					SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 2.0f * (1 + diffMod));
+					SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 2.0f * (1 - diffMod));
 					//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
 					//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
