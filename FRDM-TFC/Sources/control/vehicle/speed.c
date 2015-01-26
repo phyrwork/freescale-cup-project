@@ -8,9 +8,6 @@
 #define LENGTH_DIST 0.201f
 #define RADIUS(center) ((PX_OPP_CONST * LENGTH_DIST) / center)
 #define RADIUS_MIN1(center) (center * (1 / (PX_OPP_CONST * LENGTH_DIST)))
-#define WHEEL_DIAMETER 0.050f //wheel diameter
-#define PI 3.4159f
-#define WHEEL_SPEED_COEFF (1.0f / (PI * WHEEL_DIAMETER))
 
 VehicleSpeedControl_s VehicleSpeedControl;
 
@@ -35,7 +32,7 @@ void SetVehicleSpeed(float command)
 	float cmd_r = command + delta_w;
 	
 	//no slip control yet, so directly apply differential modified wheel speeds to wheels
-	SetWheelSpeed(speed->left, cmd_l * WHEEL_SPEED_COEFF);
-	SetWheelSpeed(speed->right, cmd_r * WHEEL_SPEED_COEFF);
+	SetWheelSpeed(speed->left, cmd_l);
+	SetWheelSpeed(speed->right, cmd_r);
 }
 

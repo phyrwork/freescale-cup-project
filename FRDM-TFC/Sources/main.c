@@ -231,12 +231,11 @@ int main(void)
 				}
 				else if (carState.lineDetectionState == LINE_LOST)
 				{
-
+					SetVehicleSpeed(0);
 				}
 				else if (carState.lineDetectionState == STOPLINE_DETECTED)
 				{
-					SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 0);
-					SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 0);
+					SetVehicleSpeed(0);
 				}
 			}
 			
