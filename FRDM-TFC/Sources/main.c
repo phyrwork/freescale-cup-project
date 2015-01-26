@@ -2,6 +2,7 @@
 #include "sensors/cadence.h"
 #include "sensors/wheel/speed.h"
 #include "control/wheel/speed.h"
+#include "control/vehicle/speed.h"
 
 ///////////////////////////////////////
 // Main Routine Task Request Handler //
@@ -156,6 +157,7 @@ void TFC_Init(carState_s* carState)
 	InitWheelSpeedSensors();
 	InitMotorPWMControl();
 	InitWheelSpeedControl();
+	InitVehicleSpeedControl();
 	InitWheelSlipSensors();
 	InitMotorTorqueControl();
 	TFC_HBRIDGE_DISABLE;
@@ -220,9 +222,7 @@ int main(void)
 	
 				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
-					float diffMod = getSpeedDiffModifier(carState.lineCenter);
-					SetWheelSpeed(&WheelSpeedControls[REAR_LEFT], 2.0f * (1 + diffMod));
-					SetWheelSpeed(&WheelSpeedControls[REAR_RIGHT], 2.0f * (1 - diffMod));
+					SetVehicleSpeed(2); //2 RPS
 					//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
 					//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
