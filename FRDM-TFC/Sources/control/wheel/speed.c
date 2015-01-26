@@ -19,13 +19,11 @@ WheelSpeedControl_s WheelSpeedControls[NUM_MOTORS];
 void InitWheelSpeedControl()
 {
 	//rear left
-	WheelSpeedControls[REAR_LEFT].value = 0.0f;
 	WheelSpeedControls[REAR_LEFT].sensor = &WheelSpeedSensors[REAR_LEFT];
 	WheelSpeedControls[REAR_LEFT].pwm = &MotorPWM[REAR_LEFT];
 	WheelSpeedControls[REAR_LEFT].pid = &pid[REAR_LEFT];
 	
 	//rear right
-	WheelSpeedControls[REAR_RIGHT].value = 0.0f;
 	WheelSpeedControls[REAR_RIGHT].sensor = &WheelSpeedSensors[REAR_RIGHT];
 	WheelSpeedControls[REAR_RIGHT].pwm = &MotorPWM[REAR_RIGHT];
 	WheelSpeedControls[REAR_RIGHT].pid = &pid[REAR_RIGHT];
@@ -51,7 +49,7 @@ void SetWheelSpeed(WheelSpeedControl_s *speed, float command)
 	speed->cmd = command; //Store command for telemetry purposes.
 	UpdateWheelSpeed(speed->sensor);
 	
-	if (speed->value == 0 && command == 0) //if vehicle is stationary or nearly stationary
+	if (speed->sensor->value == 0 && command == 0) //if vehicle is stationary or nearly stationary
 	{
 		*(speed->pwm->tpm->fwdCnVReg) = (uint16_t) (TPM0_MOD * 0xFF);  //complementary 50% PWM to prevent car rolling
 		*(speed->pwm->tpm->bwdCnVReg) = (uint16_t) ~(TPM0_MOD * 0xFF);
