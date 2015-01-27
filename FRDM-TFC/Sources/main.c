@@ -206,8 +206,10 @@ int main(void)
 					carState.lineDetectionState = STOPLINE_DETECTED;
 					SetTaskPending(CONTROL_REQUEST_INDEX);
 				}
-
-				findPosition(dy, &carState);
+				else if (carState.lineDetectionState != STOPLINE_DETECTED)
+				{
+					findPosition(dy, &carState);
+				}
 
 				//adjust camera exposure
 				totalIntensity = getTotalIntensity(LineScanImage0);
@@ -220,6 +222,11 @@ int main(void)
 			
 				//enable/disable H-bridge
 				evaluateMotorState(&carState);
+				
+				//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
+				//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
+				UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
+				UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 	
 				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
@@ -228,7 +235,6 @@ int main(void)
 					//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 					UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
-						
 				}
 				else if (carState.lineDetectionState == LINE_LOST)
 				{
