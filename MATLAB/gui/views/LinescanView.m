@@ -74,7 +74,7 @@ classdef LinescanView < LineChartView
                 lx = 1:1:128;
                 
                 % prep model detected edges
-                edges = findEdges(ly);
+                edges = findEdges(ly, 350, 600);
                 sx = [];
                 for i = 1:length(edges)
                     sx = [sx, edges(i).pos];
