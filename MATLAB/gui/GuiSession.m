@@ -2,71 +2,51 @@ classdef GuiSession
     %GuiSession
     
     properties
-        session = [];
+        session = TftpSession.empty;
         views = {};
     end
     
     methods
-        %GuiSession constructor
-        function obj = GuiSession(session)
+        % constructor
+        function obj = GuiSession(session, varargin)
+            
             % set parameters
             obj.session = session;
             
-            % define layout
-            % -example -
-            % obj = obj.addViews(...
-            %     LinescanView(obj.session, 'linescan0', 'figure', 1, 'position', [3,1,1]),...
-            %     MotorCurrentView(obj.session, 'i_rl', 'figure', 1, 'position', [3,1,2]),...
-            %     MotorCurrentView(obj.session, 'i_rr', 'figure', 1, 'position', [3,1,3])...
-            % );
+            % add all layout arguments
+            obj = obj.addLayout(varargin{:});
         end
         
-        % update
-        function obj = update(obj)
-            % draw all views
-            for i = 1:length(obj.views)
-                obj.views{i} = obj.views{i}.update();
+        % refresh gui
+        function obj = refresh(obj)
+            
+            % attempt to refresh all views
+            i = 1;
+            while i <= length(obj.views)
+                try 
+                    obj.views{i} = obj.views{1}.refresh;
+                    i = i + 1; % successful, advance
+                catch
+                    obj.views(i) = []; % something went wrong, delete the view
+                end
             end
         end
-    end
-    
-    % addView methods
-    methods
-        % addViews
-        function obj = addViews(obj, varargin)
-            % for all arguments
-            for i = 1:length(varargin)
-                % check is drawable
-                m = methods(varargin{i});
-                m = find(strcmp(m, 'update'), 1, 'first');
-                if (isempty(m))
-                    varargin{i}
-                    disp('This object is not drawable (i.e. its draw() method is missing.');
-                    continue;
-                end
-                
-                % add to cell array of views
-                obj.views{length(obj.views) + 1} = varargin{i};
-            end
+        
+        % addView
+        function obj = addView(obj, view, attribute, varargin)
+            
+            % call view with arguments
+            obj.views{end + 1} = view(obj.session, attribute, varargin{:});
         end
         
         % addLayout
-        function obj = addLayouts(obj, varargin)
-            % for all arguments
+        function obj = addLayout(obj, varargin)
+        
+            % add all layout arguments to GUI
             for i = 1:length(varargin)
-                % get a unique figure handle
-                fh = findall(0,'type','figure');
-                if (isempty(fh))
-                    fh = 0;
-                end
-                nf = max(fh(find(fh == fix(fh))));
-
-                % call layout function
-                layout = varargin{i};
-                obj = layout(obj, nf + 1);
-
-                % layout function contains appropriate calls to addViews to
-                % generate the desired window
+            
+                % call layout function/constructor
+                obj = layout(varargin{i});
             end
         end
     end
