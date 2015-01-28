@@ -46,8 +46,25 @@ classdef GuiSession
             for i = 1:length(varargin)
             
                 % call layout function/constructor
-                obj = layout(varargin{i});
+                f = varargin{i};
+                obj = f(obj);
             end
+        end
+    end
+    
+    methods (Static)
+        % open a new figure
+        function fig = newFigure()
+
+            % find all figure handles
+            fh = findall(0,'type','figure');
+            if isempty(fh)
+                fh = 0; % # is 0 if isempty(fh)
+            end
+
+            % maximal integer value is number of figures
+            nf = max(fh(find(fh == fix(fh))));
+            fig = figure(nf + 1); % new figure is one above this
         end
     end
 end
