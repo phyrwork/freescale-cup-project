@@ -151,22 +151,29 @@ classdef ChartView < handle
             x = get(findobj(h,'-property','XData'), 'XData'); % get XData
             y = get(findobj(h,'-property','YData'), 'YData'); % get YData
             
-            % set xtop
-            xmax = max(cellfun(@(x)max(x(:)), x));
+            % set xtop, xmin
+            if iscell(x)
+                xmax = max(cellfun(@(x)max(x(:)), x));
+                xmin = min(cellfun(@(x)min(x(:)), x));
+            else
+                xmax = max(x);
+                xmin = min(x);
+            end
             xtop = obj.getLimit(obj.xtop, xmax);
-            
-            % set xbot
-            xmin = min(cellfun(@(x)min(x(:)), x));
             xbot = obj.getLimit(obj.xbot, xmin);
             
-            % set ytop
-            ymax = max(cellfun(@(y)max(y(:)), y));
+            % set ytop, ymin
+            if iscell(y)
+                ymax = max(cellfun(@(y)max(y(:)), y));
+                ymin = min(cellfun(@(y)min(y(:)), y));
+            else
+                ymax = max(y);
+                ymin = min(y);
+            end
             ytop = obj.getLimit(obj.ytop, ymax);
-            
-            % set ymin
-            ymin = min(cellfun(@(y)min(y(:)), y));
             ybot = obj.getLimit(obj.ybot, ymin);
             
+            % set limits
             if ~(isempty(xtop) || isempty(xbot))
                 xlim(obj.axes, [xbot, xtop]);
             end

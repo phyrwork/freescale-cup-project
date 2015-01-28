@@ -15,8 +15,8 @@ classdef LinescanView < ChartView
                 );
             
             % add series
-            obj = obj.addSeries(@LinescanImageSeries, 'linescan0');
-            obj = obj.addSeries(@LinescanEdgesSeries, 'linescan0');
+            obj = obj.addSeries(@LinescanImageSeries, attribute);
+            obj = obj.addSeries(@LinescanEdgesSeries, attribute);
         end
     end
 end
