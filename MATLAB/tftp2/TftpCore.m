@@ -5,7 +5,7 @@ classdef TftpCore
         timerfreq = 10000;
     end
     
-    properties (Access = private)
+    properties (Access = protected)
         modules = {};
     end
     

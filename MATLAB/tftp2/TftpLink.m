@@ -40,6 +40,11 @@ classdef TftpLink
             else
                 l = []; % otherwise clear the leftovers buffer
             end
+            
+            % decode and return
+            for i = 1:length(frames)
+                frames{i} = obj.decode(frames{i}, 512);
+            end
         end
         
         % send
@@ -57,7 +62,7 @@ classdef TftpLink
             while( r < length(input) )
 
                 code = input(r);                            % number of bytes to copy
-                output(end+1:end+code) = input(r:r+code-1); % copy bytes
+                output(end+1:end+code-1) = input(r+1:r+code-1); % copy bytes
 
                 if( code ~= 255 && r ~= length(input) ) % 255 = 0xFF
                     output(end+1) = 0; % 0 = '\0'
@@ -69,4 +74,5 @@ classdef TftpLink
     end
     
 end
+
 

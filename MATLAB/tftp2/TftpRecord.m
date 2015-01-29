@@ -28,11 +28,15 @@ classdef TftpRecord
         end
         
         % push entries
-        function obj = push(obj,entry)
-              
+        function obj = push(obj,entries)
+            
             % check allocation
             l = length(obj.times);
-            if rem(l,obj.prealloc) == 0 % if record is full
+            e = length(entries);
+            persistent last_rem;                              % buffer remainder on last call
+            this_rem = rem(l+e,obj.prealloc); % buffer remainder after this call
+            
+            if isempty(last_rem) || this_rem < last_rem % if remainder set to 'decrease' then buffer is going to overflow
                 
                 % extend times
                 tmp = obj.times;                              % make copy of data
@@ -44,8 +48,10 @@ classdef TftpRecord
                 obj.values(1:l) = tmp;
             end
             
-            obj.times(end+1) = entry.time;
-            obj.values(end+1) = entry.value;
+            last_rem = this_rem;
+            
+            obj.times(end+1:end+e) = [entries.time];
+            obj.values(end+1:end+e) = [entries.value];
         end
     end
     

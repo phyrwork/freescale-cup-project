@@ -8,7 +8,7 @@ function [ output ] = cobs_decode( input, mtu )
     while( r < length(input) )
         
         code = input(r);                            % number of bytes to copy
-        output(end+1:end+code) = input(r:r+code-1); % copy bytes
+        output(end+1:end+code-1) = input(r+1:r+code-1); % copy bytes
 
         if( code ~= 255 && r ~= length(input) ) % 255 = 0xFF
             output(end+1) = 0; % 0 = '\0'
