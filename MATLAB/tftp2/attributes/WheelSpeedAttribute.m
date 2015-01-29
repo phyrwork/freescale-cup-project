@@ -2,20 +2,20 @@ classdef WheelSpeedAttribute < TftpAttribute
     %WheelSpeedAttribute 
 
     methods
-        % WheelSpeedAttribute constructor
+        % constructor
         function obj = WheelSpeedAttribute(code, attribute)
+            
             % set default properties used in superclass constructor
-            fsize = 4;
-            ssize = 1;
             ctype = 'single';
             mtype = 'single';
             
             % call TftpAttribute constructor
-            obj = obj@TftpAttribute(code, attribute, fsize, ssize, ctype, mtype);
+            obj = obj@TftpAttribute(code, attribute, ctype, mtype);
         end
             
         % decode
         function value = decode(obj, value)
+            
             % cast byte stream
             value = decode@TftpAttribute(obj, value);
             
@@ -25,6 +25,7 @@ classdef WheelSpeedAttribute < TftpAttribute
         
         % encode
         function value = encode(obj, value)
+            
             % convert revolutions per minute to per second
             value = value / 60;
             
