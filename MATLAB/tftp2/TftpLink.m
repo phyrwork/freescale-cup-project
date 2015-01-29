@@ -47,5 +47,26 @@ classdef TftpLink
         end
     end
     
+    methods (Static)
+        % decode COBS encoded message
+        function output = decode( input, mtu )
+        
+            output = zeros(0, mtu, 'uint8'); % preallocate
+            r = 1;
+
+            while( r < length(input) )
+
+                code = input(r);                            % number of bytes to copy
+                output(end+1:end+code) = input(r:r+code-1); % copy bytes
+
+                if( code ~= 255 && r ~= length(input) ) % 255 = 0xFF
+                    output(end+1) = 0; % 0 = '\0'
+                end
+
+                r = r + code;
+            end 
+        end
+    end
+    
 end
 
