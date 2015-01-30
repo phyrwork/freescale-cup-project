@@ -16,30 +16,30 @@ classdef TftpCore
             % preallocate module array
             obj.modules = cell(1, 2^16);
             
-%             obj = obj.addModule(LinescanAttribute('01', 'linescan0'))
-%             obj = obj.addModule(LinescanAttribute('02', 'linescan1'))
-%             obj = obj.addModule(WheelSpeedAttribute('03', 'w_fl'));
-%             obj = obj.addModule(WheelSpeedAttribute('04', 'w_fr'));
-            obj = obj.addModule(WheelSpeedAttribute('05', 'w_rl'));
-            obj = obj.addModule(WheelSpeedAttribute('06', 'w_rr'));
-%             obj = obj.addModule(WheelSpeedAttribute('17', 'w*_rl'));
-%             obj = obj.addModule(WheelSpeedAttribute('18', 'w*_rr'));
-%             obj = obj.addModule(MotorDutyAttribute('13', 'D_rl'));
-%             obj = obj.addModule(MotorDutyAttribute('14', 'D_rr'));
-%             obj = obj.addModule(MotorCurrentAttribute('07', 'i_rl'));
-%             obj = obj.addModule(MotorCurrentAttribute('08', 'i_rr'));
-%             obj = obj.addModule(MotorTorqueAttribute('09', 'T_rl'));
-%             obj = obj.addModule(MotorTorqueAttribute('0A', 'T_rr'));
-%             obj = obj.addModule(MotorTorqueAttribute('11', 'T*_rl'));
-%             obj = obj.addModule(MotorTorqueAttribute('12', 'T*_rr')):
-%             obj = obj.addModule(PidAttribute('15', 'PID_T_rl'));
-%             obj = obj.addModule(PidAttribute('16', 'PID_T_rr'));
-%             obj = obj.addModule(SlipAttribute('0B', 's_rl'));
-%             obj = obj.addModule(SlipAttribute('0C', 's_rr'));
-%             obj = obj.addModule(PositioningStateAttribute('0D', 'PositioningState'));
-%             obj = obj.addModule(LineAttribute('0E', 'TargetLine'));
-%             obj = obj.addModule(TrackPositionAttribute('0F', 'TrackPosition'));
-%             obj = obj.addModule(ProfilerAttribute('10', 'Profiler'));
+%             obj = obj.addModule(@LinescanAttribute,'01', 'linescan0')
+%             obj = obj.addModule(@LinescanAttribute,'02', 'linescan1')
+            obj = obj.addModule(@WheelSpeedAttribute,'03', 'w_fl');
+            obj = obj.addModule(@WheelSpeedAttribute,'04', 'w_fr');
+            obj = obj.addModule(@WheelSpeedAttribute,'05', 'w_rl');
+            obj = obj.addModule(@WheelSpeedAttribute,'06', 'w_rr');
+%             obj = obj.addModule(@WheelSpeedAttribute,'17', 'w*_rl');
+%             obj = obj.addModule(@WheelSpeedAttribute,'18', 'w*_rr');
+%             obj = obj.addModule(@MotorDutyAttribute,'13', 'D_rl');
+%             obj = obj.addModule(@MotorDutyAttribute,'14', 'D_rr');
+%             obj = obj.addModule(@MotorCurrentAttribute,'07', 'i_rl');
+%             obj = obj.addModule(@MotorCurrentAttribute,'08', 'i_rr');
+%             obj = obj.addModule(@MotorTorqueAttribute,'09', 'T_rl');
+%             obj = obj.addModule(@MotorTorqueAttribute,'0A', 'T_rr');
+%             obj = obj.addModule(@MotorTorqueAttribute,'11', 'T*_rl');
+%             obj = obj.addModule(@MotorTorqueAttribute,'12', 'T*_rr'):
+%             obj = obj.addModule(@PidAttribute,'15', 'PID_T_rl');
+%             obj = obj.addModule(@PidAttribute,'16', 'PID_T_rr');
+%             obj = obj.addModule(@SlipAttribute,'0B', 's_rl');
+%             obj = obj.addModule(@SlipAttribute,'0C', 's_rr');
+%             obj = obj.addModule(@PositioningStateAttribute,'0D', 'PositioningState');
+%             obj = obj.addModule(@LineAttribute,'0E', 'TargetLine');
+%             obj = obj.addModule(@TrackPositionAttribute,'0F', 'TrackPosition');
+%             obj = obj.addModule(@ProfilerAttribute,'10', 'Profiler');
         end
         
         % parse a frame
@@ -84,14 +84,18 @@ classdef TftpCore
     
     methods (Access = private)
         % add module
-        function obj = addModule(obj, module)
+        function obj = addModule(obj, code, module, varargin)
+            
+            % convert code from hex
+            code = hex2dec(code);
             
             % check if code used already
-            if ~isempty(obj.modules{module.code});
-                error(['Failed to add module: code ''',dec2hex(module.code), ''' is already in use.']);
+            if ~isempty(obj.modules{code});
+                error(['Failed to add module: code ''',dec2hex(code), ''' is already in use.']);
             end
             
-            obj.modules{module.code} = module;
+            % add module to manifest
+            obj.modules{code} = module(varargin{:});
         end
     end
 end

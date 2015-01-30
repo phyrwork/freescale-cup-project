@@ -38,14 +38,7 @@ classdef TftpSession < TftpCore & TftpLink
             frames = obj.receive;
             
             % separate into samples
-            for i = 1:length(frames)
-                try
-                    entries{i} = obj.parse(frames{i});
-                catch
-                    disp('Error parsing frame.')
-                end
-            end
-            
+            entries = cellfun(@obj.parse, frames, 'ErrorHandler', @() disp('Error parsing frame.'));
             entries = [entries{:}];
             
             % store samples for one record at a time

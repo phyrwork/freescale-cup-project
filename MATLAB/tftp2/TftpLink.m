@@ -8,15 +8,42 @@ classdef TftpLink
     
     methods
         % constructor
-        function obj = TftpLink(id, varargin)
+        function obj = TftpLink(varargin)
             
+            % parse arguments
+            p = inputParser;
+            addParameter(p, 'id', 'HC-05', @ischar);
+            addParameter(p, 'interface', 'Bluetooth', @ischar);
+            addParameter(p, 'channel', 1, @isnumeric);
+            addParameter(p, 'baud', 480600, @isnumeric);
+            
+            interface = lower(p.Results.interface);
+            
+            % establish serial link
+            switch interface
+                
+                % Bluetooth
+                case 'bluetooth'
+                    obj.device = Bluetooth(p.Results.id, p.Results.channel);
+                    
+                case 'serial'
+                    obj.device = Serial(p.Results.id, p.Results.baud);
+                    
+                otherwise
+                    error(['Interface ', p.Results.interface, ' is not recognised.']);
+            end
+            
+            % setup input buffer and begin reading
+            obj.device.InputBufferSize = 2^20; % 1MB buffer
+            fopen(obj.device);
         end
         
         % receive
         function frames = receive(obj)
             
              % if no new data, no new frames
-            r = obj.device.BytesAvailable;
+            %r = obj.device.BytesAvailable;
+            r = 1;
             if (r == 0)
                 return;
             end

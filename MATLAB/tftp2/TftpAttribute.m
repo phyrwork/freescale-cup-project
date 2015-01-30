@@ -2,7 +2,6 @@ classdef TftpAttribute
     %TftpAttribute
     
     properties
-        code      = uint16.empty;
         attribute = char.empty;   % attribute name
         ctype     = char.empty;   % native data type
         mtype     = char.empty;   % convenient MATLAB data type
@@ -20,7 +19,6 @@ classdef TftpAttribute
             parse(p, code, attribute, ctype, mtype);
             
             % set properties
-            obj.code      = cast(hex2dec(p.Results.code), 'uint16');
             obj.attribute = cast(p.Results.attribute, 'char');
             obj.ctype     = cast(p.Results.ctype, 'char');
             obj.mtype     = cast(p.Results.mtype, 'char');
