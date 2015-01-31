@@ -3,14 +3,14 @@ classdef WheelSpeedAttribute < TftpAttribute
 
     methods
         % constructor
-        function obj = WheelSpeedAttribute(code, attribute)
+        function obj = WheelSpeedAttribute(attribute)
             
             % set default properties used in superclass constructor
             ctype = 'single';
             mtype = 'single';
             
             % call TftpAttribute constructor
-            obj = obj@TftpAttribute(code, attribute, ctype, mtype);
+            obj = obj@TftpAttribute(attribute, ctype, mtype);
         end
             
         % decode

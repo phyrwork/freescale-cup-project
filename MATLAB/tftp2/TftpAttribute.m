@@ -9,14 +9,13 @@ classdef TftpAttribute
     
     methods
         % TftpAttribute constructor
-        function obj = TftpAttribute(code, attribute, ctype, mtype)
+        function obj = TftpAttribute(attribute, ctype, mtype)
             % parse input
             p = inputParser();
-            addRequired(p, 'code', @ischar);
             addRequired(p, 'attribute', @ischar);
             addRequired(p, 'ctype', @ischar);
             addRequired(p, 'mtype', @ischar);
-            parse(p, code, attribute, ctype, mtype);
+            parse(p, attribute, ctype, mtype);
             
             % set properties
             obj.attribute = cast(p.Results.attribute, 'char');

@@ -16,6 +16,7 @@ classdef TftpLink
             addParameter(p, 'interface', 'Bluetooth', @ischar);
             addParameter(p, 'channel', 1, @isnumeric);
             addParameter(p, 'baud', 480600, @isnumeric);
+            parse(p, varargin{:});
             
             interface = lower(p.Results.interface);
             

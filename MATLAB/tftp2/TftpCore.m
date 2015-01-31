@@ -18,10 +18,10 @@ classdef TftpCore
             
 %             obj = obj.addModule(@LinescanAttribute,'01', 'linescan0')
 %             obj = obj.addModule(@LinescanAttribute,'02', 'linescan1')
-            obj = obj.addModule(@WheelSpeedAttribute,'03', 'w_fl');
-            obj = obj.addModule(@WheelSpeedAttribute,'04', 'w_fr');
-            obj = obj.addModule(@WheelSpeedAttribute,'05', 'w_rl');
-            obj = obj.addModule(@WheelSpeedAttribute,'06', 'w_rr');
+            obj = obj.addModule('03', @WheelSpeedAttribute, 'w_fl');
+            obj = obj.addModule('04', @WheelSpeedAttribute, 'w_fr');
+            obj = obj.addModule('05', @WheelSpeedAttribute, 'w_rl');
+            obj = obj.addModule('06', @WheelSpeedAttribute, 'w_rr');
 %             obj = obj.addModule(@WheelSpeedAttribute,'17', 'w*_rl');
 %             obj = obj.addModule(@WheelSpeedAttribute,'18', 'w*_rr');
 %             obj = obj.addModule(@MotorDutyAttribute,'13', 'D_rl');
@@ -46,7 +46,7 @@ classdef TftpCore
         function entries = parse(obj, frame)
             
             % isolate timestamp
-            frametime = typecast(frame(1:4), 'uint32') / obj.timerfreq;
+            frametime = cast(typecast(frame(1:4), 'uint32'),'single') / obj.timerfreq;
             
             % isolate frame start indicies
             i = 5;             % frame read index

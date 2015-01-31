@@ -1,4 +1,4 @@
-classdef TftpSession < TftpCore & TftpLink
+classdef TftpSession < TftpCore % & TftpLink
     %TftpSession
     
     properties
@@ -9,22 +9,25 @@ classdef TftpSession < TftpCore & TftpLink
         % constructor
         function obj = TftpSession()
             
+            % initialise Tftp
+            obj = obj@TftpCore;
+            
             % configure link
-            obj = obj@TftpLink();
+            %obj = obj@TftpLink();
 
             % instantiate records
-            ind = cellfun(@isempty,obj.modules);
+            ind = cellfun('isempty',obj.modules);
             ind = find(ind == 0);
             for i = ind;
-                obj = obj.addRecord(obj.modules{i});
+                obj = obj.addRecord(obj.modules{i}, i);
             end
         end
         
         % addRecord
-        function obj = addRecord(obj, module)
+        function obj = addRecord(obj, module, index)
             
             % instantiate record
-            obj.records{module.code} = TftpRecord( ...
+            obj.records{index} = TftpRecord( ...
                 module.attribute, ...
                 module.mtype ...
             );
@@ -32,21 +35,28 @@ classdef TftpSession < TftpCore & TftpLink
         
         
         % receive
-        function obj = update(obj)
+        function obj = update(obj, frames)
             
             % receive messages from link
-            frames = obj.receive;
+            %frames = obj.receive;
             
             % separate into samples
-            entries = cellfun(@obj.parse, frames, 'ErrorHandler', @() disp('Error parsing frame.'));
+            for i = 1:length(frames)
+                try
+                    entries{i} = obj.parse(frames{i});
+                catch
+                    disp('Error parsing frame.')
+                end
+            end
+            
             entries = [entries{:}];
             
             % store samples for one record at a time
-            rind = cellfun(@isempty,obj.records);
+            rind = cellfun('isempty',obj.records);
             rind = find(rind == 0);
             for i = rind;
                 eind = [entries.code] == i;
-                obj.records{i}.push(entries(eind));
+                obj.records{i} = obj.records{i}.push(entries(eind));
             end
         end
     end
