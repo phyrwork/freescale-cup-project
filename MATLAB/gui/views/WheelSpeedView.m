@@ -3,7 +3,7 @@ classdef WheelSpeedView < ChartView
     
     methods
         % constructor
-        function obj = WheelSpeedView(session, attribute, varargin)
+        function obj = WheelSpeedView(session, actual, target, varargin)
             
             % initialise view
             obj = obj@ChartView(...
@@ -15,7 +15,8 @@ classdef WheelSpeedView < ChartView
                 );
             
             % add series
-            obj = obj.addSeries(@ChartSeries, attribute, 'label', 'Rotational Frequency');
+            obj = obj.addSeries(@ChartSeries, actual, 'label', 'Actual', 'color', 'blue');
+            obj = obj.addSeries(@ChartSeries, target, 'label', 'Command', 'color', 'green');
         end
     end
 end

@@ -7,8 +7,8 @@ function gui = MotorSpeedControlLayout( gui )
     
     % initialise views
     % TODO - Add titles
-    gui = gui.addView(@WheelSpeedView, 'w_rl', 'figure', fig, 'position', [2,3,1]);
-    gui = gui.addView(@WheelSpeedView, 'w_rr', 'figure', fig, 'position', [2,3,4]);
+    gui = gui.addView(@WheelSpeedView, 'w_rl', 'w*_rl', 'figure', fig, 'position', [2,3,1]);
+    gui = gui.addView(@WheelSpeedView, 'w_rr', 'w*_rr', 'figure', fig, 'position', [2,3,4]);
     gui = gui.addView(@MotorDutyView,  'D_rl', 'figure', fig, 'position', [2,3,2]);
     gui = gui.addView(@MotorDutyView,  'D_rr', 'figure', fig, 'position', [2,3,5]);
     gui = gui.addView(@WheelSlipView,  's_rl', 'figure', fig, 'position', [2,3,3]);
