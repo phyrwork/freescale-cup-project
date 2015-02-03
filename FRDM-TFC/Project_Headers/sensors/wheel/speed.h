@@ -10,7 +10,7 @@ typedef struct {
 	uint32_t timeout; //timeout ref
 } WheelSpeedSensor_s;
 
-extern WheelSpeedSensor_s WheelSpeedSensors[NUM_CADENCE_SENSORS];
+extern WheelSpeedSensor_s WheelSpeedSensors[4];
 
 void InitWheelSpeedSensors();
 void UpdateWheelSpeed(WheelSpeedSensor_s *wheel);

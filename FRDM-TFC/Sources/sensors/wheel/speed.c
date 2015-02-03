@@ -1,14 +1,18 @@
 #include "sensors/wheel/speed.h"
 #include "sensors/cadence.h"
 #include "support/ARM_SysTick.h"
+#include "devices/CrystalClock.h"
 #include "config.h"
+
+//clock def
+#define TPM_FREQ (CORE_CLOCK/2)
 
 //time-out config
 #define TICKER TFC_Ticker[UPTIME_TICKER]
 #define SENSOR_TIMEOUT_TICKS (  SYSTICK_FREQUENCY * 0.01f )
 
 /* Sensor configurations and data */
-WheelSpeedSensor_s WheelSpeedSensors[NUM_CADENCE_SENSORS];
+WheelSpeedSensor_s WheelSpeedSensors[4];
 
 void InitWheelSpeedSensors()
 {
@@ -21,6 +25,16 @@ void InitWheelSpeedSensors()
 	WheelSpeedSensors[REAR_RIGHT].value = 0;
 	WheelSpeedSensors[REAR_RIGHT].sensor = &CadenceSensors[0];
 	WheelSpeedSensors[REAR_RIGHT].ratio = 8;
+	
+	//front left
+	WheelSpeedSensors[FRONT_LEFT].value = 0;
+	WheelSpeedSensors[FRONT_LEFT].sensor = &CadenceSensors[3];
+	WheelSpeedSensors[FRONT_LEFT].ratio = 1;
+	
+	//front right
+	WheelSpeedSensors[FRONT_RIGHT].value = 0;
+	WheelSpeedSensors[FRONT_RIGHT].sensor = &CadenceSensors[2];
+	WheelSpeedSensors[FRONT_RIGHT].ratio = 1;
 }
 
 uint32_t FilterWheelPeriod(WheelSpeedSensor_s *speed)
@@ -55,6 +69,6 @@ void UpdateWheelSpeed(WheelSpeedSensor_s *speed)
 	speed->sensor->flag = 0; //clear flag
 	speed->timeout = ref;    //take time reference
 
-	float period = FilterWheelPeriod(speed) * speed->ratio; //revolution period in TPM ticks
-	speed->value = period ? ( (float) speed->sensor->TPM->MOD / (float) period ) : 0; //revolution frequency in seconds
+	float period = FilterWheelPeriod(speed) * speed->ratio; //revolution period in TPM ticks = core clock/2 ticks
+	speed->value = period ? ( (float) TPM_FREQ / (float) period ) : 0; //revolution frequency in seconds
 }

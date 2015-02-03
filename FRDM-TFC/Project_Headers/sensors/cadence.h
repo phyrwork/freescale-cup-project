@@ -26,9 +26,10 @@ typedef struct {
   } buffer;
 } CadenceSensor_s;
 
-extern CadenceSensor_s CadenceSensors[NUM_CADENCE_SENSORS];
+extern CadenceSensor_s CadenceSensors[4];
 
 void CadenceSensors_Init();
 void FTM2_IRQHandler();
+void FTM0_IRQHandler();
 
 #endif /* HALL_SENSORS_H_ */
