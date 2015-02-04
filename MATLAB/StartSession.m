@@ -10,9 +10,11 @@ if (~exist('frdm'))
 end
 
 % rename the most recent session
-if (exist('session'))
-    evalStr = ['session_',strrep(session.id, '-', '_'),' = session;']; %replace hyphens with underscores
-    eval(evalStr);
+try
+    if (exist('session'))
+        evalStr = ['session_',strrep(session.id, '-', '_'),' = session;']; %replace hyphens with underscores
+        eval(evalStr);
+    end
 end
 
 % set up the new session
@@ -50,7 +52,7 @@ gui = GuiSession(session);
         timers(2).Period = 0.25;
         timers(2).BusyMode = 'queue';
         % callbacks
-        timers(2).TimerFcn = 'gui = gui.update();';
+        timers(2).TimerFcn = 'gui = gui.refresh();';
         %finish up
         timers(2) % print settings
  
