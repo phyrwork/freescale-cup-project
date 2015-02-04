@@ -16,22 +16,14 @@
 
 CadenceSensor_s CadenceSensors[NUM_SENSORS] = {
 	/* [0] (REAR_RIGHT) = */  {
-		/* TPM = */       TPM2_BASE_PTR,
-		/* channel = */   0,
-		/* cnv = */       0,
-		/* overflows = */ 0,
-		/* period = */    0,
-		/* epr = */       6,
-		/* flag = */      0
+		.TPM =     TPM2_BASE_PTR,
+		.channel = 0,
+		.epr =     6,
 	},
 	/* [1] (REAR_LEFT) = */ {
-		/* TPM = */       TPM2_BASE_PTR,
-		/* channel = */   1,
-		/* cnv = */       0,
-		/* overflows = */ 0,
-		/* period = */    0,
-		/* epr = */       6,
-		/* flag = */      0
+		.TPM =     TPM2_BASE_PTR,
+		.channel = 1,
+		.epr =     6,
 	}
 };
 
@@ -86,6 +78,10 @@ void SensorEventHandler(CadenceSensor_s* sensor)
 		}
 
 		sensor->period *= sensor->epr; //adjust to represent complete revolution
+		
+		/* Push new period onto buffer */
+		if (++sensor->buffer.pos >= CADENCE_BUFFER_SIZE - 1) sensor->buffer.pos = 0; //wrap buffer around
+		sensor->buffer.data[sensor->buffer.pos] = sensor->period;
 	}
 }
 

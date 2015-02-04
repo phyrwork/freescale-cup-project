@@ -1,73 +1,23 @@
-classdef WheelSlipView < LineChartView
-    %WheelSlipView
-    
-    properties
-        % attribute = char.empty; % attribute id
-        % session   = []; % handle of session view is attached to
-        % record    = []; % handle of record view is attached to
-        % hfig      = []; % handle of figure (layout) view belongs to
-        % haxis     = []; % handle of axis
-        % atitle    = char.empty; % axis title
-        % axlabel   = char.empty; % x-axis label
-        % aylabel   = char.empty; % y-axis label
-        % hplot     = []; % plot handle
-        % period    = single.empty; % chart period (s)
-    end
+classdef WheelSlipView < ChartView
+    %MotorCurrentView
     
     methods
-        % WheelSlipView constructor
+        % constructor
         function obj = WheelSlipView(session, attribute, varargin)
-            % parse input
-            p = inputParser;
-            addRequired (p, 'session');
-            addRequired (p, 'attribute', @isattribute);
-            addParameter(p, 'figure', double.empty);
-            addParameter(p, 'position', double.empty, @isnumeric);
-            % addParameter(p, 'title', char.empty, @ischar);
-            % addParameter(p, 'xlabel', char.empty, @ischar);
-            % addParameter(p, 'ylabel', char.empty, @ischar);
-            parse(p, session, attribute, varargin{:});
             
-            % initialise LineChartView
-            obj = obj@LineChartView(...
-                p.Results.session,...
-                p.Results.attribute,...
-                'figure', p.Results.figure,...
-                'position', p.Results.position,... 
-                'title', ['Wheel slip: ', strrep(attribute, '_', '\_')],...
-                'xlabel', 'Time (s)',...
-                'ylabel', 'Slip (ratio)',...
-                'period', 5 ...
-            );
-        end
-        
-        % update chart - overload @LineChartView
-        function obj = update(obj)
-            % if no data nothing to do, return
-            if (obj.record.rsize < 1)
-                return;
-            end
+            % initialise view
+            obj = obj@ChartView(...
+                session,varargin{:}, ...
+                'xlabel', 'Time (s)', ...
+                'ylabel', 'Slip (ratio)', ...
+                'ybotl', -0.4, ...
+                'ybotu', -0.2, ...
+                'ytopl', 0.2, ...
+                'ytopu', 0.4 ...
+                );
             
-            % fetch data
-            [x,y] = obj.record.latest(obj.period);
-            
-            % draw chart
-            obj = obj.draw(x, y);
-            
-            miy = min(y);
-            if miy > -0.3
-                miy = -0.3;
-            end
-            may = max(y);
-            if may < 0.3
-                may = 0.3;
-            end
-            if (miy ~= 0 && may ~= 0)
-                ylim(obj.haxis, [miy, may]); % adjust y-axis limits
-            end
-            xlim(obj.haxis, [x(1), x(end)]); % adjust y-axis limits
+            % add series
+            obj = obj.addSeries(@ChartSeries, attribute, 'label', 'Slip ratio');
         end
     end
-    
 end
-

@@ -53,6 +53,7 @@ void SetWheelSpeed(WheelSpeedControl_s *speed, float command)
 	{
 		*(speed->pwm->tpm->fwdCnVReg) = (uint16_t) (TPM0_MOD * 0xFF);  //complementary 50% PWM to prevent car rolling
 		*(speed->pwm->tpm->bwdCnVReg) = (uint16_t) ~(TPM0_MOD * 0xFF);
+		speed->pwm->value = 0;
 	}
 	else {
 		UpdatePID(speed->pid, command, speed->sensor->value);
