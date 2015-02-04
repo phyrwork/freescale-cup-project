@@ -104,23 +104,35 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	},
 	//[9]
 	{ //w_rl
+		.data = &WheelSpeedSensors[FRONT_LEFT].value,
+		.endpoint = &TFTP_W_FL_ENDPOINT,
+		.fauto = 20
+	},
+	//[10]
+	{ //w_rr
+		.data = &WheelSpeedSensors[FRONT_RIGHT].value,
+		.endpoint = &TFTP_W_FR_ENDPOINT,
+		.fauto = 20
+	},
+	//[11]
+	{ //w_rl
 		.data = &WheelSpeedControls[REAR_LEFT].cmd,
 		.endpoint = &TFTP_WREF_RL_ENDPOINT,
 		.fauto = 20
 	},
-	//[10]
+	//[12]
 	{ //w_rr
 		.data = &WheelSpeedControls[REAR_RIGHT].cmd,
 		.endpoint = &TFTP_WREF_RR_ENDPOINT,
 		.fauto = 20
 	},
-	//[11]
+	//[13]
 	{ //s_rl
 		.data = &WheelSlipSensors[REAR_LEFT].value,
 		.endpoint = &TFTP_S_RL_ENDPOINT,
 		.fauto = 20
 	},
-	//[12]
+	//[14]
 	{ //s_rr
 		.data = &WheelSlipSensors[REAR_RIGHT].value,
 		.endpoint = &TFTP_S_RR_ENDPOINT,

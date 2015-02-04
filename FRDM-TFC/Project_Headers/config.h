@@ -16,7 +16,7 @@
 
 /* Collector config */
 #define COLLECTOR_TLIM_SECONDS 0.0005f //2000Hz
-#define NUM_COLLECTOR_ITEMS               14
+#define NUM_COLLECTOR_ITEMS               16
 #define LINESCAN0_COLLECTOR_INDEX          0
 #define TRACK_POSITION_COLLECTOR_INDEX     1
 #define POSITIONING_STATE_COLLECTOR_INDEX  2
@@ -26,11 +26,13 @@
 #define D_RR_COLLECTOR_INDEX               6
 #define W_RL_COLLECTOR_INDEX               7
 #define W_RR_COLLECTOR_INDEX               8
-#define WREF_RL_COLLECTOR_INDEX            9
-#define WREF_RR_COLLECTOR_INDEX           10
-#define S_RL_COLLECTOR_INDEX              11
-#define S_RR_COLLECTOR_INDEX              12
-#define TARGET_LINE_COLLECTOR_INDEX       13
+#define W_FL_COLLECTOR_INDEX               9
+#define W_FR_COLLECTOR_INDEX              10
+#define WREF_RL_COLLECTOR_INDEX           11
+#define WREF_RR_COLLECTOR_INDEX           12
+#define S_RL_COLLECTOR_INDEX              13
+#define S_RR_COLLECTOR_INDEX              14
+#define TARGET_LINE_COLLECTOR_INDEX       15
 
 
 /* PIT1 config */
