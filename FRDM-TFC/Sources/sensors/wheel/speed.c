@@ -9,7 +9,7 @@
 
 //time-out config
 #define TICKER TFC_Ticker[UPTIME_TICKER]
-#define SENSOR_TIMEOUT_TICKS (  SYSTICK_FREQUENCY * 0.01f )
+#define SENSOR_TIMEOUT_TICKS (  SYSTICK_FREQUENCY * 0.05f )
 
 /* Sensor configurations and data */
 WheelSpeedSensor_s WheelSpeedSensors[4];
