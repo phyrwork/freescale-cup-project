@@ -59,11 +59,11 @@ classdef GuiSession
             % find all figure handles
             fh = findall(0,'type','figure');
             if isempty(fh)
-                fh = 0; % # is 0 if isempty(fh)
+                nf = 0;
+            else
+                nf = max([fh.Number]);
             end
 
-            % maximal integer value is number of figures
-            nf = max(fh(find(fh == fix(fh))));
             fig = figure(nf + 1); % new figure is one above this
         end
     end
