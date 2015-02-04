@@ -69,7 +69,9 @@ classdef ChartSeries
             hold(obj.view.axes, 'off');
             
             % update the legend
-            legend('-DynamicLegend');
+            if ~isempty(obj.plot)
+                legend('-DynamicLegend');
+            end
         end
         
         % draw the series

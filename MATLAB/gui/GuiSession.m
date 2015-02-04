@@ -24,7 +24,7 @@ classdef GuiSession
             i = 1;
             while i <= length(obj.views)
                 try 
-                    obj.views{i} = obj.views{1}.refresh;
+                    obj.views{i} = obj.views{i}.refresh;
                     i = i + 1; % successful, advance
                 catch
                     obj.views(i) = []; % something went wrong, delete the view

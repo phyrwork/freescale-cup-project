@@ -174,10 +174,10 @@ classdef ChartView < handle
             ybot = obj.getLimit(obj.ybot, ymin);
             
             % set limits
-            if ~(isempty(xtop) || isempty(xbot))
+            if ~(isempty(xtop) || isempty(xbot)) && xtop ~= xbot
                 xlim(obj.axes, [xbot, xtop]);
             end
-            if ~(isempty(ytop) || isempty(ybot))
+            if ~(isempty(ytop) || isempty(ybot)) && ytop ~= ybot
                 ylim(obj.axes, [ybot, ytop]);
             end
         end
