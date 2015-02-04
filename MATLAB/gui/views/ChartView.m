@@ -153,8 +153,23 @@ classdef ChartView < handle
             
             % set xtop, xmin
             if iscell(x)
-                xmax = max(cellfun(@(x)max(x(:)), x));
-                xmin = min(cellfun(@(x)min(x(:)), x));
+                %xmax = max(cellfun(@(x)max(x(:)), x, 'UniformOutput', false));
+                xmax = max(x{1});
+                for i = 2:length(x)
+                    tmp = max(x{i});
+                    if tmp > xmax
+                        xmax = tmp;
+                    end
+                end
+                
+                %xmin = min(cellfun(@(x)min(x(:)), x, 'UniformOutput', false));
+                xmin = min(x{1});
+                for i = 2:length(x)
+                    tmp = min(x{i});
+                    if tmp < xmin
+                        xmin = tmp;
+                    end
+                end
             else
                 xmax = max(x);
                 xmin = min(x);
@@ -164,8 +179,23 @@ classdef ChartView < handle
             
             % set ytop, ymin
             if iscell(y)
-                ymax = max(cellfun(@(y)max(y(:)), y));
-                ymin = min(cellfun(@(y)min(y(:)), y));
+                %ymax = max(cellfun(@(y)max(y(:)), y, 'UniformOutput', false));
+                ymax = max(y{1});
+                for i = 2:length(y)
+                    tmp = max(y{i});
+                    if tmp > ymax
+                        ymax = tmp;
+                    end
+                end
+                
+                %ymin = min(cellfun(@(y)min(y(:)), y, 'UniformOutput', false));
+                ymin = min(y{1});
+                for i = 2:length(y)
+                    tmp = min(y{i});
+                    if tmp < ymin
+                        ymin = tmp;
+                    end
+                end
             else
                 ymax = max(y);
                 ymin = min(y);
