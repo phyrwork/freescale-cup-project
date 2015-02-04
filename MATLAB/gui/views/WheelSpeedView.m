@@ -3,7 +3,14 @@ classdef WheelSpeedView < ChartView
     
     methods
         % constructor
-        function obj = WheelSpeedView(session, actual, target, varargin)
+        function obj = WheelSpeedView(session, actual, varargin)
+            
+            % parse arguments
+            p = inputParser;
+            p.KeepUnmatched = true;
+            addParameter(p, 'target', char.empty, @ischar);
+            parse(p, varargin{:});
+            target = p.Results.target;
             
             % initialise view
             obj = obj@ChartView(...
@@ -16,7 +23,9 @@ classdef WheelSpeedView < ChartView
             
             % add series
             obj = obj.addSeries(@ChartSeries, actual, 'label', 'Actual', 'color', 'blue');
-            obj = obj.addSeries(@ChartSeries, target, 'label', 'Command', 'color', 'green');
+            if ~isempty(target)
+                obj = obj.addSeries(@ChartSeries, target, 'label', 'Command', 'color', 'green');
+            end
         end
     end
 end

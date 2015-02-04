@@ -22,6 +22,7 @@ classdef ChartView < handle
             
             % parse input
             p = inputParser;
+            p.KeepUnmatched = true;
             addRequired (p, 'session');
             addParameter(p, 'figure',   double.empty);
             addParameter(p, 'position', double.empty, @isnumeric);
