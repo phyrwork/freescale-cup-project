@@ -24,7 +24,7 @@
 #define MAX_NUMBER_OF_TRANSITIONS 16
 
 //findPosition
-#define TRACK_DY_T                300
+#define TRACK_DY_T                250
 #define TRACK_RY_T                600
 #define MAX_LOST_LINE_DURATION    10000
 #define LOST_LINE_RESET_DURATION  10000
@@ -36,7 +36,7 @@
 
 //weightLines
 #define LINE_WIDTH_SD    10
-#define LINE_WIDTH_MEAN  95
+#define LINE_WIDTH_MEAN  100
 #define LINE_DWIDTH_SD   15
 #define LINE_DWIDTH_MEAN 0
 
