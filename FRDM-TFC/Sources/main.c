@@ -152,10 +152,9 @@ void TFC_Init(carState_s* carState)
 	TFC_InitADCs();
 	UART0_Init();
 	DMA0_Init();
-	//TFC_InitSpeedSensor();
+	InitMotorPWMControl();
 	CadenceSensors_Init();
 	InitWheelSpeedSensors();
-	InitMotorPWMControl();
 	InitWheelSpeedControl();
 	InitVehicleSpeedControl();
 	InitWheelSlipSensors();
@@ -225,6 +224,8 @@ int main(void)
 				
 				//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
 				//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
+				UpdateWheelSpeed(&WheelSpeedSensors[FRONT_LEFT]);
+				UpdateWheelSpeed(&WheelSpeedSensors[FRONT_RIGHT]);
 				UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 				UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 	
