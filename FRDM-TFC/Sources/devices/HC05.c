@@ -28,8 +28,8 @@ GPIO_Config cmd_conf = { /* .io = */ { /* .io = */ {
     /* .dir = */  GPIO_OUT
 };
 
-#define  PWR_ON  GPIO_Set(&pwr)
-#define  PWR_OFF GPIO_Clear(&pwr)
+#define  PWR_ON  GPIO_Clear(&pwr)
+#define  PWR_OFF GPIO_Set(&pwr)
 #define  SET_KEY GPIO_Set(&cmd)
 #define  CLR_KEY GPIO_Clear(&cmd)
 //
