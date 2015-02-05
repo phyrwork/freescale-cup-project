@@ -71,7 +71,11 @@ classdef TftpLink
             
             % decode and return
             for i = 1:length(frames)
-                frames{i} = obj.decode(frames{i}, 512);
+                try
+                    frames{i} = obj.decode(frames{i}, 512);
+                catch
+                    disp('Error decoding frame...');
+                end
             end
         end
         
@@ -85,11 +89,12 @@ classdef TftpLink
         function output = decode( input, mtu )
         
             output = zeros(0, mtu, 'uint8'); % preallocate
+            code   = double(1);              % need to make sure code can handle numbers > 255 or indexing will go wrong
             r = 1;
 
             while( r < length(input) )
 
-                code = input(r);                            % number of bytes to copy
+                code(1) = input(r);                             % number of bytes to copy
                 output(end+1:end+code-1) = input(r+1:r+code-1); % copy bytes
 
                 if( code ~= 255 && r ~= length(input) ) % 255 = 0xFF
