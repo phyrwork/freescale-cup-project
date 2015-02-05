@@ -3,7 +3,7 @@
 #include "support/carState_s.h"
 #include <math.h>
 
-#define PX_OPP_CONST 65.0f   //estimated relationship between steering angle and line offset (px)
+#define PX_OPP_CONST 5750.0f   //estimated relationship between steering angle and servo position
 #define WIDTH_DIST 0.138f //distance between wheels
 #define LENGTH_DIST 0.201f
 #define RADIUS(center) ((PX_OPP_CONST * LENGTH_DIST) / center)
@@ -27,7 +27,7 @@ void SetVehicleSpeed(float command)
 	speed->cmd = command;
 	
 	//calculate differential modifier coefficients
-	float delta_w = (WIDTH_DIST / 2) * RADIUS_MIN1(carState.lineCenter) * command;
+	float delta_w = (WIDTH_DIST / 2) * RADIUS_MIN1(carState.servoPosition) * command;
 	float cmd_l = command - delta_w;
 	float cmd_r = command + delta_w;
 	

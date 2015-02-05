@@ -250,8 +250,9 @@ int main(void)
 			//update steering
 			if ( PollTaskPending(STEERING_REQUEST_INDEX) )
 			{    ClearTaskPending(STEERING_REQUEST_INDEX);
-				
-				TFC_SetServo(0, getDesiredServoValue(carState.lineCenter, 0));
+				carState.servoPosition = getDesiredServoValue(carState.lineCenter, 0);
+				CollectorRequest(SERVO_POSITION_COLLECTOR_INDEX);
+				TFC_SetServo(0, carState.servoPosition);
 			}
 			
 			if ( PollTaskPending(TELEMETRY_REQUEST_INDEX) )
