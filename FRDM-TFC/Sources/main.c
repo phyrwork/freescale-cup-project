@@ -231,7 +231,7 @@ int main(void)
 	
 				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
-					SetVehicleSpeed(2); //2 RPS
+					SetVehicleSpeed(6); //2 RPS
 					//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
 					//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
