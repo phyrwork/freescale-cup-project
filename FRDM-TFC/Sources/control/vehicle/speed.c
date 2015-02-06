@@ -9,6 +9,12 @@
 #define RADIUS(center) ((PX_OPP_CONST * LENGTH_DIST) / center)
 #define RADIUS_MIN1(center) (center * (1 / (PX_OPP_CONST * LENGTH_DIST)))
 
+#define VEHICLE_TURN_MOD_LOW 5.0f
+#define VEHICLE_TURN_MOD_HIGH 40.0f
+#define VEHICLE_CORNERING_SPEED_LOW 4.0f
+#define VEHICLE_CORNERING_SPEED_HIGH 10.0f
+#define VEHICLE_STRAIGHT_SPEED 20.0f
+
 VehicleSpeedControl_s VehicleSpeedControl;
 
 void InitVehicleSpeedControl()
@@ -36,3 +42,18 @@ void SetVehicleSpeed(float command)
 	SetWheelSpeed(speed->right, cmd_r);
 }
 
+float GetVehicleSpeed(float modifier)
+{
+	VehicleSpeedControl_s * const speed = &VehicleSpeedControl;
+
+	modifier = abs(modifier);
+
+	if ( modifier > VEHICLE_TURN_MOD_LOW )
+	{
+		float oscale = VEHICLE_CORNERING_SPEED_HIGH - VEHICLE_CORNERING_SPEED_LOW;
+		float iscale = VEHICLE_TURN_MOD_HIGH - VEHICLE_TURN_MOD_LOW;
+		float iratio = (modifier - VEHICLE_TURN_MOD_LOW)/iscale; //linear speed change between low and high cornerning
+		return VEHICLE_CORNERING_SPEED_LOW + (iratio * oscale);
+	}
+	else return VEHICLE_STRAIGHT_SPEED;
+}
