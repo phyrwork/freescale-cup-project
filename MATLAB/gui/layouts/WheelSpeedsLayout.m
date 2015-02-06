@@ -12,5 +12,5 @@ function gui = WheelSpeedsLayout( gui )
     gui = gui.addView(@WheelSpeedView, 'w_fl', 'figure', fig, 'position', [2,3,2]);
     gui = gui.addView(@WheelSpeedView, 'w_fr', 'figure', fig, 'position', [2,3,5]);
     gui = gui.addView(@WheelSlipView,  's_rl', 'figure', fig, 'position', [2,3,3]);
-    %gui = gui.addView(@WheelSlipView, 's_rr', 'figure', fig, 'position', [2,3,6]);
+    gui = gui.addView(@WheelSlipView,  's_rr', 'figure', fig, 'position', [2,3,6]);
 end

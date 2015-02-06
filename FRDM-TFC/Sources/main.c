@@ -200,7 +200,7 @@ int main(void)
 				//update position
 				diff(LineScanImage0, dy, 128);
 
-				if (findStop(dy) == STOP_LINE_FOUND)
+				if (/*findStop(dy) == STOP_LINE_FOUND*/0)
 				{
 					carState.lineDetectionState = STOPLINE_DETECTED;
 					SetTaskPending(CONTROL_REQUEST_INDEX);
@@ -231,7 +231,8 @@ int main(void)
 	
 				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
-					SetVehicleSpeed(6); 
+					float tspeed = GetVehicleSpeed((float)carState.lineCenter);
+					SetVehicleSpeed(tspeed); 
 					UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
 					UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
@@ -239,10 +240,14 @@ int main(void)
 				}
 				else if (carState.lineDetectionState == LINE_LOST)
 				{
+					WheelSpeedControls[REAR_LEFT].pid->value_min = 0; //unidirectional speed sensors suck
+					WheelSpeedControls[REAR_RIGHT].pid->value_min = 0;
 					SetVehicleSpeed(0);
 				}
 				else if (carState.lineDetectionState == STOPLINE_DETECTED)
 				{
+					WheelSpeedControls[REAR_LEFT].pid->value_min = 0;
+					WheelSpeedControls[REAR_RIGHT].pid->value_min = 0;
 					SetVehicleSpeed(0);
 				}
 			}

@@ -9,9 +9,9 @@
 #include "support/ARM_SysTick.h"
 #include "config.h"
 
-#define MSPEED_KP 0.050f
-#define MSPEED_KI 0.160f
-#define MSPEED_KD 0.00002f
+#define MSPEED_KP 0.14f
+#define MSPEED_KI 0.140f
+#define MSPEED_KD 0.0f
 
 static PID_s pid[NUM_MOTORS];
 WheelSpeedControl_s WheelSpeedControls[NUM_MOTORS];
@@ -49,7 +49,7 @@ void SetWheelSpeed(WheelSpeedControl_s *speed, float command)
 	speed->cmd = command; //Store command for telemetry purposes.
 	UpdateWheelSpeed(speed->sensor);
 	
-	if (speed->sensor->value == 0 && command == 0) //if vehicle is stationary or nearly stationary
+	if (speed->sensor->value == 0 && command == 0 ) //if vehicle is stationary or nearly stationary
 	{
 		*(speed->pwm->tpm->fwdCnVReg) = (uint16_t) (TPM0_MOD * 0xFF);  //complementary 50% PWM to prevent car rolling
 		*(speed->pwm->tpm->bwdCnVReg) = (uint16_t) ~(TPM0_MOD * 0xFF);

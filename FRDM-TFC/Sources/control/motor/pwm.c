@@ -84,8 +84,8 @@ void SetMotorPWM(MotorPWM_s *pwm, float value)
 	 else pol = BACKWARD;
 
 	 //Check/limit magnitude
-	 value = fabsf(value); //return abs(float value)
-	 if (value > MAX_DUTY) value = MAX_DUTY; //limit to max duty
+	 float lvalue = fabsf(value); //return abs(float value)
+	 if (lvalue > MAX_DUTY) value = value > 0 ? MAX_DUTY : -MAX_DUTY;
 
 	 //Set PWM
 	 if (value != 0.0) //Any magnitude
