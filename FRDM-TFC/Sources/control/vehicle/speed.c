@@ -3,7 +3,7 @@
 #include "support/carState_s.h"
 #include <math.h>
 
-#define PX_OPP_CONST 5750.0f   //estimated relationship between steering angle and servo position
+#define PX_OPP_CONST 0.7345f   //estimated relationship between steering angle and servo position
 #define WIDTH_DIST 0.138f //distance between wheels
 #define LENGTH_DIST 0.201f
 #define RADIUS(center) ((PX_OPP_CONST * LENGTH_DIST) / center)
