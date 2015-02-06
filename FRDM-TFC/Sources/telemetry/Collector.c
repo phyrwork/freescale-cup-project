@@ -104,13 +104,13 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 		.fauto = 20
 	},
 	//[9]
-	{ //w_rl
+	{ //w_fl
 		.data = &WheelSpeedSensors[FRONT_LEFT].value,
 		.endpoint = &TFTP_W_FL_ENDPOINT,
 		.fauto = 20
 	},
 	//[10]
-	{ //w_rr
+	{ //w_fr
 		.data = &WheelSpeedSensors[FRONT_RIGHT].value,
 		.endpoint = &TFTP_W_FR_ENDPOINT,
 		.fauto = 20
@@ -151,6 +151,30 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 		.endpoint = &TFTP_SERVO_POSITION_ENDPOINT,
 		.flim = 100
 	},
+	//[17]
+	{ //T_rl
+		.data = &MotorTorque[REAR_LEFT].value,
+		.endpoint = &TFTP_T_RL_ENDPOINT,
+		.fauto = 20
+	},
+	//[18]
+	{ //T_rr
+		.data = &MotorTorque[REAR_RIGHT].value,
+		.endpoint = &TFTP_T_RR_ENDPOINT,
+		.fauto = 20
+	},
+	//[19]
+	{ //T_rl
+		.data = &MotorTorque[REAR_LEFT].cmd,
+		.endpoint = &TFTP_TREF_RL_ENDPOINT,
+		.fauto = 20
+	},
+	//[20]
+	{ //T_rr
+		.data = &MotorTorque[REAR_RIGHT].cmd,
+		.endpoint = &TFTP_TREF_RR_ENDPOINT,
+		.fauto = 20
+	}
 };
 
 void Collector_Init()

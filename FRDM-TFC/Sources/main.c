@@ -226,16 +226,34 @@ int main(void)
 				//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 				UpdateWheelSpeed(&WheelSpeedSensors[FRONT_LEFT]);
 				UpdateWheelSpeed(&WheelSpeedSensors[FRONT_RIGHT]);
+				UpdateWheelSpeed(&WheelSpeedSensors[REAR_LEFT]);
+				UpdateWheelSpeed(&WheelSpeedSensors[REAR_RIGHT]);
 				UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 				UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
+				
+				static uint8_t flag = 0;
+				if (WheelSpeedSensors[REAR_LEFT].value > 20 || WheelSpeedSensors[REAR_RIGHT].value > 20)
+				{
+					if (flag == 0) flag = 1;
+					else carState.lineDetectionState = STOPLINE_DETECTED;
+				}
+				else flag = 0;
 	
 				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
-					SetVehicleSpeed(6); 
-					UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
-					UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
-					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
-					UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
+					if (WheelSpeedSensors[FRONT_LEFT].value > 1 && WheelSpeedSensors[FRONT_RIGHT].value > 1)
+					{
+						
+						//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
+						//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
+						SetMotorTorque(&MotorTorque[REAR_LEFT], 0.0027);
+						SetMotorTorque(&MotorTorque[REAR_RIGHT], 0.0027);
+					}
+					else
+					{
+						SetVehicleSpeed(6); 
+					}
+						
 				}
 				else if (carState.lineDetectionState == LINE_LOST)
 				{
