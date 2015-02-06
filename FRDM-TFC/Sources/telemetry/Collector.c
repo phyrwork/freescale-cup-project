@@ -37,6 +37,7 @@
 #include "control/motor/pwm.h"
 #include "control/motor/torque.h"
 #include "io/ADC.h"
+#include "support/carState_s.h"
 
 //service defines
 #define CLTR_IDLE    0
@@ -138,12 +139,18 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 		.endpoint = &TFTP_S_RR_ENDPOINT,
 		.fauto = 20
 	},
-	//[13]
+	//[15]
 	{ //TargetLine
 		.data = &TargetLine,
 		.endpoint = &TFTP_TARGET_LINE_ENDPOINT,
 		.flim = 10
-	}
+	},
+	//[16]
+	{ //ServoPosition
+		.data = &carState.servoPosition,
+		.endpoint = &TFTP_SERVO_POSITION_ENDPOINT,
+		.flim = 100
+	},
 };
 
 void Collector_Init()

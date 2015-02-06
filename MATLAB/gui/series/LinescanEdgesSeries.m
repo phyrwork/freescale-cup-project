@@ -23,7 +23,7 @@ classdef LinescanEdgesSeries < ChartSeries
             [~,y] = obj.record.peek;
             
             % identify edges
-            e = findEdges(y, 250, 600);
+            e = findEdges(y, 200, 500);
             x = [];
             for i = 1:length(e)
                 x = [x, e(i).pos];

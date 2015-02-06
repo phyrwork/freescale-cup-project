@@ -21,6 +21,7 @@ typedef struct {
 	lineDetectionState_t lineDetectionState;
 	lineScanState_t lineScanState;	
 	int8_t lineCenter;
+	float servoPosition;
 }carState_s;
 
 extern carState_s carState;

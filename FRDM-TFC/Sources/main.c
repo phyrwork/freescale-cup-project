@@ -231,9 +231,9 @@ int main(void)
 	
 				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
-					SetVehicleSpeed(2); //2 RPS
-					//UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
-					//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
+					SetVehicleSpeed(6); 
+					UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
+					UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 					UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 				}
@@ -250,8 +250,9 @@ int main(void)
 			//update steering
 			if ( PollTaskPending(STEERING_REQUEST_INDEX) )
 			{    ClearTaskPending(STEERING_REQUEST_INDEX);
-				
-				TFC_SetServo(0, getDesiredServoValue(carState.lineCenter, 0));
+				carState.servoPosition = getDesiredServoValue(carState.lineCenter, 0);
+				CollectorRequest(SERVO_POSITION_COLLECTOR_INDEX);
+				TFC_SetServo(0, carState.servoPosition);
 			}
 			
 			if ( PollTaskPending(TELEMETRY_REQUEST_INDEX) )

@@ -62,6 +62,10 @@
 #define TFTP_PID_TYPE PID_s
 #define TFTP_PID_SIZE 1
 
+/* Servo position attributes */
+#define TFTP_SERVO_POSITION_TYPE float
+#define TFTP_SERVO_POSITION_SIZE 1
+
 #endif //TFTP_TYPES
 
 
