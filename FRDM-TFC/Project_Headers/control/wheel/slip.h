@@ -2,6 +2,8 @@
 #define WHEEL_SLIP_CONTROL_H
 
 #include "sensors/wheel/slip.h"
+#include "sensors/wheel/speed.h"
+#include "control/wheel/speed.h"
 #include "support/PID.h"
 
 typedef struct {
