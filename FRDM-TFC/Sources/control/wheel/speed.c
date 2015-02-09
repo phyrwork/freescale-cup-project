@@ -6,6 +6,7 @@
  */
 
 #include "control/wheel/speed.h"
+#include "sensors/vehicle/speed.h"
 #include "support/ARM_SysTick.h"
 #include "config.h"
 
@@ -49,7 +50,7 @@ void SetWheelSpeed(WheelSpeedControl_s *speed, float command)
 	speed->cmd = command; //Store command for telemetry purposes.
 	UpdateWheelSpeed(speed->sensor);
 	
-	if (command == 0 || speed->sensor->value < 5) speed->pid->value_min = 0; //try and prevent max throttle 'stops'
+	if (command == 0 || VehicleSpeedSensor.value < 5) speed->pid->value_min = 0; //try and prevent max throttle 'stops'
 	else speed->pid->value_min = -1;
 	
 	if (speed->sensor->value == 0 && command == 0 ) //if vehicle is stationary or nearly stationary

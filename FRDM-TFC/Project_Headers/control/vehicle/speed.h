@@ -10,6 +10,7 @@ typedef struct {
 	VehicleSpeedSensor_s *sensor;
 	WheelSpeedControl_s  *left;
 	WheelSpeedControl_s  *right;
+	PID_s                *pid;
 	VehicleSlipControl_s *slip;
 } VehicleSpeedControl_s;
 

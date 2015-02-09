@@ -1,4 +1,5 @@
 #include "control/vehicle/speed.h"
+#include "control/motor/torque.h"
 #include "config.h"
 #include "support/carState_s.h"
 #include <math.h>
@@ -20,7 +21,12 @@
 #define VEHICLE_CORNERING_SPEED_HIGH 6.5f
 #define VEHICLE_STRAIGHT_SPEED 10.0f
 
+#define VSPEED_KP 0.000001f
+#define VSPEED_KI 0.00002f
+#define VSPEED_KD 0.0f
+
 VehicleSpeedControl_s VehicleSpeedControl;
+PID_s pid;
 
 void InitVehicleSpeedControl()
 {
@@ -31,6 +37,15 @@ void InitVehicleSpeedControl()
 	speed->left = &WheelSpeedControls[REAR_LEFT];
 	speed->right = &WheelSpeedControls[REAR_RIGHT];
 	speed->slip = &VehicleSlipControl;
+	
+	speed->pid = &pid;
+	speed->pid->Kp = VSPEED_KP;
+	speed->pid->Ki = VSPEED_KI;
+	speed->pid->Kd = VSPEED_KD;
+	speed->pid->time = 0;
+	speed->pid->value = 0;
+	speed->pid->value_max = 0.007;
+	speed->pid->value_min = -0.007;
 }
 
 void _setByWheelSpeed(float command)
@@ -55,6 +70,17 @@ void _setByVehicleSlip(float command)
 	else SetVehicleSlip(VEHICLE_DECEL_SLIP);
 }
 
+void _setByVehicleSpeed(float command)
+{
+	VehicleSpeedControl_s * const speed = &VehicleSpeedControl;
+	MotorTorque_s * const left = &MotorTorque[REAR_LEFT];
+	MotorTorque_s * const right = &MotorTorque[REAR_RIGHT];
+	
+	UpdatePID(speed->pid, command, speed->sensor->value);
+	SetMotorTorque(left, speed->pid->value);
+	SetMotorTorque(right, speed->pid->value);
+}
+
 void SetVehicleSpeed(float command)
 {
 	VehicleSpeedControl_s * const speed = &VehicleSpeedControl;
@@ -65,8 +91,8 @@ void SetVehicleSpeed(float command)
 	float diff = fabsf(speed->sensor->value - command);
 	float thres = command * VEHICLE_SPEED_ACC;
 	
-	if (speed->sensor->value < 2 || diff < thres) _setByWheelSpeed(command);
-	else _setByVehicleSlip(command);
+	if (speed->sensor->value < 1 /*|| diff < thres */) _setByWheelSpeed(command);
+	else _setByVehicleSpeed(command);
 }
 
 float GetVehicleSpeed(float modifier)

@@ -235,20 +235,22 @@ int main(void)
 					SetVehicleSpeed(tspeed); 
 					UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
 					UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
-					UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
-					UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
+					//UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
+					//UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 				}
 				else if (carState.lineDetectionState == LINE_LOST)
 				{
-					WheelSpeedControls[REAR_LEFT].pid->value_min = 0; //unidirectional speed sensors suck
-					WheelSpeedControls[REAR_RIGHT].pid->value_min = 0;
+					//WheelSpeedControls[REAR_LEFT].pid->value_min = 0; //unidirectional speed sensors suck
+					//WheelSpeedControls[REAR_RIGHT].pid->value_min = 0;
 					SetVehicleSpeed(0);
+					TFC_HBRIDGE_DISABLE;
 				}
 				else if (carState.lineDetectionState == STOPLINE_DETECTED)
 				{
-					WheelSpeedControls[REAR_LEFT].pid->value_min = 0;
-					WheelSpeedControls[REAR_RIGHT].pid->value_min = 0;
+					//WheelSpeedControls[REAR_LEFT].pid->value_min = 0;
+					//WheelSpeedControls[REAR_RIGHT].pid->value_min = 0;
 					SetVehicleSpeed(0);
+					TFC_HBRIDGE_DISABLE;
 				}
 			}
 			
