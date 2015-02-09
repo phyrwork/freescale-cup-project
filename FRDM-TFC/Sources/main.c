@@ -156,6 +156,7 @@ void TFC_Init(carState_s* carState)
 	CadenceSensors_Init();
 	InitWheelSpeedSensors();
 	InitWheelSpeedControl();
+	InitVehicleSpeedSensor();
 	InitVehicleSpeedControl();
 	InitWheelSlipSensors();
 	InitMotorTorqueControl();

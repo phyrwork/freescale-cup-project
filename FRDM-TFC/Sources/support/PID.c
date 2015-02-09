@@ -12,6 +12,7 @@
 #include "config.h"
 #define PID_TICKER TFC_Ticker[UPTIME_TICKER]
 #define TIME ( (float)PID_TICKER / (float)SYSTICK_FREQUENCY )
+#define MAX_DT 0.01
 
 void UpdatePID(PID_s *PID, float ref, float actual)
 {

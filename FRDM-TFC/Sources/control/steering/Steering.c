@@ -15,8 +15,8 @@
 #define Ki 0.0f//0.05f
 #define Kd 0.0003f//0.0004f
 #define INTEGRAL_LIMIT 1.0f
-#define STEERING_LIMIT_UPPER 0.6f
-#define STEERING_LIMIT_LOWER -0.5f
+#define STEERING_LIMIT_UPPER 0.55f
+#define STEERING_LIMIT_LOWER -0.45f
 #define OFFSET -0.049//-0.062f
 
 float getDesiredServoValue(int8_t position, int8_t setpoint)

@@ -17,9 +17,9 @@
 #define TORQUE_KT 0.0134f //Torque constant
 
 /* Control properties */
-#define TORQUE_KP 14.0f
-#define TORQUE_KI 12.0f
-#define TORQUE_KD 3.5f
+#define TORQUE_KP 120.0f
+#define TORQUE_KI 75.0f
+#define TORQUE_KD 0.5f
 
 /* Torque structs */
 typedef struct {
