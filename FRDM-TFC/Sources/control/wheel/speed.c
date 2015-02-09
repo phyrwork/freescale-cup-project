@@ -40,7 +40,7 @@ void InitWheelSpeedControl()
 		speed->pid->time = 0;
 		speed->pid->value = 0;
 		speed->pid->value_max = 1;
-		speed->pid->value_min = 0;
+		speed->pid->value_min = -1;
 	}
 }
 
@@ -48,6 +48,9 @@ void SetWheelSpeed(WheelSpeedControl_s *speed, float command)
 {
 	speed->cmd = command; //Store command for telemetry purposes.
 	UpdateWheelSpeed(speed->sensor);
+	
+	if (command == 0 || speed->sensor->value < 5) speed->pid->value_min = 0; //try and prevent max throttle 'stops'
+	else speed->pid->value_min = -1;
 	
 	if (speed->sensor->value == 0 && command == 0 ) //if vehicle is stationary or nearly stationary
 	{

@@ -38,7 +38,8 @@ void InitMotorTorqueControl()
 void UpdateMotorTorque(MotorTorque_s *torque)
 {
 	UpdateCurrentValue(torque->current); //Update current value
-	torque->value = torque->current->value * TORQUE_KT; //Scale by torque constant
+	torque->value = torque->pwm->value >= 0 ? //scale by torque constant
+			torque->current->value * TORQUE_KT : torque->current->value * -TORQUE_KT; //positive or negative torque?
 }
 
 void SetMotorTorque(MotorTorque_s *torque, float command)
