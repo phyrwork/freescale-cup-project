@@ -35,6 +35,7 @@
 #include "sensors/vehicle/slip.h"
 #include "control/vehicle/slip.h"
 #include "sensors/vehicle/speed.h"
+#include "control/vehicle/speed.h"
 #include "control/wheel/speed.h"
 #include "sensors/wheel/slip.h"
 #include "control/motor/pwm.h"
@@ -188,6 +189,18 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	{ //S*_v
 		.data = &VehicleSlipControl.cmd,
 		.endpoint = &TFTP_SREF_V_ENDPOINT,
+		.fauto = 20
+	},
+	//[23]
+	{ //S_v
+		.data = &VehicleSpeedSensor.value,
+		.endpoint = &TFTP_W_V_ENDPOINT,
+		.fauto = 20
+	},
+	//[24]
+	{ //S*_v
+		.data = &VehicleSpeedControl.cmd,
+		.endpoint = &TFTP_WREF_V_ENDPOINT,
 		.fauto = 20
 	}
 };
