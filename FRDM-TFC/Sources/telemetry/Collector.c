@@ -32,6 +32,8 @@
 #include "sensors/motor/current.h"
 #include "sensors/cadence.h"
 #include "sensors/wheel/speed.h"
+#include "sensors/vehicle/slip.h"
+#include "control/vehicle/slip.h"
 #include "sensors/vehicle/speed.h"
 #include "control/wheel/speed.h"
 #include "sensors/wheel/slip.h"
@@ -165,15 +167,27 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 		.fauto = 20
 	},
 	//[19]
-	{ //T_rl
+	{ //T*_rl
 		.data = &MotorTorque[REAR_LEFT].cmd,
 		.endpoint = &TFTP_TREF_RL_ENDPOINT,
 		.fauto = 20
 	},
 	//[20]
-	{ //T_rr
+	{ //T*_rr
 		.data = &MotorTorque[REAR_RIGHT].cmd,
 		.endpoint = &TFTP_TREF_RR_ENDPOINT,
+		.fauto = 20
+	},
+	//[21]
+	{ //S_v
+		.data = &VehicleSlipSensor.value,
+		.endpoint = &TFTP_S_V_ENDPOINT,
+		.fauto = 20
+	},
+	//[22]
+	{ //S*_v
+		.data = &VehicleSlipControl.cmd,
+		.endpoint = &TFTP_SREF_V_ENDPOINT,
 		.fauto = 20
 	}
 };

@@ -236,8 +236,6 @@ int main(void)
 					SetVehicleSpeed(tspeed); 
 					UpdateWheelSlip(&WheelSlipSensors[REAR_LEFT]);
 					UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
-					//UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
-					//UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 				}
 				else if (carState.lineDetectionState == LINE_LOST)
 				{
