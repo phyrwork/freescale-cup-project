@@ -3,6 +3,7 @@
 #include "sensors/wheel/speed.h"
 #include "control/wheel/speed.h"
 #include "control/vehicle/speed.h"
+#include "devices/TFC_SHIELD.h"
 
 ///////////////////////////////////////
 // Main Routine Task Request Handler //
@@ -177,12 +178,24 @@ int main(void)
 	//initialise modules
 	TFC_Init(&carState);
 	
+	//orientation
 	while ( !PollTaskPending(POSITIONING_REQUEST_INDEX) ){};
-	//InitTracking(LineScanImage0, 350);
-	TFC_SetLED(0);
+	TFC_SetLED(0); //signal car position known
+	
+	//launch control
+	while ( !TFC_PUSH_BUTTON_0_PRESSED ) {};
+	while ( TFC_PUSH_BUTTON_0_PRESSED ) {}; //wait for press and release
+	for (uint32_t wait = 0; wait < 10000000; ++wait) {};
+	TICKER = 0;
+	
+	MotorTorque[REAR_LEFT].PID->value = LAUNCH_TORQUE;
+	MotorTorque[REAR_LEFT].cmd = LAUNCH_TORQUE;
+	MotorTorque[REAR_RIGHT].PID->value = LAUNCH_TORQUE;
+	MotorTorque[REAR_RIGHT].cmd = LAUNCH_TORQUE;
 
-	while (1)
+	while (!TFC_PUSH_BUTTON_0_PRESSED)
 	{	
+		//task scheduling
 		UpdateTaskRequests();
 		if ( AnyTaskPending() )
 		{
@@ -194,12 +207,18 @@ int main(void)
 			//Positioning update tasks
 			if ( PollTaskPending(POSITIONING_REQUEST_INDEX) )
 			{    ClearTaskPending(POSITIONING_REQUEST_INDEX);
+				
+				//dead-pixel workaround
+				uint16_t y[128];
+				for (uint8_t i = 0; i < 128; ++i) y[i] = LineScanImage0[i];
+				y[98] = (y[99] + y[97])/2;
+				//end
 			
 				uint32_t totalIntensity = 0;
 				int16_t dy[128];
 
 				//update position
-				diff(LineScanImage0, dy, 128);
+				diff(y, dy, 128);
 
 				if (/*findStop(dy) == STOP_LINE_FOUND*/0)
 				{
@@ -214,6 +233,14 @@ int main(void)
 				//adjust camera exposure
 				totalIntensity = getTotalIntensity(LineScanImage0);
 				TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
+			}
+			
+			//update steering
+			if ( PollTaskPending(STEERING_REQUEST_INDEX) )
+			{    ClearTaskPending(STEERING_REQUEST_INDEX);
+				carState.servoPosition = getDesiredServoValue(carState.lineCenter, 0);
+				CollectorRequest(SERVO_POSITION_COLLECTOR_INDEX);
+				TFC_SetServo(0, carState.servoPosition);
 			}
 			
 			//main control
@@ -253,14 +280,6 @@ int main(void)
 				}
 			}
 			
-			//update steering
-			if ( PollTaskPending(STEERING_REQUEST_INDEX) )
-			{    ClearTaskPending(STEERING_REQUEST_INDEX);
-				carState.servoPosition = getDesiredServoValue(carState.lineCenter, 0);
-				CollectorRequest(SERVO_POSITION_COLLECTOR_INDEX);
-				TFC_SetServo(0, carState.servoPosition);
-			}
-			
 			if ( PollTaskPending(TELEMETRY_REQUEST_INDEX) )
 			{    ClearTaskPending(TELEMETRY_REQUEST_INDEX);
 
@@ -276,6 +295,11 @@ int main(void)
 			#endif
 		}
 	}
+	
+	TFC_HBRIDGE_DISABLE;
+	TFC_SetLED(0);
+	while(1) {};
+	
 	return 0;
 }
 

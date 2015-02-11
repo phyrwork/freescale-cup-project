@@ -62,6 +62,7 @@
 #define BATTERY_SAMPLE_FREQUENCY 1
 
 /* Powertrain config */
+#define LAUNCH_TORQUE 0.003f
 #define NUM_MOTORS  2
 #define REAR_LEFT   0
 #define REAR_RIGHT  1
