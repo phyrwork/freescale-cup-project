@@ -18,11 +18,11 @@
 #define VEHICLE_TURN_MOD_LOW 5.0f
 #define VEHICLE_TURN_MOD_HIGH 30.0f
 #define VEHICLE_CORNERING_SPEED_LOW 6.0f
-#define VEHICLE_CORNERING_SPEED_HIGH 7.0f
+#define VEHICLE_CORNERING_SPEED_HIGH 7.5f
 #define VEHICLE_STRAIGHT_SPEED 10.0f
 
 #define VSPEED_KP 0.00085f
-#define VSPEED_KI 0.00040f
+#define VSPEED_KI 0.00060f
 #define VSPEED_KD 0.0f
 
 VehicleSpeedControl_s VehicleSpeedControl;
@@ -91,7 +91,7 @@ void SetVehicleSpeed(float command)
 	float diff = fabsf(speed->sensor->value - command);
 	float thres = command * VEHICLE_SPEED_ACC;
 	
-	if (command < 1 || VehicleSpeedSensor.value < 0) _setByWheelSpeed(command);
+	if (command < 1 && VehicleSpeedSensor.value < 0.5) _setByWheelSpeed(command);
 	else _setByVehicleSpeed(command);
 }
 
