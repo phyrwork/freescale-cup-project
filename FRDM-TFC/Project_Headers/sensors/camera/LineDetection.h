@@ -27,7 +27,7 @@
 #define TRACK_DY_T                200
 #define TRACK_RY_T                500
 #define MAX_LOST_LINE_DURATION    10000
-#define LOST_LINE_RESET_DURATION  10000
+#define LOST_LINE_RESET_DURATION  15000
 #define MIN_CERTAINTY             0.3f
 
 //weightEdges
@@ -37,7 +37,7 @@
 //weightLines
 #define LINE_WIDTH_SD    10
 #define LINE_WIDTH_MEAN  100
-#define LINE_DWIDTH_SD   15
+#define LINE_DWIDTH_SD   30
 #define LINE_DWIDTH_MEAN 0
 
 //findStop

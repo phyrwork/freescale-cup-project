@@ -75,13 +75,13 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	{ //i_rl
 		.data = &MotorCurrent[REAR_LEFT].value,
 		.endpoint = &TFTP_I_RL_ENDPOINT,
-		.fauto = 50
+		.fauto = 200
 	},
 	//[4]
 	{ //i_rr
 		.data = &MotorCurrent[REAR_RIGHT].value,
 		.endpoint = &TFTP_I_RR_ENDPOINT,
-		.fauto = 50
+		.fauto = 200
 	},
 	//[5]
 	{ //D_rl
