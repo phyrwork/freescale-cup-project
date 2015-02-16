@@ -32,6 +32,9 @@ void InitMotorTorqueControl()
 		torque->PID->value = 0;
 		torque->PID->value_max = 1;
 		torque->PID->value_min = -1;
+		torque->PID->antiwindup = ANTI_WINDUP_CLAMP;
+		torque->PID->windup_max = 1;
+		torque->PID->windup_min = -1;
 	}
 }
 

@@ -256,8 +256,9 @@ int main(void)
 				UpdateWheelSpeed(&WheelSpeedSensors[FRONT_RIGHT]);
 				UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
 				UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
-	
-				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
+				
+				if(1)
+				//if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
 				{
 					float tspeed = GetVehicleSpeed((float)carState.lineCenter);
 					SetVehicleSpeed(tspeed); 

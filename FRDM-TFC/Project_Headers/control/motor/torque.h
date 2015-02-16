@@ -14,11 +14,11 @@
 
 /* Motor properties */
 #define TORQUE_MAX 0.0075f //Nm
-#define TORQUE_KT 0.0134f //Torque constant
+#define TORQUE_KT 0.003829f //Torque constant
 
 /* Control properties */
-#define TORQUE_KP 240.0f
-#define TORQUE_KI 160.0f
+#define TORQUE_KP 60.0f
+#define TORQUE_KI 20500.0f
 #define TORQUE_KD 0.0f
 
 /* Torque structs */

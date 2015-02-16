@@ -10,6 +10,9 @@
 
 #include <stdint.h>
 
+#define ANTI_WINDUP_NONE  0
+#define ANTI_WINDUP_CLAMP 1
+
 typedef struct {
 	float Kp;
 	float Ki;
@@ -20,6 +23,9 @@ typedef struct {
 	float value_min;
 	float error;
 	float integral;
+	uint8_t antiwindup;
+	float windup_max;
+	float windup_min;
 	uint8_t clamped;
 } PID_s;
 

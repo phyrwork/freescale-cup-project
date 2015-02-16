@@ -33,19 +33,6 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 	/* Update controller */
 	PID->error = ref - actual; //calculate error
 	
-	//operate integral clamp
-	if (!PID->clamped) {
-		// if sum of components > saturation limits and integral output and set point have same sign, clamp
-		if ( (prev_error > PID->value_max || prev_error < PID->value_min) && (PID->Ki > 0 ? 1 : -1)*(PID->error > 0 ? 1 : -1) == (ref > 0 ? 1 : -1) )
-			PID->clamped = KI_CLAMPED;
-	}
-	else
-	{
-		// if sum of components > saturation limits and integral output and set point have different sign, unclamp
-		if ( (prev_error > PID->value_max || prev_error < PID->value_min) && (PID->Ki > 0 ? 1 : -1)*(PID->error > 0 ? 1 : -1) != (ref > 0 ? 1 : -1) )
-			PID->clamped = KI_ACTIVE;
-	}
-	
 	
 	PID->value = (PID->error * PID->Kp); //sum proportional
 	
@@ -55,10 +42,35 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 		PID->value += (PID->integral * PID->Ki); //sum integral
 	}	
 	
-	if (PID->Kd > 0.0f)
+	if (PID->Kd > 0.0f && dt > 0.0f)
 	{
 		float error_diff = (PID->error - prev_error) / dt; //calculate error derivative
 		PID->value += (error_diff * PID->Kd); //sum derivative
+	}
+	
+	
+	//operate integral clamp
+	if (PID->antiwindup == ANTI_WINDUP_CLAMP)
+	{
+		if (!PID->clamped) {
+			// if sum of components > saturation limits and integral output and set point have same sign, clamp
+			int8_t ski = PID->Ki > 0 ? 1 : -1;
+			int8_t se = PID->error > 0 ? 1 : -1;
+			int8_t sr = ref > 0 ? 1 : -1;
+			
+			if ( (PID->value > PID->windup_max || PID->value < PID->windup_min) && ski*se == sr )
+				PID->clamped = KI_CLAMPED;
+		}
+		else
+		{
+			// if sum of components > saturation limits and integral output and set point have different sign, unclamp
+			int8_t ski = PID->Ki > 0 ? 1 : -1;
+			int8_t se = PID->error > 0 ? 1 : -1;
+			int8_t sr = ref > 0 ? 1 : -1;
+							
+			if ( (PID->value > PID->windup_max || PID->value < PID->windup_min) && ski*se != sr )
+				PID->clamped = KI_ACTIVE;
+		}
 	}
 	
 	/* Saturation filter */
