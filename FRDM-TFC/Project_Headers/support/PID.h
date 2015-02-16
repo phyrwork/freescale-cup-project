@@ -8,6 +8,8 @@
 #ifndef PID_H_
 #define PID_H_
 
+#include <stdint.h>
+
 typedef struct {
 	float Kp;
 	float Ki;
@@ -18,6 +20,7 @@ typedef struct {
 	float value_min;
 	float error;
 	float integral;
+	uint8_t clamped;
 } PID_s;
 
 void UpdatePID(PID_s *PID, float ref, float actual);

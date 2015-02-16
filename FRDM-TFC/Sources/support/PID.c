@@ -14,6 +14,9 @@
 #define TIME ( (float)PID_TICKER / (float)SYSTICK_FREQUENCY )
 #define MAX_DT 0.01
 
+#define KI_CLAMPED 1
+#define KI_ACTIVE  0
+
 void UpdatePID(PID_s *PID, float ref, float actual)
 {
 	/* Take reference values */
@@ -25,14 +28,34 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 	PID->time = TIME;
 	float dt = PID->time - prev_time;
 	
+	
+	
 	/* Update controller */
 	PID->error = ref - actual; //calculate error
-	PID->value  = (PID->error * PID->Kp); //sum proportional
 	
-	PID->integral += PID->error * dt; //accumulate error into integral
-	PID->value += (PID->integral * PID->Ki); //sum integral
+	//operate integral clamp
+	if (!PID->clamped) {
+		// if sum of components > saturation limits and integral output and set point have same sign, clamp
+		if ( (prev_error > PID->value_max || prev_error < PID->value_min) && (PID->Ki > 0 ? 1 : -1)*(PID->error > 0 ? 1 : -1) == (ref > 0 ? 1 : -1) )
+			PID->clamped = KI_CLAMPED;
+	}
+	else
+	{
+		// if sum of components > saturation limits and integral output and set point have different sign, unclamp
+		if ( (prev_error > PID->value_max || prev_error < PID->value_min) && (PID->Ki > 0 ? 1 : -1)*(PID->error > 0 ? 1 : -1) != (ref > 0 ? 1 : -1) )
+			PID->clamped = KI_ACTIVE;
+	}
 	
-	if (PID->Kd > 0.0)
+	
+	PID->value = (PID->error * PID->Kp); //sum proportional
+	
+	if (PID->Ki > 0.0f && !PID->clamped)
+	{
+		PID->integral += PID->error * dt; //accumulate error into integral
+		PID->value += (PID->integral * PID->Ki); //sum integral
+	}	
+	
+	if (PID->Kd > 0.0f)
 	{
 		float error_diff = (PID->error - prev_error) / dt; //calculate error derivative
 		PID->value += (error_diff * PID->Kd); //sum derivative
