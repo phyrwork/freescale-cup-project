@@ -11,6 +11,10 @@
 static PID_s PID[NUM_MOTORS];
 MotorTorque_s MotorTorque[NUM_MOTORS];
 
+#define TORQUE_SPEED_M -0.00018714f
+#define TORQUE_SPEED_C 0.0060841
+
+
 void InitMotorTorqueControl()
 {
 	/* Initialise torque control structs */
@@ -22,6 +26,8 @@ void InitMotorTorqueControl()
 		torque->value = 0;
 		torque->pwm = &MotorPWM[i];
 		torque->current = &MotorCurrent[i];
+		//torque->speed = &WheelSpeedSensor[i];
+		torque->speed = &VehicleSpeedSensor;
 		
 		/* Initialise PID controller */
 		torque->PID = &PID[i];
@@ -49,6 +55,12 @@ void SetMotorTorque(MotorTorque_s *torque, float command)
 {
 	torque->cmd = command; //Store command for telemetry purposes.
 	UpdateMotorTorque(torque);
+	
+	//recalculate saturation
+	float tspd = torque->speed->value > 31 ? 31 : torque->speed->value;
+	float tsat = (TORQUE_SPEED_M * tspd) + TORQUE_SPEED_C;
+	command = command > tsat ? tsat : (command < -tsat ? -tsat : command);
+	
 	UpdatePID(torque->PID, command, torque->value);
 	SetMotorPWM(torque->pwm, torque->PID->value);
 }

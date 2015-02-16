@@ -18,8 +18,8 @@
 #define VEHICLE_TURN_MOD_LOW 5.0f
 #define VEHICLE_TURN_MOD_HIGH 30.0f
 #define VEHICLE_CORNERING_SPEED_LOW 6.0f
-#define VEHICLE_CORNERING_SPEED_HIGH 6.5f
-#define VEHICLE_STRAIGHT_SPEED 9.0f
+#define VEHICLE_CORNERING_SPEED_HIGH 7.0f
+#define VEHICLE_STRAIGHT_SPEED 10.0f
 
 #define VSPEED_KP 0.0080f
 #define VSPEED_KI 0.0060f
@@ -70,11 +70,20 @@ void _setByVehicleSlip(float command)
 	else SetVehicleSlip(VEHICLE_DECEL_SLIP);
 }
 
+#define TORQUE_SPEED_M -0.00018714f
+#define TORQUE_SPEED_C 0.0060841
+
 void _setByVehicleSpeed(float command)
 {
 	VehicleSpeedControl_s * const speed = &VehicleSpeedControl;
 	MotorTorque_s * const left = &MotorTorque[REAR_LEFT];
 	MotorTorque_s * const right = &MotorTorque[REAR_RIGHT];
+	
+	//recalculate saturation
+	float tspd = speed->sensor->value > 31 ? 31 : speed->sensor->value;
+	float tsat = (TORQUE_SPEED_M * tspd) + TORQUE_SPEED_C;
+	speed->pid->value_max = tsat;
+	speed->pid->value_min = -tsat;
 	
 	UpdatePID(speed->pid, command, speed->sensor->value);
 	SetMotorTorque(left, speed->pid->value);

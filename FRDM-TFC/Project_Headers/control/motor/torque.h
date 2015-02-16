@@ -10,6 +10,8 @@
 
 #include "control/motor/pwm.h"
 #include "sensors/motor/current.h"
+#include "sensors/wheel/speed.h"
+#include "sensors/vehicle/speed.h"
 #include "support/PID.h"
 
 /* Motor properties */
@@ -17,7 +19,7 @@
 #define TORQUE_KT 0.003829f //Torque constant
 
 /* Control properties */
-#define TORQUE_KP 60.0f
+#define TORQUE_KP 120.0f
 #define TORQUE_KI 20500.0f
 #define TORQUE_KD 0.0f
 
@@ -27,6 +29,8 @@ typedef struct {
 	float cmd; //debug
 	MotorPWM_s *pwm;
 	MotorCurrent_s *current;
+	//WheelSpeedSensor_s *speed;
+	VehicleSpeedSensor_s *speed;
 	PID_s *PID;
 } MotorTorque_s;
 extern MotorTorque_s MotorTorque[NUM_MOTORS];
