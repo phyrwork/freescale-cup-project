@@ -22,7 +22,7 @@ void InitMotorTorqueControl()
 		torque->value = 0;
 		torque->pwm = &MotorPWM[i];
 		torque->current = &MotorCurrent[i];
-		torque->speed = &WheelSpeedSensor[i];
+		torque->speed = &WheelSpeedSensors[i];
 		//torque->speed = &VehicleSpeedSensor;
 		
 		/* Initialise PID controller */
@@ -51,7 +51,7 @@ void SetMotorTorque(MotorTorque_s *torque, float command)
 	UpdateMotorTorque(torque);
 	
 	//limit command torque to max torque
-	command = TORQUE_MAX;
+	command = command > TORQUE_MAX ? TORQUE_MAX : (command < -TORQUE_MAX ? -TORQUE_MAX : command);
 	
 	//recalculate saturation
 	float tspd = torque->speed->value > 31 ? 31 : torque->speed->value;
