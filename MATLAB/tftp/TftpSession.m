@@ -42,7 +42,7 @@ classdef TftpSession < Tftp
                 module.ssize...
             );
             % add attribute ID to cell array
-            obj.attributes{length(obj.attributes) + 1} = module.attribute;
+            obj.attributes{module.code} = module.attribute;
         end
     end
     
