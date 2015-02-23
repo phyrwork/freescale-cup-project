@@ -11,10 +11,6 @@
 static PID_s PID[NUM_MOTORS];
 MotorTorque_s MotorTorque[NUM_MOTORS];
 
-#define TORQUE_SPEED_M -0.00018714f
-#define TORQUE_SPEED_C 0.0060841
-
-
 void InitMotorTorqueControl()
 {
 	/* Initialise torque control structs */
@@ -39,8 +35,6 @@ void InitMotorTorqueControl()
 		torque->PID->value_max = 1;
 		torque->PID->value_min = -1;
 		torque->PID->antiwindup = ANTI_WINDUP_CLAMP;
-		torque->PID->windup_max = 1;
-		torque->PID->windup_min = -1;
 	}
 }
 
@@ -56,10 +50,15 @@ void SetMotorTorque(MotorTorque_s *torque, float command)
 	torque->cmd = command; //Store command for telemetry purposes.
 	UpdateMotorTorque(torque);
 	
+	//limit command torque to max torque
+	command = TORQUE_MAX;
+	
 	//recalculate saturation
 	float tspd = torque->speed->value > 31 ? 31 : torque->speed->value;
 	float tsat = (TORQUE_SPEED_M * tspd) + TORQUE_SPEED_C;
-	command = command > tsat ? tsat : (command < -tsat ? -tsat : command);
+	//command = command > tsat ? tsat : (command < -tsat ? -tsat : command);
+	torque->PID->in_max = tsat;
+	torque->PID->in_min = -tsat;
 	
 	UpdatePID(torque->PID, command, torque->value);
 	SetMotorPWM(torque->pwm, torque->PID->value);
