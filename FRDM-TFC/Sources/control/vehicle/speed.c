@@ -17,13 +17,19 @@
 
 #define VEHICLE_TURN_MOD_LOW 5.0f
 #define VEHICLE_TURN_MOD_HIGH 30.0f
-#define VEHICLE_CORNERING_SPEED_LOW 6.0f
-#define VEHICLE_CORNERING_SPEED_HIGH 7.0f
-#define VEHICLE_STRAIGHT_SPEED 10.0f
+#define VEHICLE_CORNERING_SPEED_LOW 3.0f
+#define VEHICLE_CORNERING_SPEED_HIGH 4.0f
+#define VEHICLE_STRAIGHT_SPEED 6.0f
 
-#define VSPEED_KP 0.0080f
-#define VSPEED_KI 0.0060f
-#define VSPEED_KD 0.0f
+#define VSPEED_CONT_REGION(speed) ( 1.0f + (speed * 0.05f) )
+
+#define VSPEED_KP_UNCONT 0.0080f
+#define VSPEED_KI_UNCONT 0.0000f
+#define VSPEED_KD_UNCONT 0.0000f
+
+#define VSPEED_KP_CONT 0.0080f
+#define VSPEED_KI_CONT 0.0060f
+#define VSPEED_KD_CONT 0.0000f
 
 VehicleSpeedControl_s VehicleSpeedControl;
 PID_s pid;
@@ -39,9 +45,9 @@ void InitVehicleSpeedControl()
 	speed->slip = &VehicleSlipControl;
 	
 	speed->pid = &pid;
-	speed->pid->Kp = VSPEED_KP;
-	speed->pid->Ki = VSPEED_KI;
-	speed->pid->Kd = VSPEED_KD;
+	speed->pid->Kp = VSPEED_KP_UNCONT;
+	speed->pid->Ki = VSPEED_KI_UNCONT;
+	speed->pid->Kd = VSPEED_KD_UNCONT;
 	speed->pid->time = 0;
 	speed->pid->value = 0;
 	speed->pid->value_max = 0.007;
@@ -70,20 +76,34 @@ void _setByVehicleSlip(float command)
 	else SetVehicleSlip(VEHICLE_DECEL_SLIP);
 }
 
-#define TORQUE_SPEED_M -0.00018714f
-#define TORQUE_SPEED_C 0.0060841
-
 void _setByVehicleSpeed(float command)
 {
 	VehicleSpeedControl_s * const speed = &VehicleSpeedControl;
 	MotorTorque_s * const left = &MotorTorque[REAR_LEFT];
 	MotorTorque_s * const right = &MotorTorque[REAR_RIGHT];
 	
-	//recalculate saturation
+	//recalculate controller saturation point
 	float tspd = speed->sensor->value > 31 ? 31 : speed->sensor->value;
 	float tsat = (TORQUE_SPEED_M * tspd) + TORQUE_SPEED_C;
 	speed->pid->value_max = tsat;
 	speed->pid->value_min = -tsat;
+	
+	//set pid according to controllable region rules
+	float sdiff = command - speed->sensor->value;
+	if ( fabsf(sdiff) < VSPEED_CONT_REGION(speed->sensor->value) )
+	{
+		//speed in controllable region
+		speed->pid->Kp = VSPEED_KP_CONT;
+		speed->pid->Ki = VSPEED_KI_CONT;
+		speed->pid->Kd = VSPEED_KD_CONT;
+	}
+	else
+	{
+		//speed in uncontrollable region
+		speed->pid->Kp = VSPEED_KP_UNCONT;
+		speed->pid->Ki = VSPEED_KI_UNCONT;
+		speed->pid->Kd = VSPEED_KD_UNCONT;
+	}
 	
 	UpdatePID(speed->pid, command, speed->sensor->value);
 	SetMotorTorque(left, speed->pid->value);

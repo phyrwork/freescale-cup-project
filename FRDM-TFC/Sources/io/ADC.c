@@ -3,6 +3,7 @@
 #include "devices/arm_cm0.h"
 #include "devices/CrystalClock.h"
 #include "sensors/camera/LineScanCamera.h"
+#include "control/motor/pwm.h"
 #include "support/rbuf_voidptr.h"
 #include "config.h"
 #include "main.h"
@@ -579,25 +580,37 @@ extern MotorCurrent_s MotorCurrent[NUM_MOTORS];
 
 int8_t MotorCurrent0Callback ()
 {
-    rbuf_uint16_write(&MotorCurrent[1].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
-    return 0;
+	//get polarity
+	int16_t c = MotorPWM[0].value >= 0 ? ADC0_RA : -ADC0_RA;
+	
+	//push new period onto buffer
+	if (++(MotorCurrent[0].buffer.pos) >= CURRENT_FILTER_BUFFER_SIZE - 1) MotorCurrent[0].buffer.pos = 0; //wrap buffer around
+	MotorCurrent[0].buffer.data[MotorCurrent[0].buffer.pos] = c;
+	
+	return 0;
 }
 
 int8_t MotorCurrent1Callback ()
 {
-    rbuf_uint16_write(&MotorCurrent[0].buffer, (uint16_t*) &ADC0_RA, 1); //push sample onto signal buffer
-    return 0;
+	//get polarity
+	int16_t c = MotorPWM[1].value >= 0 ? ADC0_RA : -ADC0_RA;
+	
+	//push new period onto buffer
+	if (++(MotorCurrent[1].buffer.pos) >= CURRENT_FILTER_BUFFER_SIZE - 1) MotorCurrent[1].buffer.pos = 0; //wrap buffer around
+	MotorCurrent[1].buffer.data[MotorCurrent[1].buffer.pos] = c;
+	
+	return 0;
 }
 
 AdcConfig_s AdcConfigMotorCurrent0 = { //MotorCurrent0 ADC config
-    /* channel = */  7,
+    /* channel = */  3,
     /* mux = */      MUX_A,
     /* *data = */    &AdcBuffer,
     /* callback = */ &MotorCurrent0Callback
 };
 
 AdcConfig_s AdcConfigMotorCurrent1 = { //MotorCurrent1 ADC config
-    /* channel = */  3,
+    /* channel = */  7,
     /* mux = */      MUX_A,
     /* *data = */    &AdcBuffer,
     /* callback = */ &MotorCurrent1Callback

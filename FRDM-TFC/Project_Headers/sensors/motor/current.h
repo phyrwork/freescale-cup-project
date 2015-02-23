@@ -12,8 +12,10 @@
 /* Define motor current struct */
 #define CURRENT_FILTER_BUFFER_SIZE (CURRENT_FILTER_ORDER * 3)
 typedef struct {
-	uint16_t data[CURRENT_FILTER_BUFFER_SIZE];
-	rbuf_uint16_s buffer;
+	struct {
+		  int16_t data[CURRENT_FILTER_BUFFER_SIZE];
+		  uint16_t pos;
+	} buffer;
 	float value;
 } MotorCurrent_s;
 extern MotorCurrent_s MotorCurrent[NUM_MOTORS];

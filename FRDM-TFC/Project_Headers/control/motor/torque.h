@@ -15,12 +15,17 @@
 #include "support/PID.h"
 
 /* Motor properties */
-#define TORQUE_MAX 0.0075f //Nm
-#define TORQUE_KT 0.003829f //Torque constant
+#define TORQUE_STALL 0.00784532f
+#define TORQUE_CUTOFF 0.0075f
+#define TORQUE_MAX 0.0065f //Nm
+#define TORQUE_KT 0.002064557f //Torque constant
+
+#define TORQUE_SPEED_M -0.00018714f
+#define TORQUE_SPEED_C 0.0060841f
 
 /* Control properties */
-#define TORQUE_KP 120.0f
-#define TORQUE_KI 20500.0f
+#define TORQUE_KP 150.0f
+#define TORQUE_KI 15000.0f
 #define TORQUE_KD 0.0f
 
 /* Torque structs */
@@ -29,8 +34,8 @@ typedef struct {
 	float cmd; //debug
 	MotorPWM_s *pwm;
 	MotorCurrent_s *current;
-	//WheelSpeedSensor_s *speed;
-	VehicleSpeedSensor_s *speed;
+	WheelSpeedSensor_s *speed;
+	//VehicleSpeedSensor_s *speed;
 	PID_s *PID;
 } MotorTorque_s;
 extern MotorTorque_s MotorTorque[NUM_MOTORS];

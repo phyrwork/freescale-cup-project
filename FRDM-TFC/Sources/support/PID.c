@@ -58,7 +58,7 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 			int8_t se = PID->error > 0 ? 1 : -1;
 			int8_t sr = ref > 0 ? 1 : -1;
 			
-			if ( (PID->value > PID->windup_max || PID->value < PID->windup_min) && ski*se == sr )
+			if ( (actual > PID->in_max || actual < PID->in_min) && ski*se == sr )
 				PID->clamped = KI_CLAMPED;
 		}
 		else
@@ -68,7 +68,7 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 			int8_t se = PID->error > 0 ? 1 : -1;
 			int8_t sr = ref > 0 ? 1 : -1;
 							
-			if ( (PID->value > PID->windup_max || PID->value < PID->windup_min) && ski*se != sr )
+			if ( (actual > PID->in_max || actual < PID->in_min) && ski*se != sr )
 				PID->clamped = KI_ACTIVE;
 		}
 	}
