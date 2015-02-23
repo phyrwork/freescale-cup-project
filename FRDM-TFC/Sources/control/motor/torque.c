@@ -22,8 +22,8 @@ void InitMotorTorqueControl()
 		torque->value = 0;
 		torque->pwm = &MotorPWM[i];
 		torque->current = &MotorCurrent[i];
-		//torque->speed = &WheelSpeedSensor[i];
-		torque->speed = &VehicleSpeedSensor;
+		torque->speed = &WheelSpeedSensor[i];
+		//torque->speed = &VehicleSpeedSensor;
 		
 		/* Initialise PID controller */
 		torque->PID = &PID[i];

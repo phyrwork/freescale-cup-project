@@ -34,8 +34,8 @@ typedef struct {
 	float cmd; //debug
 	MotorPWM_s *pwm;
 	MotorCurrent_s *current;
-	//WheelSpeedSensor_s *speed;
-	VehicleSpeedSensor_s *speed;
+	WheelSpeedSensor_s *speed;
+	//VehicleSpeedSensor_s *speed;
 	PID_s *PID;
 } MotorTorque_s;
 extern MotorTorque_s MotorTorque[NUM_MOTORS];
