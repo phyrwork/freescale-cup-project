@@ -8,7 +8,6 @@
 #define FTM0_CLOCK                                   	      (CORE_CLOCK/2)
 #define FTM0_CLK_PRESCALE                                 	   0  // Prescale Selector value - see comments in Status Control (SC) section for more details
 #define FTM0_OVERFLOW_FREQUENCY 5000							  //
-#define MAX_DUTY 1
 
 /* Define motor structs */
 const MotorTPM_s MotorTPM[NUM_MOTORS] = {
@@ -84,8 +83,7 @@ void SetMotorPWM(MotorPWM_s *pwm, float value)
 	 else pol = BACKWARD;
 
 	 //Check/limit magnitude
-	 float lvalue = fabsf(value); //return abs(float value)
-	 if (lvalue > MAX_DUTY) value = value > 0 ? MAX_DUTY : -MAX_DUTY;
+	 if (fabsf(value) > MAX_DUTY) value = value > 0 ? MAX_DUTY : -MAX_DUTY;
 
 	 //Set PWM
 	 if (value != 0.0) //Any magnitude
@@ -101,7 +99,7 @@ void SetMotorPWM(MotorPWM_s *pwm, float value)
 		{
 			*(pwm->tpm->fwdCnVReg) = 0;
 			*(pwm->tpm->bwdCnVReg) = (uint16_t) (TPM0_MOD * (float) value);
-			pwm->value = -value;
+			pwm->value = value;
 		}
 	else //No magnitude
 	{

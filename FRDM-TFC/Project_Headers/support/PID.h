@@ -24,8 +24,8 @@ typedef struct {
 	float error;
 	float integral;
 	uint8_t antiwindup;
-	float windup_max;
-	float windup_min;
+	float in_max;
+	float in_min;
 	uint8_t clamped;
 } PID_s;
 
