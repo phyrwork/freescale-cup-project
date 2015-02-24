@@ -28,19 +28,14 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 	PID->time = TIME;
 	float dt = PID->time - prev_time;
 	
-	
-	
 	/* Update controller */
 	PID->error = ref - actual; //calculate error
 	
 	
 	PID->value = (PID->error * PID->Kp); //sum proportional
 	
-	if (PID->Ki > 0.0f)
-	{
-		if (!PID->clamped) PID->integral += PID->error * dt; //accumulate error into integral
-		PID->value += (PID->integral * PID->Ki); //sum integral
-	}	
+	if (!PID->clamped)  PID->integral += PID->error * dt;        //accumulate error into integral
+	if (PID->Ki > 0.0f) PID->value += (PID->integral * PID->Ki); //sum integral	
 	
 	if (PID->Kd > 0.0f && dt > 0.0f)
 	{
@@ -53,22 +48,24 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 	if (PID->antiwindup == ANTI_WINDUP_CLAMP)
 	{
 		if (!PID->clamped) {
-			// if sum of components > saturation limits and integral output and set point have same sign, clamp
-			int8_t ski = PID->Ki > 0 ? 1 : -1;
-			int8_t se = PID->error > 0 ? 1 : -1;
-			int8_t sr = ref > 0 ? 1 : -1;
+			// if output > saturation limits and integral output and set point have same sign, clamp
+			int8_t gain_sign = PID->Ki > 0 ? 1 : -1;
+			int8_t error_sign = PID->error > 0 ? 1 : -1;
+			int8_t integral_sign = gain_sign * error_sign;
+			int8_t setpoint_sign = ref > 0 ? 1 : -1;
 			
-			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && ski*se == sr )
+			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && integral_sign == setpoint_sign )
 				PID->clamped = KI_CLAMPED;
 		}
 		else
 		{
-			// if sum of components > saturation limits and integral output and set point have different sign, unclamp
-			int8_t ski = PID->Ki > 0 ? 1 : -1;
-			int8_t se = PID->error > 0 ? 1 : -1;
-			int8_t sr = ref > 0 ? 1 : -1;
+			// if output > saturation limits and integral output and set point have different sign, unclamp
+			int8_t gain_sign = PID->Ki > 0 ? 1 : -1;
+			int8_t error_sign = PID->error > 0 ? 1 : -1;
+			int8_t integral_sign = gain_sign * error_sign;
+			int8_t setpoint_sign = ref > 0 ? 1 : -1;
 							
-			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && ski*se != sr )
+			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && integral_sign != setpoint_sign )
 				PID->clamped = KI_ACTIVE;
 		}
 	}
