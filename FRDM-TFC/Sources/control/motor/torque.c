@@ -41,8 +41,7 @@ void InitMotorTorqueControl()
 void UpdateMotorTorque(MotorTorque_s *torque)
 {
 	UpdateCurrentValue(torque->current); //Update current value
-	torque->value = torque->pwm->value >= 0 ? //scale by torque constant
-			torque->current->value * TORQUE_KT : torque->current->value * -TORQUE_KT; //positive or negative torque?
+	torque->value = torque->current->value * TORQUE_KT;
 }
 
 void SetMotorTorque(MotorTorque_s *torque, float command)
@@ -57,8 +56,6 @@ void SetMotorTorque(MotorTorque_s *torque, float command)
 	float tspd = torque->speed->value > 31 ? 31 : torque->speed->value;
 	float tsat = (TORQUE_SPEED_M * tspd) + TORQUE_SPEED_C;
 	//command = command > tsat ? tsat : (command < -tsat ? -tsat : command);
-	torque->PID->value_max = tsat;
-	torque->PID->value_min = -tsat;
 	
 	UpdatePID(torque->PID, command, torque->value);
 	SetMotorPWM(torque->pwm, torque->PID->value);
