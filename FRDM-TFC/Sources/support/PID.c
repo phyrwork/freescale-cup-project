@@ -36,9 +36,9 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 	
 	PID->value = (PID->error * PID->Kp); //sum proportional
 	
-	if (PID->Ki > 0.0f && !PID->clamped)
+	if (PID->Ki > 0.0f)
 	{
-		PID->integral += PID->error * dt; //accumulate error into integral
+		if (!PID->clamped) PID->integral += PID->error * dt; //accumulate error into integral
 		PID->value += (PID->integral * PID->Ki); //sum integral
 	}	
 	
@@ -58,7 +58,7 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 			int8_t se = PID->error > 0 ? 1 : -1;
 			int8_t sr = ref > 0 ? 1 : -1;
 			
-			if ( (actual > PID->in_max || actual < PID->in_min) && ski*se == sr )
+			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && ski*se == sr )
 				PID->clamped = KI_CLAMPED;
 		}
 		else
@@ -68,7 +68,7 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 			int8_t se = PID->error > 0 ? 1 : -1;
 			int8_t sr = ref > 0 ? 1 : -1;
 							
-			if ( (actual > PID->in_max || actual < PID->in_min) && ski*se != sr )
+			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && ski*se != sr )
 				PID->clamped = KI_ACTIVE;
 		}
 	}

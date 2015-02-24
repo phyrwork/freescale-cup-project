@@ -57,8 +57,8 @@ void SetMotorTorque(MotorTorque_s *torque, float command)
 	float tspd = torque->speed->value > 31 ? 31 : torque->speed->value;
 	float tsat = (TORQUE_SPEED_M * tspd) + TORQUE_SPEED_C;
 	//command = command > tsat ? tsat : (command < -tsat ? -tsat : command);
-	torque->PID->in_max = tsat;
-	torque->PID->in_min = -tsat;
+	torque->PID->value_max = tsat;
+	torque->PID->value_min = -tsat;
 	
 	UpdatePID(torque->PID, command, torque->value);
 	SetMotorPWM(torque->pwm, torque->PID->value);
