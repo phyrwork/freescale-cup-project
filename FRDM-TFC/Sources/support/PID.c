@@ -47,25 +47,18 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 	//operate integral clamp
 	if (PID->antiwindup == ANTI_WINDUP_CLAMP)
 	{
+		int8_t error_sign = PID->error != 0 ? (PID->error > 0 ? 1 : -1) : 0;
+		int8_t integral_sign = PID->integral != 0 ? (PID->integral > 0 ? 1 : -1) : 0;
+		
 		if (!PID->clamped) {
 			// if output > saturation limits and integral output and set point have same sign, clamp
-			int8_t gain_sign = PID->Ki > 0 ? 1 : -1;
-			int8_t error_sign = PID->error > 0 ? 1 : -1;
-			int8_t integral_sign = gain_sign * error_sign;
-			int8_t setpoint_sign = ref > 0 ? 1 : -1;
-			
-			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && integral_sign == setpoint_sign )
+			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && integral_sign == error_sign )
 				PID->clamped = KI_CLAMPED;
 		}
 		else
 		{
-			// if output > saturation limits and integral output and set point have different sign, unclamp
-			int8_t gain_sign = PID->Ki > 0 ? 1 : -1;
-			int8_t error_sign = PID->error > 0 ? 1 : -1;
-			int8_t integral_sign = gain_sign * error_sign;
-			int8_t setpoint_sign = ref > 0 ? 1 : -1;
-							
-			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && integral_sign != setpoint_sign )
+			// if output > saturation limits and integral output and set point have different sign, unclamp				
+			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && integral_sign != error_sign )
 				PID->clamped = KI_ACTIVE;
 		}
 	}
