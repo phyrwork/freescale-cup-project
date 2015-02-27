@@ -43,6 +43,8 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 		PID->value += (error_diff * PID->Kd); //sum derivative
 	}
 	
+	if (PID->Kc != 0.0f) PID->value *= PID->Kc;
+	
 	
 	//operate integral clamp
 	if (PID->antiwindup == ANTI_WINDUP_CLAMP)

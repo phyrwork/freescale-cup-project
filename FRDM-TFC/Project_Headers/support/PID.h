@@ -17,6 +17,7 @@ typedef struct {
 	float Kp;
 	float Ki;
 	float Kd;
+	float Kc;
 	float time;
 	float value;
 	float value_max;
