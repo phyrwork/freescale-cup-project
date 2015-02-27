@@ -11,6 +11,14 @@
 static PID_s PID[NUM_MOTORS];
 MotorTorque_s MotorTorque[NUM_MOTORS];
 
+/* Control properties */
+#define TORQUE_KP 40.0f
+#define TORQUE_KI 40.0f
+#define TORQUE_KD 0.0f
+
+#define TORQUE_PID_GAIN_C 1.0f
+#define TORQUE_PID_GAIN_M 0.1f
+
 void InitMotorTorqueControl()
 {
 	/* Initialise torque control structs */

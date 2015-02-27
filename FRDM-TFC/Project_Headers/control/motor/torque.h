@@ -23,11 +23,6 @@
 #define TORQUE_SPEED_M -0.00018714f
 #define TORQUE_SPEED_C 0.0060841f
 
-/* Control properties */
-#define TORQUE_KP 150.0f
-#define TORQUE_KI 15000.0f
-#define TORQUE_KD 0.0f
-
 /* Torque structs */
 typedef struct {
 	float value;
