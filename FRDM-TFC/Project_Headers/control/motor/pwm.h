@@ -4,7 +4,7 @@
 #include "support/Types.h"
 #include "config.h"
 
-#define MAX_DUTY 0.8
+#define MAX_DUTY 1.0f
 
 typedef struct {
 	volatile uint32_t *fwdCnVReg;
