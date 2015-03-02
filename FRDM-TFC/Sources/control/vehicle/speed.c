@@ -15,11 +15,12 @@
 #define VEHICLE_DECEL_SLIP -0.15f
 
 
-#define VEHICLE_TURN_MOD_LOW 5.0f
-#define VEHICLE_TURN_MOD_HIGH 30.0f
-#define VEHICLE_CORNERING_SPEED_LOW 3.0f
-#define VEHICLE_CORNERING_SPEED_HIGH 4.0f
-#define VEHICLE_STRAIGHT_SPEED 6.0f
+#define VEHICLE_TURN_MOD_LOW 2.5f
+#define VEHICLE_TURN_MOD_HIGH 20.0f
+#define VEHICLE_TURN_MOD_MAX 30.0f
+#define VEHICLE_CORNERING_SPEED_LOW 6.0f
+#define VEHICLE_CORNERING_SPEED_HIGH 8.0f
+#define VEHICLE_STRAIGHT_SPEED 12.0f
 
 #define VSPEED_CONT_REGION(speed) ( 1.0f + (speed * 0.05f) )
 
@@ -138,7 +139,8 @@ float GetVehicleSpeed(float modifier)
 	//VehicleSpeedControl_s * const speed = &VehicleSpeedControl;
 
 	modifier = fabsf(modifier);
-
+	
+	if ( modifier > VEHICLE_TURN_MOD_HIGH ) return VEHICLE_CORNERING_SPEED_LOW;
 	if ( modifier > VEHICLE_TURN_MOD_LOW )
 	{
 		float oscale = VEHICLE_CORNERING_SPEED_HIGH - VEHICLE_CORNERING_SPEED_LOW;

@@ -57,7 +57,7 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 		.data = &LineScanImage0,
 		.deref = 1,
 		.endpoint = &TFTP_LINESCAN0_ENDPOINT,
-		.flim = 30
+		.flim = 4
 	},
 	//[1]
 	{ //TrackPosition
@@ -69,31 +69,31 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	{ //PositioningState
 		.data = &positioningState,
 		.endpoint = &TFTP_POSITIONING_STATE_ENDPOINT,
-		.fauto = 20
+		.fauto = 10
 	},
 	//[3]
 	{ //i_rl
 		.data = &MotorCurrent[REAR_LEFT].value,
 		.endpoint = &TFTP_I_RL_ENDPOINT,
-		.fauto = 200
+		.fauto = 30
 	},
 	//[4]
 	{ //i_rr
 		.data = &MotorCurrent[REAR_RIGHT].value,
 		.endpoint = &TFTP_I_RR_ENDPOINT,
-		.fauto = 200
+		.fauto = 30
 	},
 	//[5]
 	{ //D_rl
 		.data = &MotorPWM[REAR_LEFT].value,
 		.endpoint = &TFTP_D_RL_ENDPOINT,
-		.fauto = 20
+		.fauto = 30
 	},
 	//[6]
 	{ //D_rr
 		.data = &MotorPWM[REAR_RIGHT].value,
 		.endpoint = &TFTP_D_RR_ENDPOINT,
-		.fauto = 20
+		.fauto = 30
 	},
 	//[7]
 	{ //w_rl
@@ -133,21 +133,25 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	},
 	//[13]
 	{ //s_rl
-		.data = &WheelSlipSensors[REAR_LEFT].value,
+		//.data = &WheelSlipSensors[REAR_LEFT].value,
+		.data = &s_rl,
+		.deref = 1,
 		.endpoint = &TFTP_S_RL_ENDPOINT,
-		.fauto = 20
+		.fauto = 30
 	},
 	//[14]
 	{ //s_rr
-		.data = &WheelSlipSensors[REAR_RIGHT].value,
+		//.data = &WheelSlipSensors[REAR_RIGHT].value,
+		.data = &s_rr,
+		.deref = 1,
 		.endpoint = &TFTP_S_RR_ENDPOINT,
-		.fauto = 20
+		.fauto = 30
 	},
 	//[15]
 	{ //TargetLine
 		.data = &TargetLine,
 		.endpoint = &TFTP_TARGET_LINE_ENDPOINT,
-		.flim = 10
+		//.flim = 10
 	},
 	//[16]
 	{ //ServoPosition
@@ -159,37 +163,38 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	{ //T_rl
 		.data = &MotorTorque[REAR_LEFT].value,
 		.endpoint = &TFTP_T_RL_ENDPOINT,
-		.fauto = 20
+		.fauto = 30
 	},
 	//[18]
 	{ //T_rr
 		.data = &MotorTorque[REAR_RIGHT].value,
 		.endpoint = &TFTP_T_RR_ENDPOINT,
-		.fauto = 20
+		.fauto = 30
 	},
 	//[19]
 	{ //T*_rl
 		.data = &MotorTorque[REAR_LEFT].cmd,
 		.endpoint = &TFTP_TREF_RL_ENDPOINT,
-		.fauto = 20
+		.fauto = 30
 	},
 	//[20]
 	{ //T*_rr
 		.data = &MotorTorque[REAR_RIGHT].cmd,
 		.endpoint = &TFTP_TREF_RR_ENDPOINT,
-		.fauto = 20
+		.fauto = 30
 	},
 	//[21]
 	{ //S_v
 		.data = &VehicleSlipSensor.value,
 		.endpoint = &TFTP_S_V_ENDPOINT,
-		.fauto = 20
+		//.fauto = 20
 	},
 	//[22]
 	{ //S*_v
-		.data = &VehicleSlipControl.cmd,
+		//.data = &VehicleSlipControl.cmd,
+		.data = &contrib,
 		.endpoint = &TFTP_SREF_V_ENDPOINT,
-		.fauto = 20
+		.fauto = 30
 	},
 	//[23]
 	{ //S_v
