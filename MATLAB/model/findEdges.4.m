@@ -2,11 +2,7 @@ function edges = findEdges( image, dy_t, ry_t )
 %findEdges Version 3.1:
     
     % SETUP
-    image = double(image);
     dy = derivative(image);
-    dy = filtfilt([0.25,0.25,0.25,0.25],1,dy);
-    %dy = derivative(image);
-    
     edges = [];
     i = 2;
     
