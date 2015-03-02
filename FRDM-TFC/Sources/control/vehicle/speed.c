@@ -23,14 +23,15 @@
 
 #define VSPEED_CONT_REGION(speed) ( 1.0f + (speed * 0.05f) )
 
-#define VSPEED_KP_UNCONT 0.0080f
-#define VSPEED_KI_UNCONT 0.0000f
+#define VSPEED_KP_UNCONT 0.0065f
+#define VSPEED_KI_UNCONT 0.0010f
 #define VSPEED_KD_UNCONT 0.0000f
 
-#define VSPEED_KP_CONT 0.0080f
+#define VSPEED_KP_CONT 0.0012f
 #define VSPEED_KI_CONT 0.0060f
 #define VSPEED_KD_CONT 0.0000f
 
+#define TORQUE_VECTORING_CONST 0.35f
 VehicleSpeedControl_s VehicleSpeedControl;
 PID_s pid;
 
@@ -93,6 +94,7 @@ void _setByVehicleSpeed(float command)
 	if ( fabsf(sdiff) < VSPEED_CONT_REGION(speed->sensor->value) )
 	{
 		//speed in controllable region
+		speed->pid->clamped = KI_ACTIVE;
 		speed->pid->Kp = VSPEED_KP_CONT;
 		speed->pid->Ki = VSPEED_KI_CONT;
 		speed->pid->Kd = VSPEED_KD_CONT;
@@ -100,14 +102,21 @@ void _setByVehicleSpeed(float command)
 	else
 	{
 		//speed in uncontrollable region
+		speed->pid->clamped = KI_CLAMPED;
 		speed->pid->Kp = VSPEED_KP_UNCONT;
 		speed->pid->Ki = VSPEED_KI_UNCONT;
 		speed->pid->Kd = VSPEED_KD_UNCONT;
 	}
 	
 	UpdatePID(speed->pid, command, speed->sensor->value);
-	SetMotorTorque(left, speed->pid->value);
-	SetMotorTorque(right, speed->pid->value);
+	
+	//torque vectoring
+	float lt = speed->pid->value * (1 - ( ( carState.servoPosition / VEHICLE_TURN_MOD_MAX ) * TORQUE_VECTORING_CONST ) );
+	float rt = speed->pid->value * (1 + ( ( carState.servoPosition / VEHICLE_TURN_MOD_MAX ) * TORQUE_VECTORING_CONST ) );
+		
+	
+	SetMotorTorque(left, lt);
+	SetMotorTorque(right, rt);
 }
 
 void SetVehicleSpeed(float command)
