@@ -14,9 +14,6 @@
 #define TIME ( (float)PID_TICKER / (float)SYSTICK_FREQUENCY )
 #define MAX_DT 0.01
 
-#define KI_CLAMPED 1
-#define KI_ACTIVE  0
-
 void UpdatePID(PID_s *PID, float ref, float actual)
 {
 	/* Take reference values */
@@ -59,8 +56,6 @@ void UpdatePID(PID_s *PID, float ref, float actual)
 		}
 		else
 		{
-			// if output > saturation limits and integral output and set point have different sign, unclamp				
-			if ( (PID->value > PID->value_max || PID->value < PID->value_min) && integral_sign != error_sign )
 				PID->clamped = KI_ACTIVE;
 		}
 	}

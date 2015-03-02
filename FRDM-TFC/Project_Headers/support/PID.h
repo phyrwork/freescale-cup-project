@@ -10,6 +10,9 @@
 
 #include <stdint.h>
 
+#define KI_CLAMPED 1
+#define KI_ACTIVE  0
+
 #define ANTI_WINDUP_NONE  0
 #define ANTI_WINDUP_CLAMP 1
 
