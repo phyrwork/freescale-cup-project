@@ -472,7 +472,9 @@ void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
 
 #include "sensors/camera/LineScanCamera.h"
 
+//linescan0
 AdcConfig_s    AdcConfigLinescan0;
+AdcConfig_s    AdcConfigLinescan1;
 
 int8_t Linescan0Callback ()
 {
@@ -481,6 +483,66 @@ int8_t Linescan0Callback ()
         //image capture sequence ongoing...
 
         linescan0.buffer.data[linescan0.buffer.pos++] = AdcBuffer; //store pixel
+
+        AdcConfig_s *config = &AdcConfigLinescan1;      //To-do separate push into push and push_array
+        Sampler_Push(config); //Queue conversion
+        
+        /*
+        TAOS_CLK_LOW;               
+        for(uint8_t j = 0; j < 10; ++j) {}
+        TAOS_CLK_HIGH; //shift in next pixel
+        */
+    }
+    else
+    {
+        //image capture sequence complete
+
+        /*
+        TAOS_CLK_HIGH;                                  
+        for(uint8_t j = 0; j < 10; ++j) {}
+        TAOS_CLK_LOW; //disconnect final pixel from output
+        */
+        
+        //swap the image buffer
+        if(linescan0.buffer.data == &linescan0.data[0][0])
+        {
+
+            linescan0.buffer.data = &linescan0.data[1][0];
+            linescan0.image =       &linescan0.data[0][0];
+        }
+        else
+        {
+            linescan0.buffer.data = &linescan0.data[0][0];
+            linescan0.image =       &linescan0.data[1][0];
+        }
+
+        CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
+        SetTaskRequest(POSITIONING_REQUEST_INDEX);
+
+        //chain
+        AdcConfig_s *config = &AdcConfigLinescan1;
+        Sampler_Push(config);
+    }
+    return 0;
+}
+
+AdcConfig_s AdcConfigLinescan0 = { //linescan0 ADC config
+    /* channel = */  6,
+    /* mux = */      MUX_B,
+    /* *data = */    &AdcBuffer,
+    /* callback = */ &Linescan0Callback
+};
+
+//linescan1
+//AdcConfig_s    AdcConfigLinescan1;
+
+int8_t Linescan1Callback ()
+{
+    if (linescan1.buffer.pos < 128)
+    {
+        //image capture sequence ongoing...
+
+        linescan1.buffer.data[linescan1.buffer.pos++] = AdcBuffer; //store pixel
 
         AdcConfig_s *config = &AdcConfigLinescan0;      //To-do separate push into push and push_array
         Sampler_Push(config); //Queue conversion
@@ -498,31 +560,30 @@ int8_t Linescan0Callback ()
         TAOS_CLK_LOW; //disconnect final pixel from output
         
         //swap the image buffer
-        if(linescan0.buffer.data == &linescan0.data[0][0])
+        if(linescan1.buffer.data == &linescan1.data[0][0])
         {
 
-            linescan0.buffer.data = &linescan0.data[1][0];
-            linescan0.image =       &linescan0.data[0][0];
+            linescan1.buffer.data = &linescan1.data[1][0];
+            linescan1.image =       &linescan1.data[0][0];
         }
         else
         {
-            linescan0.buffer.data = &linescan0.data[0][0];
-            linescan0.image =       &linescan0.data[1][0];
+            linescan1.buffer.data = &linescan1.data[0][0];
+            linescan1.image =       &linescan1.data[1][0];
         }
 
-        CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
-        SetTaskRequest(POSITIONING_REQUEST_INDEX);
+        CollectorRequest(LINESCAN1_COLLECTOR_INDEX);
+        //SetTaskRequest(POSITIONING_REQUEST_INDEX);
     }
     return 0;
 }
 
-AdcConfig_s AdcConfigLinescan0 = { //linescan0 ADC config
-    /* channel = */  6,
+AdcConfig_s AdcConfigLinescan1 = { //linescan1 ADC config
+    /* channel = */  7,
     /* mux = */      MUX_B,
     /* *data = */    &AdcBuffer,
-    /* callback = */ &Linescan0Callback
+    /* callback = */ &Linescan1Callback
 };
-
 
 ///////////////////////////////////////
 // Potentiometer-related definitions //
@@ -741,6 +802,8 @@ void PIT_IRQHandler()
 
 		//Begin image capture sequence
 		linescan0.buffer.pos = 0;
+        linescan1.buffer.pos = 0;
+
 		TAOS_SI_HIGH;                      //rising SI holds linescan image at current state
 		for(uint8_t j = 0; j < 10; ++j) {}
 		TAOS_CLK_HIGH;				       //rising CLK shifts in first pixel
