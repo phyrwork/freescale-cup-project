@@ -431,11 +431,9 @@ void TFC_InitADCs()
 	PIT_MCR |= PIT_MCR_FRZ_MASK; //Pause PIT0 when in debug mode.
 	PIT_MCR &= ~PIT_MCR_MDIS_MASK; //Enable PIT module (Reset = 1 - disabled).
 
-  Sampler_Init();
+    Sampler_Init();
 
-  TFC_SetLineScanExposureTime(TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS);
-	
-  /* Configure and enable interrupts */
+    /* Configure and enable interrupts */
 	set_irq_priority (INT_PIT - 16, 0);
 	set_irq_priority (INT_ADC0 - 16, 1);
 	enable_irq(INT_PIT-16);
@@ -473,116 +471,51 @@ void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
 #include "sensors/camera/LineScanCamera.h"
 
 //linescan0
-AdcConfig_s    AdcConfigLinescan0;
-AdcConfig_s    AdcConfigLinescan1;
+AdcConfig_s AdcConfigLinescan[2];
 
 int8_t Linescan0Callback ()
 {
-    if (linescan0.buffer.pos < 128)
+    if (linescan[0].buffer.pos < 128) //image capture sequence ongoing...
     {
-        //image capture sequence ongoing...
-
-        linescan0.buffer.data[linescan0.buffer.pos++] = AdcBuffer; //store pixel
-
-        AdcConfig_s *config = &AdcConfigLinescan1;      //To-do separate push into push and push_array
-        Sampler_Push(config); //Queue conversion
-        
-        /*
-        TAOS_CLK_LOW;               
-        for(uint8_t j = 0; j < 10; ++j) {}
-        TAOS_CLK_HIGH; //shift in next pixel
-        */
+        LinescanProcess(&linescan[0], AdcBuffer);
+        Sampler_Push(&AdcConfigLinescan[0]); //Queue conversion
     }
-    else
+    else //image capture sequence complete
     {
-        //image capture sequence complete
-
-        /*
-        TAOS_CLK_HIGH;                                  
-        for(uint8_t j = 0; j < 10; ++j) {}
-        TAOS_CLK_LOW; //disconnect final pixel from output
-        */
-        
-        //swap the image buffer
-        if(linescan0.buffer.data == &linescan0.data[0][0])
-        {
-
-            linescan0.buffer.data = &linescan0.data[1][0];
-            linescan0.image =       &linescan0.data[0][0];
-        }
-        else
-        {
-            linescan0.buffer.data = &linescan0.data[0][0];
-            linescan0.image =       &linescan0.data[1][0];
-        }
-
         CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
         SetTaskRequest(POSITIONING_REQUEST_INDEX);
-
-        //chain
-        AdcConfig_s *config = &AdcConfigLinescan1;
-        Sampler_Push(config);
     }
     return 0;
 }
 
-AdcConfig_s AdcConfigLinescan0 = { //linescan0 ADC config
-    /* channel = */  6,
-    /* mux = */      MUX_B,
-    /* *data = */    &AdcBuffer,
-    /* callback = */ &Linescan0Callback
-};
-
-//linescan1
-//AdcConfig_s    AdcConfigLinescan1;
-
 int8_t Linescan1Callback ()
 {
-    if (linescan1.buffer.pos < 128)
+    if (linescan[1].buffer.pos < 128) //image capture sequence ongoing...
     {
-        //image capture sequence ongoing...
-
-        linescan1.buffer.data[linescan1.buffer.pos++] = AdcBuffer; //store pixel
-
-        AdcConfig_s *config = &AdcConfigLinescan0;      //To-do separate push into push and push_array
-        Sampler_Push(config); //Queue conversion
-        
-        TAOS_CLK_LOW;               
-        for(uint8_t j = 0; j < 10; ++j) {}
-        TAOS_CLK_HIGH; //shift in next pixel
+        LinescanProcess(&linescan[1], AdcBuffer);
+        Sampler_Push(&AdcConfigLinescan[1]); //Queue conversion
     }
-    else
+    else //image capture sequence complete
     {
-        //image capture sequence complete
-
-        TAOS_CLK_HIGH;                                  
-        for(uint8_t j = 0; j < 10; ++j) {}
-        TAOS_CLK_LOW; //disconnect final pixel from output
-        
-        //swap the image buffer
-        if(linescan1.buffer.data == &linescan1.data[0][0])
-        {
-
-            linescan1.buffer.data = &linescan1.data[1][0];
-            linescan1.image =       &linescan1.data[0][0];
-        }
-        else
-        {
-            linescan1.buffer.data = &linescan1.data[0][0];
-            linescan1.image =       &linescan1.data[1][0];
-        }
-
         CollectorRequest(LINESCAN1_COLLECTOR_INDEX);
         //SetTaskRequest(POSITIONING_REQUEST_INDEX);
     }
     return 0;
 }
 
-AdcConfig_s AdcConfigLinescan1 = { //linescan1 ADC config
-    /* channel = */  7,
-    /* mux = */      MUX_B,
-    /* *data = */    &AdcBuffer,
-    /* callback = */ &Linescan1Callback
+AdcConfig_s AdcConfigLinescan[2] = { //linescan0 ADC config
+    {
+        /* channel = */  6,
+        /* mux = */      MUX_B,
+        /* *data = */    &AdcBuffer,
+        /* callback = */ &Linescan0Callback
+    },
+    {
+        /* channel = */  7,
+        /* mux = */      MUX_B,
+        /* *data = */    &AdcBuffer,
+        /* callback = */ &Linescan1Callback
+    }
 };
 
 ///////////////////////////////////////
@@ -800,18 +733,38 @@ void PIT_IRQHandler()
 
         PIT_TFLG0 = PIT_TFLG_TIF_MASK; //clear the IRQ flag
 
-		//Begin image capture sequence
-		linescan0.buffer.pos = 0;
-        linescan1.buffer.pos = 0;
+        //initiate pending captures
+        for (uint32_t i = 0; i < 2; ++i)
+        {
 
-		TAOS_SI_HIGH;                      //rising SI holds linescan image at current state
-		for(uint8_t j = 0; j < 10; ++j) {}
-		TAOS_CLK_HIGH;				       //rising CLK shifts in first pixel
-		for(uint8_t j = 0; j < 10; ++j) {}
-		TAOS_SI_LOW;                       //SI needs to fall at some point before next capture
+            if (UPTIME >= linescan[i].exposure.start + linescan[i].exposure.time)
+            {
+                //exposure is done, begin capture
+                linescan->buffer.pos = 0;
+                linescan->exposure.start = UPTIME;
 
-		AdcConfig_s *config = &AdcConfigLinescan0;      //To-do separate push into push and push_array
-		Sampler_Push(config); //Queue conversion
+                LINESCAN_SIGNAL_HIGH(linescan[i].signal->si);
+                for(uint8_t j = 0; j < 10; ++j) {};
+                LINESCAN_SIGNAL_HIGH(linescan[i].signal->clk);
+                for(uint8_t j = 0; j < 10; ++j) {};
+                LINESCAN_SIGNAL_HIGH(linescan[i].signal->si);
+
+                Sampler_Push(&AdcConfigLinescan[i]);
+            }
+        }
+
+        //schedule next PIT0 interrupt
+        uint32_t earliest = linescan[0].exposure.start + linescan[0].exposure.time;
+        for (uint32_t i = 1; i < 2; ++i) //for each linescan camera
+        {
+            uint32_t next = linescan[i].exposure.start + linescan[i].exposure.time;
+            if (next < earliest && next > UPTIME) earliest = next;
+        }
+
+        //convert systicks into PIT ticks and set LDVAL0
+        PIT_LDVAL0 =  (PERIPHERAL_BUS_CLOCK / SYSTICK_FREQUENCY) * (earliest - UPTIME);
+        PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
+        PIT_TCTRL0 |=  PIT_TCTRL_TEN_MASK; //restart timer to load new value
     }
 
 

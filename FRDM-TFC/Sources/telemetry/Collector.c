@@ -54,16 +54,16 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 {
 	//[0]
 	{ //linescan0
-		.data = &linescan0.image,
+		.data = &linescan[0].image,
 		.deref = 1,
 		.endpoint = &TFTP_LINESCAN0_ENDPOINT,
 		.flim = 4
 	},
 	//[1]
-	{ //linescan0
-		.data = &linescan0.image,
+	{ //linescan1
+		.data = &linescan[1].image,
 		.deref = 1,
-		.endpoint = &TFTP_LINESCAN0_ENDPOINT,
+		.endpoint = &TFTP_LINESCAN1_ENDPOINT,
 		.flim = 4
 	},
 	//[2]
