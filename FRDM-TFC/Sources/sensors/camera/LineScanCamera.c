@@ -1,13 +1,15 @@
-#include "sensors/camera/LineScanCamera.h"
+#include "sensors/camera/LineScanCamera.h" 
 #include "devices/MKL25Z4.h"
 #include "devices/CrystalClock.h"
 
-volatile uint16_t  *LineScanImage0WorkingBuffer;
-volatile uint16_t  *LineScanImage0;
-volatile uint16_t  LineScanImage0Buffer[2][128];
-volatile uint8_t  LineScanWorkingBuffer;
-
-volatile uint8_t LineScanImageReady = 0;
+LineScan_s linescan0 = {
+	.image =  &linescan0.data[0][0],
+	.buffer.data = &linescan0.data[1][0]
+};
+LineScan_s linescan1 = {
+	.image =  &linescan1.data[0][0],
+	.buffer.data = &linescan0.data[1][0]
+};
 
 void TFC_InitLineScanCamera()
 {
@@ -24,12 +26,6 @@ void TFC_InitLineScanCamera()
             
 	TAOS_CLK_LOW;
 	TAOS_SI_LOW;
-
-	LineScanWorkingBuffer = 0;
-	
-	LineScanImage0WorkingBuffer = &LineScanImage0Buffer[0][0];
-	
-	LineScanImage0 = &LineScanImage0Buffer[1][0];
 }
 
 

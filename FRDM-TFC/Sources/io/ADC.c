@@ -451,6 +451,7 @@ void TFC_InitADCs()
 #define UPTIME TFC_Ticker[UPTIME_TICKER]
 
 uint16_t AdcBuffer;
+rbuf_voidptr_s queue;
 
 void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
 {
@@ -462,6 +463,8 @@ void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
     ADC0_SC1A  = channel |          //select channel
                  ADC_SC1_AIEN_MASK; //initiate conversion
 }
+
+
 //////////////////////////////////
 // Linescan-related definitions //
 // and ADC configuration        //
@@ -469,24 +472,15 @@ void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
 
 #include "sensors/camera/LineScanCamera.h"
 
-typedef struct {
-    //uint16_t __data[2][128];
-    //uint16_t  *data;
-    uint8_t      pixel;
-    AdcConfig_s *AdcConfig;
-} LinescanImage;
-
-LinescanImage  linescan0;
 AdcConfig_s    AdcConfigLinescan0;
-rbuf_voidptr_s queue;
 
 int8_t Linescan0Callback ()
 {
-    if (linescan0.pixel < 128)
+    if (linescan0.buffer.pos < 128)
     {
         //image capture sequence ongoing...
 
-        LineScanImage0WorkingBuffer[linescan0.pixel++] = AdcBuffer; //store pixel
+        linescan0.buffer.data[linescan0.buffer.pos++] = AdcBuffer; //store pixel
 
         AdcConfig_s *config = &AdcConfigLinescan0;      //To-do separate push into push and push_array
         Sampler_Push(config); //Queue conversion
@@ -504,17 +498,16 @@ int8_t Linescan0Callback ()
         TAOS_CLK_LOW; //disconnect final pixel from output
         
         //swap the image buffer
-        if(LineScanWorkingBuffer == 0)
+        if(linescan0.buffer.data == &linescan0.data[0][0])
         {
-            LineScanWorkingBuffer = 1;
-            LineScanImage0WorkingBuffer = &LineScanImage0Buffer[1][0];
-            LineScanImage0 = &LineScanImage0Buffer[0][0];
+
+            linescan0.buffer.data = &linescan0.data[1][0];
+            linescan0.image =       &linescan0.data[0][0];
         }
         else
         {
-            LineScanWorkingBuffer = 0;
-            LineScanImage0WorkingBuffer = &LineScanImage0Buffer[0][0];
-            LineScanImage0 = &LineScanImage0Buffer[1][0];
+            linescan0.buffer.data = &linescan0.data[0][0];
+            linescan0.image =       &linescan0.data[1][0];
         }
 
         CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
@@ -528,11 +521,6 @@ AdcConfig_s AdcConfigLinescan0 = { //linescan0 ADC config
     /* mux = */      MUX_B,
     /* *data = */    &AdcBuffer,
     /* callback = */ &Linescan0Callback
-};
-
-LinescanImage linescan0 = { //linescan0 struct
-	/* pixel = */ 0,
-    /* AdcConfig = */ &AdcConfigLinescan0
 };
 
 
@@ -752,7 +740,7 @@ void PIT_IRQHandler()
         PIT_TFLG0 = PIT_TFLG_TIF_MASK; //clear the IRQ flag
 
 		//Begin image capture sequence
-		linescan0.pixel = 0;
+		linescan0.buffer.pos = 0;
 		TAOS_SI_HIGH;                      //rising SI holds linescan image at current state
 		for(uint8_t j = 0; j < 10; ++j) {}
 		TAOS_CLK_HIGH;				       //rising CLK shifts in first pixel

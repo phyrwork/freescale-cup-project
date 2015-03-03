@@ -210,7 +210,7 @@ int main(void)
 				
 				//dead-pixel workaround
 				uint16_t y[128];
-				for (uint8_t i = 0; i < 128; ++i) y[i] = LineScanImage0[i];
+				for (uint8_t i = 0; i < 128; ++i) y[i] = linescan0.image[i];
 				y[98] = (y[99] + y[97])/2;
 				//end
 			
@@ -231,7 +231,7 @@ int main(void)
 				}
 
 				//adjust camera exposure
-				totalIntensity = getTotalIntensity(LineScanImage0);
+				totalIntensity = getTotalIntensity(linescan0.image);
 				TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
 			}
 			
