@@ -28,7 +28,9 @@
 #define TRACK_RY_T                450
 #define MAX_LOST_LINE_DURATION    10000
 #define LOST_LINE_RESET_DURATION  15000
-#define MIN_CERTAINTY             0.25f
+#define MIN_CERT_ABS 0.3f
+#define MIN_CERT_REL 0.60f
+#define MIN_CERT_NEW 0.25f
 
 //weightEdges
 #define EDGE_DPOS_SD   15

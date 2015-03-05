@@ -52,7 +52,7 @@ void findPosition(int16_t *dy, carState_s* carState)
 	///////////////////////////////////
 
 	Line_s *best = findTrack(lines, numFeatures, TRACK_TYPE_ABS);
-	if (best->match > MIN_CERTAINTY)
+	if (best->match > MIN_CERT_ABS)
 	{
 		//Found an absolute match - i.e. a complete line.
 
@@ -77,7 +77,7 @@ void findPosition(int16_t *dy, carState_s* carState)
 	////////////////////////////////////
 	
 	best = findTrack(lines, numFeatures, TRACK_TYPE_REL);
-	if (best->match > MIN_CERTAINTY)
+	if (best->match > MIN_CERT_REL)
 	{
 		//Found a relative match - i.e. a partial line similar to the target line
 
@@ -128,7 +128,7 @@ void findPosition(int16_t *dy, carState_s* carState)
 	/////////////////////////////////////////////////////////////
 	
 	best = findTrack(lines, numFeatures, TRACK_TYPE_NEW);
-	if (best->match > MIN_CERTAINTY)
+	if (best->match > MIN_CERT_NEW)
 	{
 		//Found an absolute match - i.e. a complete line.
 

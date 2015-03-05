@@ -133,17 +133,17 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	},
 	//[13]
 	{ //s_rl
-		//.data = &WheelSlipSensors[REAR_LEFT].value,
-		.data = &s_rl,
-		.deref = 1,
+		.data = &WheelSlipSensors[REAR_LEFT].value,
+		//.data = &s_rl,
+		//.deref = 1,
 		.endpoint = &TFTP_S_RL_ENDPOINT,
 		.fauto = 30
 	},
 	//[14]
 	{ //s_rr
-		//.data = &WheelSlipSensors[REAR_RIGHT].value,
-		.data = &s_rr,
-		.deref = 1,
+		.data = &WheelSlipSensors[REAR_RIGHT].value,
+		//.data = &s_rr,
+		//.deref = 1,
 		.endpoint = &TFTP_S_RR_ENDPOINT,
 		.fauto = 30
 	},
@@ -191,8 +191,8 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	},
 	//[22]
 	{ //S*_v
-		//.data = &VehicleSlipControl.cmd,
-		.data = &contrib,
+		.data = &VehicleSlipControl.cmd,
+		//.data = &contrib,
 		.endpoint = &TFTP_SREF_V_ENDPOINT,
 		.fauto = 30
 	},
