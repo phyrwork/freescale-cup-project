@@ -427,15 +427,12 @@ void TFC_InitADCs()
    * Configure PIT0
    */
 	SIM_SCGC6 |= SIM_SCGC6_PIT_MASK; //Enable clock to the PIT module.
-	PIT_TCTRL0 = PIT_TCTRL_TEN_MASK | PIT_TCTRL_TIE_MASK; //Enable PIT channel 0; enable interrupts.
 	PIT_MCR |= PIT_MCR_FRZ_MASK; //Pause PIT0 when in debug mode.
 	PIT_MCR &= ~PIT_MCR_MDIS_MASK; //Enable PIT module (Reset = 1 - disabled).
 
-  Sampler_Init();
+    Sampler_Init();
 
-  TFC_SetLineScanExposureTime(TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS);
-	
-  /* Configure and enable interrupts */
+    /* Configure and enable interrupts */
 	set_irq_priority (INT_PIT - 16, 0);
 	set_irq_priority (INT_ADC0 - 16, 1);
 	enable_irq(INT_PIT-16);
@@ -451,6 +448,7 @@ void TFC_InitADCs()
 #define UPTIME TFC_Ticker[UPTIME_TICKER]
 
 uint16_t AdcBuffer;
+rbuf_voidptr_s queue;
 
 void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
 {
@@ -462,6 +460,8 @@ void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
     ADC0_SC1A  = channel |          //select channel
                  ADC_SC1_AIEN_MASK; //initiate conversion
 }
+
+
 //////////////////////////////////
 // Linescan-related definitions //
 // and ADC configuration        //
@@ -469,72 +469,53 @@ void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
 
 #include "sensors/camera/LineScanCamera.h"
 
-typedef struct {
-    //uint16_t __data[2][128];
-    //uint16_t  *data;
-    uint8_t      pixel;
-    AdcConfig_s *AdcConfig;
-} LinescanImage;
-
-LinescanImage  linescan0;
-AdcConfig_s    AdcConfigLinescan0;
-rbuf_voidptr_s queue;
+//linescan0
+AdcConfig_s AdcConfigLinescan[2];
 
 int8_t Linescan0Callback ()
 {
-    if (linescan0.pixel < 128)
+    LinescanProcess(&linescan[0], AdcBuffer);
+    if (linescan[0].buffer.pos != 0) //image capture sequence ongoing...
     {
-        //image capture sequence ongoing...
-
-        LineScanImage0WorkingBuffer[linescan0.pixel++] = AdcBuffer; //store pixel
-
-        AdcConfig_s *config = &AdcConfigLinescan0;      //To-do separate push into push and push_array
-        Sampler_Push(config); //Queue conversion
-        
-        TAOS_CLK_LOW;               
-        for(uint8_t j = 0; j < 10; ++j) {}
-        TAOS_CLK_HIGH; //shift in next pixel
+        Sampler_Push(&AdcConfigLinescan[0]); //Queue conversion
     }
-    else
+    else //image capture sequence complete
     {
-        //image capture sequence complete
-
-        TAOS_CLK_HIGH;                                  
-        for(uint8_t j = 0; j < 10; ++j) {}
-        TAOS_CLK_LOW; //disconnect final pixel from output
-        
-        //swap the image buffer
-        if(LineScanWorkingBuffer == 0)
-        {
-            LineScanWorkingBuffer = 1;
-            LineScanImage0WorkingBuffer = &LineScanImage0Buffer[1][0];
-            LineScanImage0 = &LineScanImage0Buffer[0][0];
-        }
-        else
-        {
-            LineScanWorkingBuffer = 0;
-            LineScanImage0WorkingBuffer = &LineScanImage0Buffer[0][0];
-            LineScanImage0 = &LineScanImage0Buffer[1][0];
-        }
-
         CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
         SetTaskRequest(POSITIONING_REQUEST_INDEX);
     }
     return 0;
 }
 
-AdcConfig_s AdcConfigLinescan0 = { //linescan0 ADC config
-    /* channel = */  6,
-    /* mux = */      MUX_B,
-    /* *data = */    &AdcBuffer,
-    /* callback = */ &Linescan0Callback
-};
+int8_t Linescan1Callback ()
+{
+	LinescanProcess(&linescan[1], AdcBuffer);
+    if (linescan[1].buffer.pos != 0) //image capture sequence ongoing...
+    { 
+        Sampler_Push(&AdcConfigLinescan[1]); //Queue conversion
+    }
+    else //image capture sequence complete
+    {
+        CollectorRequest(LINESCAN1_COLLECTOR_INDEX);
+        //SetTaskRequest(POSITIONING_REQUEST_INDEX);
+    }
+    return 0;
+}
 
-LinescanImage linescan0 = { //linescan0 struct
-	/* pixel = */ 0,
-    /* AdcConfig = */ &AdcConfigLinescan0
+AdcConfig_s AdcConfigLinescan[2] = { //linescan0 ADC config
+    {
+        /* channel = */  6,
+        /* mux = */      MUX_B,
+        /* *data = */    &AdcBuffer,
+        /* callback = */ &Linescan0Callback
+    },
+    {
+        /* channel = */  7,
+        /* mux = */      MUX_B,
+        /* *data = */    &AdcBuffer,
+        /* callback = */ &Linescan1Callback
+    }
 };
-
 
 ///////////////////////////////////////
 // Potentiometer-related definitions //
@@ -750,17 +731,42 @@ void PIT_IRQHandler()
     if (PIT_TFLG0) {
 
         PIT_TFLG0 = PIT_TFLG_TIF_MASK; //clear the IRQ flag
+      
+		#define NUM_CAMERAS 2
 
-		//Begin image capture sequence
-		linescan0.pixel = 0;
-		TAOS_SI_HIGH;                      //rising SI holds linescan image at current state
-		for(uint8_t j = 0; j < 10; ++j) {}
-		TAOS_CLK_HIGH;				       //rising CLK shifts in first pixel
-		for(uint8_t j = 0; j < 10; ++j) {}
-		TAOS_SI_LOW;                       //SI needs to fall at some point before next capture
+        //initiate pending captures
+        for (uint32_t i = 0; i < NUM_CAMERAS; ++i)
+        {
 
-		AdcConfig_s *config = &AdcConfigLinescan0;      //To-do separate push into push and push_array
-		Sampler_Push(config); //Queue conversion
+            if (linescan[i].buffer.pos == 0 && UPTIME >= linescan[i].exposure.start + linescan[i].exposure.time)
+            {
+                //exposure is done, begin capture
+                linescan[i].exposure.start = UPTIME;
+
+                LINESCAN_SIGNAL_HIGH(linescan[i].signal->si);
+                for(uint8_t j = 0; j < 10; ++j) {};
+                LINESCAN_SIGNAL_HIGH(linescan[i].signal->clk);
+                for(uint8_t j = 0; j < 10; ++j) {};
+                LINESCAN_SIGNAL_LOW(linescan[i].signal->si);
+
+                Sampler_Push(&AdcConfigLinescan[i]);
+            }
+        }
+
+        //schedule next PIT0 interrupt
+        uint32_t earliest = 0xFFFFFFFF;
+        for (uint32_t i = 0; i < NUM_CAMERAS; ++i) //for each linescan camera
+        {
+            uint32_t next = linescan[i].exposure.start + linescan[i].exposure.time;
+            if (next < earliest && next > UPTIME) earliest = next;
+        }
+
+        //convert systicks into PIT ticks and set LDVAL0
+        if (earliest != 0xFFFFFFFF) {
+			PIT_LDVAL0 =  (PERIPHERAL_BUS_CLOCK / SYSTICK_FREQUENCY) * (earliest - UPTIME);
+			PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
+			PIT_TCTRL0 |=  PIT_TCTRL_TEN_MASK; //restart timer to load new value
+        }
     }
 
 

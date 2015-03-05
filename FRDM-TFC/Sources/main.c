@@ -146,11 +146,11 @@ void TFC_Init(carState_s* carState)
 	TFC_InitClock();
 	TFC_InitSysTick();
 	TFC_InitGPIO();
-	TFC_InitServos();
-	TFC_InitLineScanCamera();
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
 	TaskRequest_Init();
 	TFC_InitADCs();
+	TFC_InitServos();
+	TFC_InitLineScanCamera();
 	UART0_Init();
 	DMA0_Init();
 	InitMotorPWMControl();
@@ -210,7 +210,7 @@ int main(void)
 				
 				//dead-pixel workaround
 				uint16_t y[128];
-				for (uint8_t i = 0; i < 128; ++i) y[i] = LineScanImage0[i];
+				for (uint8_t i = 0; i < 128; ++i) y[i] = linescan[0].image[i];
 				y[98] = (y[99] + y[97])/2;
 				//end
 			
@@ -231,8 +231,8 @@ int main(void)
 				}
 
 				//adjust camera exposure
-				totalIntensity = getTotalIntensity(LineScanImage0);
-				TFC_SetLineScanExposureTime(calculateNewExposure(totalIntensity, TARGET_TOTAL_INTENSITY));
+				linescan[0].exposure.time = calculateNewExposure(&linescan[0], TARGET_TOTAL_INTENSITY);
+				linescan[1].exposure.time = calculateNewExposure(&linescan[1], TARGET_TOTAL_INTENSITY);
 			}
 			
 			//update steering
