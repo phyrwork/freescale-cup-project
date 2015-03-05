@@ -1,4 +1,4 @@
-function gui = VisionCurrentLayout( gui, fig )
+function gui = VisionSteeringLayout( gui, fig )
 %VisionCurrentLayout Load a simple GUI window showing car vision and motor
 %load current.
     
