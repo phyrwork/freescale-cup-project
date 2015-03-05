@@ -33,13 +33,19 @@ LineScan_s linescan[2] = {
 	{ //positioning
 		.image =  &linescan[0].data[0][0],
 		.buffer.data = &linescan[0].data[1][0],
-		.signal = &shield
+		.signal = &shield,
+		.exposure = {
+				.time = ((float)TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS / 1000000.0f) * SYSTICK_FREQUENCY
+		}
 	},
 	//[1]
 	{ //lookahead
 		.image =  &linescan[1].data[0][0],
 		.buffer.data = &linescan[1].data[1][0],
-		.signal = &breakout
+		.signal = &breakout,
+		.exposure = {
+				.time = ((float)TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS / 1000000.0f) * SYSTICK_FREQUENCY
+		}
 	}
 };
 
@@ -69,6 +75,9 @@ void TFC_InitLineScanCamera()
 	LINESCAN_SIGNAL_LOW(shield.si);
 	LINESCAN_SIGNAL_LOW(breakout.clk);
 	LINESCAN_SIGNAL_LOW(breakout.si);
+	
+	PIT_LDVAL0 = ((float)TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS / 1000000.0f) * PERIPHERAL_BUS_CLOCK;
+	PIT_TCTRL0 = PIT_TCTRL_TEN_MASK | PIT_TCTRL_TIE_MASK; //Enable PIT channel 0; enable interrupts.
 }
 
 int8_t LinescanProcess (LineScan_s *linescan, uint16_t data)
@@ -102,6 +111,8 @@ int8_t LinescanProcess (LineScan_s *linescan, uint16_t data)
             linescan->buffer.data = &linescan->data[0][0];
             linescan->image =       &linescan->data[1][0];
         }
+        
+        linescan->buffer.pos = 0;
     }
     return 0;
 }

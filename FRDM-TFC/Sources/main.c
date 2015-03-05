@@ -146,11 +146,11 @@ void TFC_Init(carState_s* carState)
 	TFC_InitClock();
 	TFC_InitSysTick();
 	TFC_InitGPIO();
-	TFC_InitServos();
-	TFC_InitLineScanCamera();
 	InitCurrentSensors(); //Must be initialized before ADC or illegal memory access will occur
 	TaskRequest_Init();
 	TFC_InitADCs();
+	TFC_InitServos();
+	TFC_InitLineScanCamera();
 	UART0_Init();
 	DMA0_Init();
 	InitMotorPWMControl();
@@ -232,6 +232,7 @@ int main(void)
 
 				//adjust camera exposure
 				linescan[0].exposure.time = calculateNewExposure(&linescan[0], TARGET_TOTAL_INTENSITY);
+				linescan[1].exposure.time = calculateNewExposure(&linescan[1], TARGET_TOTAL_INTENSITY);
 			}
 			
 			//update steering

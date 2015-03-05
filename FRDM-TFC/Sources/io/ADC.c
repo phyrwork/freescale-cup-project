@@ -427,7 +427,6 @@ void TFC_InitADCs()
    * Configure PIT0
    */
 	SIM_SCGC6 |= SIM_SCGC6_PIT_MASK; //Enable clock to the PIT module.
-	PIT_TCTRL0 = PIT_TCTRL_TEN_MASK | PIT_TCTRL_TIE_MASK; //Enable PIT channel 0; enable interrupts.
 	PIT_MCR |= PIT_MCR_FRZ_MASK; //Pause PIT0 when in debug mode.
 	PIT_MCR &= ~PIT_MCR_MDIS_MASK; //Enable PIT module (Reset = 1 - disabled).
 
@@ -475,9 +474,9 @@ AdcConfig_s AdcConfigLinescan[2];
 
 int8_t Linescan0Callback ()
 {
-    if (linescan[0].buffer.pos < 128) //image capture sequence ongoing...
+    LinescanProcess(&linescan[0], AdcBuffer);
+    if (linescan[0].buffer.pos != 0) //image capture sequence ongoing...
     {
-        LinescanProcess(&linescan[0], AdcBuffer);
         Sampler_Push(&AdcConfigLinescan[0]); //Queue conversion
     }
     else //image capture sequence complete
@@ -490,9 +489,9 @@ int8_t Linescan0Callback ()
 
 int8_t Linescan1Callback ()
 {
-    if (linescan[1].buffer.pos < 128) //image capture sequence ongoing...
-    {
-        LinescanProcess(&linescan[1], AdcBuffer);
+	LinescanProcess(&linescan[1], AdcBuffer);
+    if (linescan[1].buffer.pos != 0) //image capture sequence ongoing...
+    { 
         Sampler_Push(&AdcConfigLinescan[1]); //Queue conversion
     }
     else //image capture sequence complete
@@ -732,39 +731,42 @@ void PIT_IRQHandler()
     if (PIT_TFLG0) {
 
         PIT_TFLG0 = PIT_TFLG_TIF_MASK; //clear the IRQ flag
+      
+		#define NUM_CAMERAS 2
 
         //initiate pending captures
-        for (uint32_t i = 0; i < 2; ++i)
+        for (uint32_t i = 0; i < NUM_CAMERAS; ++i)
         {
 
-            if (UPTIME >= linescan[i].exposure.start + linescan[i].exposure.time)
+            if (linescan[i].buffer.pos == 0 && UPTIME >= linescan[i].exposure.start + linescan[i].exposure.time)
             {
                 //exposure is done, begin capture
-                linescan->buffer.pos = 0;
-                linescan->exposure.start = UPTIME;
+                linescan[i].exposure.start = UPTIME;
 
                 LINESCAN_SIGNAL_HIGH(linescan[i].signal->si);
                 for(uint8_t j = 0; j < 10; ++j) {};
                 LINESCAN_SIGNAL_HIGH(linescan[i].signal->clk);
                 for(uint8_t j = 0; j < 10; ++j) {};
-                LINESCAN_SIGNAL_HIGH(linescan[i].signal->si);
+                LINESCAN_SIGNAL_LOW(linescan[i].signal->si);
 
                 Sampler_Push(&AdcConfigLinescan[i]);
             }
         }
 
         //schedule next PIT0 interrupt
-        uint32_t earliest = linescan[0].exposure.start + linescan[0].exposure.time;
-        for (uint32_t i = 1; i < 2; ++i) //for each linescan camera
+        uint32_t earliest = 0xFFFFFFFF;
+        for (uint32_t i = 0; i < NUM_CAMERAS; ++i) //for each linescan camera
         {
             uint32_t next = linescan[i].exposure.start + linescan[i].exposure.time;
             if (next < earliest && next > UPTIME) earliest = next;
         }
 
         //convert systicks into PIT ticks and set LDVAL0
-        PIT_LDVAL0 =  (PERIPHERAL_BUS_CLOCK / SYSTICK_FREQUENCY) * (earliest - UPTIME);
-        PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
-        PIT_TCTRL0 |=  PIT_TCTRL_TEN_MASK; //restart timer to load new value
+        if (earliest != 0xFFFFFFFF) {
+			PIT_LDVAL0 =  (PERIPHERAL_BUS_CLOCK / SYSTICK_FREQUENCY) * (earliest - UPTIME);
+			PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
+			PIT_TCTRL0 |=  PIT_TCTRL_TEN_MASK; //restart timer to load new value
+        }
     }
 
 

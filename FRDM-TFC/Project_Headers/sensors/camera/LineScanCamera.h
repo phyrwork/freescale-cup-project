@@ -33,7 +33,7 @@ typedef struct
 		uint32_t time;  //most recent commanded exposure time
 		uint32_t start; //time of start of current exposure
 	} exposure;
-	LineScanControl_s * const signal;
+	LineScanControl_s const * const signal;
 } LineScan_s;
 
 void TFC_InitLineScanCamera();
