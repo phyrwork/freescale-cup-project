@@ -197,6 +197,7 @@ void UART0_Init()
 	//Enable receive interrupts
     UART0_C2 |= UART_C2_RIE_MASK;
     enable_irq(INT_UART0-16);
+    set_irq_priority (INT_ADC0 - 16, 3);
 }
 
 void UART0_ConfigureDataRate (int sysclk, int baud)
