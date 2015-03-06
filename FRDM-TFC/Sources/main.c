@@ -4,6 +4,7 @@
 #include "control/wheel/speed.h"
 #include "control/vehicle/speed.h"
 #include "devices/TFC_SHIELD.h"
+#include "support/filtfilt4ma.h"
 
 ///////////////////////////////////////
 // Main Routine Task Request Handler //
@@ -207,18 +208,12 @@ int main(void)
 			//Positioning update tasks
 			if ( PollTaskPending(POSITIONING_REQUEST_INDEX) )
 			{    ClearTaskPending(POSITIONING_REQUEST_INDEX);
-				
-				//dead-pixel workaround
-				uint16_t y[128];
-				for (uint8_t i = 0; i < 128; ++i) y[i] = linescan[0].image[i];
-				y[98] = (y[99] + y[97])/2;
-				//end
 			
 				uint32_t totalIntensity = 0;
 				int16_t dy[128];
 
-				//update position
-				diff(y, dy, 128);
+				diff(linescan[0].image, dy, 128);
+				filtfilt4ma(dy, dy);
 
 				if (/*findStop(dy) == STOP_LINE_FOUND*/0)
 				{
