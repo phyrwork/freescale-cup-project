@@ -1,3 +1,5 @@
+#include "support/filtfilt4ma.h"
+
 void filtfilt4ma(int16_t *in, int16_t *out)
 {
 	int16_t buf[128];
