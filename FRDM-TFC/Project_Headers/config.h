@@ -16,32 +16,33 @@
 
 /* Collector config */
 #define COLLECTOR_TLIM_SECONDS 0.0005f //2000Hz
-#define NUM_COLLECTOR_ITEMS               25
+#define NUM_COLLECTOR_ITEMS               26
 #define LINESCAN0_COLLECTOR_INDEX          0
-#define TRACK_POSITION_COLLECTOR_INDEX     1
-#define POSITIONING_STATE_COLLECTOR_INDEX  2
-#define I_RL_COLLECTOR_INDEX               3
-#define I_RR_COLLECTOR_INDEX               4
-#define D_RL_COLLECTOR_INDEX               5
-#define D_RR_COLLECTOR_INDEX               6
-#define W_RL_COLLECTOR_INDEX               7
-#define W_RR_COLLECTOR_INDEX               8
-#define W_FL_COLLECTOR_INDEX               9
-#define W_FR_COLLECTOR_INDEX              10
-#define WREF_RL_COLLECTOR_INDEX           11
-#define WREF_RR_COLLECTOR_INDEX           12
-#define S_RL_COLLECTOR_INDEX              13
-#define S_RR_COLLECTOR_INDEX              14
-#define TARGET_LINE_COLLECTOR_INDEX       15
-#define SERVO_POSITION_COLLECTOR_INDEX    16
-#define T_RL_COLLECTOR_INDEX              17
-#define T_RR_COLLECTOR_INDEX              18
-#define TREF_RL_COLLECTOR_INDEX           19
-#define TREF_RR_COLLECTOR_INDEX           20
-#define S_V_COLLECTOR_INDEX               21
-#define SREF_V_COLLECTOR_INDEX            22
-#define W_V_COLLECTOR_INDEX               23
-#define WREF_V_COLLECTOR_INDEX            24
+#define LINESCAN1_COLLECTOR_INDEX          1
+#define TRACK_POSITION_COLLECTOR_INDEX     2
+#define POSITIONING_STATE_COLLECTOR_INDEX  3
+#define I_RL_COLLECTOR_INDEX               4
+#define I_RR_COLLECTOR_INDEX               5
+#define D_RL_COLLECTOR_INDEX               6
+#define D_RR_COLLECTOR_INDEX               7
+#define W_RL_COLLECTOR_INDEX               8
+#define W_RR_COLLECTOR_INDEX               9
+#define W_FL_COLLECTOR_INDEX              10
+#define W_FR_COLLECTOR_INDEX              11
+#define WREF_RL_COLLECTOR_INDEX           12
+#define WREF_RR_COLLECTOR_INDEX           13
+#define S_RL_COLLECTOR_INDEX              14
+#define S_RR_COLLECTOR_INDEX              15
+#define TARGET_LINE_COLLECTOR_INDEX       16
+#define SERVO_POSITION_COLLECTOR_INDEX    17
+#define T_RL_COLLECTOR_INDEX              18
+#define T_RR_COLLECTOR_INDEX              19
+#define TREF_RL_COLLECTOR_INDEX           20
+#define TREF_RR_COLLECTOR_INDEX           21
+#define S_V_COLLECTOR_INDEX               22
+#define SREF_V_COLLECTOR_INDEX            23
+#define W_V_COLLECTOR_INDEX               24
+#define WREF_V_COLLECTOR_INDEX            25
 
 /* PIT1 config */
 #define PIT1_POLLING_FREQUENCY 2400

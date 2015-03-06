@@ -1,48 +1,118 @@
-#include "sensors/camera/LineScanCamera.h"
+#include "sensors/camera/LineScanCamera.h" 
 #include "devices/MKL25Z4.h"
 #include "devices/CrystalClock.h"
 
-volatile uint16_t  *LineScanImage0WorkingBuffer;
-volatile uint16_t  *LineScanImage0;
-volatile uint16_t  LineScanImage0Buffer[2][128];
-volatile uint8_t  LineScanWorkingBuffer;
+//import timer
+#include "support/ARM_SysTick.h"
+#include "config.h"
+#define TICKER TFC_Ticker[UPTIME_TICKER]
 
-volatile uint8_t LineScanImageReady = 0;
+LineScanControl_s const shield = {
+	.clk = {
+		.port = PTE_BASE_PTR,
+		.pin = 1
+	},
+	.si = {
+		.port = PTD_BASE_PTR,
+		.pin = 7
+	}
+};
+LineScanControl_s const breakout = {
+	.clk = {
+		.port = PTC_BASE_PTR,
+		.pin = 10
+	},
+	.si = {
+		.port = PTC_BASE_PTR,
+		.pin = 11
+	}
+};
+
+LineScan_s linescan[2] = {
+	//[0]
+	{ //positioning
+		.image =  &linescan[0].data[0][0],
+		.buffer.data = &linescan[0].data[1][0],
+		.signal = &shield,
+		.exposure = {
+				.time = ((float)TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS / 1000000.0f) * SYSTICK_FREQUENCY
+		}
+	},
+	//[1]
+	{ //lookahead
+		.image =  &linescan[1].data[0][0],
+		.buffer.data = &linescan[1].data[1][0],
+		.signal = &breakout,
+		.exposure = {
+				.time = ((float)TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS / 1000000.0f) * SYSTICK_FREQUENCY
+		}
+	}
+};
 
 void TFC_InitLineScanCamera()
 {
-	SIM_SCGC5 |=     SIM_SCGC5_PORTE_MASK | SIM_SCGC5_PORTD_MASK; //Make sure the clock is enabled for PORTE;
-	PORTE_PCR1 = PORT_PCR_MUX(1) | PORT_PCR_DSE_MASK;   //Enable GPIO on on the pin for the CLOCK Signal
-	PORTD_PCR7 = PORT_PCR_MUX(1) | PORT_PCR_DSE_MASK;   //Enable GPIO on on the pin for SI signal
+	//enable clocks to GPIO ports
+	SIM_SCGC5 |=   SIM_SCGC5_PORTE_MASK
+	             | SIM_SCGC5_PORTD_MASK
+	             | SIM_SCGC5_PORTC_MASK;
+
+	//mux pins to GPIO ports
+	PORTE_PCR1  = PORT_PCR_MUX(1) | PORT_PCR_DSE_MASK; //linescan0 clk
+	PORTD_PCR7  = PORT_PCR_MUX(1) | PORT_PCR_DSE_MASK; //linescan0 si
+	PORTC_PCR10 = PORT_PCR_MUX(1) | PORT_PCR_DSE_MASK; //linescan1 clk
+	PORTC_PCR11 = PORT_PCR_MUX(1) | PORT_PCR_DSE_MASK; //linescan1 si
 	
-	PORTD_PCR5 = PORT_PCR_MUX(0); //Make sure AO signal goes to an analog input
-	PORTD_PCR6 = PORT_PCR_MUX(0); //Make sure AO signal goes to an analog input
+	PORTD_PCR5 = PORT_PCR_MUX(0); //make sure linescan0? signal goes to an analog input
+	PORTD_PCR6 = PORT_PCR_MUX(0); //make sure linescan1? signal goes to an analog input
 		
-	//Make sure the Clock and SI pins are outputs
+	//make sure the clk and si pins are outputs
     GPIOD_PDDR |= (1<<7);
     GPIOE_PDDR |= (1<<1);
+    GPIOC_PDDR |= (1<<10);
+    GPIOC_PDDR |= (1<<11);
             
-	TAOS_CLK_LOW;
-	TAOS_SI_LOW;
-
-	LineScanWorkingBuffer = 0;
+	LINESCAN_SIGNAL_LOW(shield.clk);
+	LINESCAN_SIGNAL_LOW(shield.si);
+	LINESCAN_SIGNAL_LOW(breakout.clk);
+	LINESCAN_SIGNAL_LOW(breakout.si);
 	
-	LineScanImage0WorkingBuffer = &LineScanImage0Buffer[0][0];
-	
-	LineScanImage0 = &LineScanImage0Buffer[1][0];
+	PIT_LDVAL0 = ((float)TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS / 1000000.0f) * PERIPHERAL_BUS_CLOCK;
+	PIT_TCTRL0 = PIT_TCTRL_TEN_MASK | PIT_TCTRL_TIE_MASK; //Enable PIT channel 0; enable interrupts.
 }
 
-
-void TFC_SetLineScanExposureTime(uint32_t  TimeIn_uS)
+int8_t LinescanProcess (LineScan_s *linescan, uint16_t data)
 {
-	/* Calculate number of PIT ticks for exposure time */
-	float t;
+    if (linescan->buffer.pos < 128) //image capture sequence ongoing...
+    {
+        linescan->buffer.data[linescan->buffer.pos++] = data; //store pixel
+        
+        LINESCAN_SIGNAL_LOW(linescan->signal->clk);               
+        for(uint8_t j = 0; j < 10; ++j) {}
+        LINESCAN_SIGNAL_HIGH(linescan->signal->clk);
 
-	t = (TimeIn_uS /1000000.0f) * (float)(PERIPHERAL_BUS_CLOCK);
-	PIT_LDVAL0 = (uint32_t)t; //Set PIT0 counter register
-	
-}
+    	//if new exposure has just started
+    	//if (linescan->buffer.pos == 19) linescan->exposure.start = TICKER;
+    }
+    else //image capture sequence complete
+    {
+        LINESCAN_SIGNAL_HIGH(linescan->signal->clk);                                  
+        for(uint8_t j = 0; j < 10; ++j) {}
+        LINESCAN_SIGNAL_LOW(linescan->signal->clk); //disconnect final pixel from output
+        
+        //swap the image buffer
+        if(linescan->buffer.data == &linescan->data[0][0])
+        {
 
-uint32_t TFC_getLineScanExposureTime(){
-	return (uint32_t)(((float)PIT_LDVAL0 * 1000000.0f) / (float)(PERIPHERAL_BUS_CLOCK));
+            linescan->buffer.data = &linescan->data[1][0];
+            linescan->image =       &linescan->data[0][0];
+        }
+        else
+        {
+            linescan->buffer.data = &linescan->data[0][0];
+            linescan->image =       &linescan->data[1][0];
+        }
+        
+        linescan->buffer.pos = 0;
+    }
+    return 0;
 }
