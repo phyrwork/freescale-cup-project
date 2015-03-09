@@ -24,7 +24,7 @@
 #define MAX_NUMBER_OF_TRANSITIONS 8
 
 //findPosition
-#define TRACK_DY_T                50
+#define TRACK_DY_T                200
 #define TRACK_RY_T                300
 #define MAX_LOST_LINE_DURATION    10000
 #define LOST_LINE_RESET_DURATION  15000

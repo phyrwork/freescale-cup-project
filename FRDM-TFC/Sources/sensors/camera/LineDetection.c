@@ -78,15 +78,6 @@ void findPosition(int16_t *dy, carState_s* carState)
 		// Found a good match for at least one type of line //
 		//////////////////////////////////////////////////////
 		
-		BestMatch  = *best;
-		TargetLine = *best; //matched line becomes new target line
-		CollectorRequest(BEST_MATCH_COLLECTOR_INDEX);
-		CollectorRequest(TARGET_LINE_COLLECTOR_INDEX);
-		
-		//Update car status; reset timeout counter
-		carState->lineDetectionState = LINE_FOUND;
-		TFC_Ticker[3] = 0;
-		
 		if (best->edges[L].type != EDGE_TYPE_VIRTUAL &&
 			best->edges[R].type != EDGE_TYPE_VIRTUAL)
 		{
@@ -120,6 +111,15 @@ void findPosition(int16_t *dy, carState_s* carState)
 			carState->lineCenter += offset;
 			trackPosition = carState->lineCenter; //local copy of road position for telemetry.
 		}
+		
+		BestMatch  = *best;
+		TargetLine = *best; //matched line becomes new target line
+		CollectorRequest(BEST_MATCH_COLLECTOR_INDEX);
+		CollectorRequest(TARGET_LINE_COLLECTOR_INDEX);
+				
+		//Update car status; reset timeout counter
+		carState->lineDetectionState = LINE_FOUND;
+		TFC_Ticker[3] = 0;
 	}
 	else
 	{
@@ -314,7 +314,7 @@ void findTrack(Line_s* line, uint8_t lines)
 		//combined probs
 		line->P.fsh = ve == 0 ? P_w : 0;
 		line->P.asl = ve == 0 ? P_w * P_dw : 0;
-		line->P.rel = ve == 1 ? P_dw * P_dp_l * P_dp_r * P_d2p_l * P_d2p_r : 0;
+		line->P.rel = ve == 1 ? P_dw * P_dp_l * P_dp_r /* * P_d2p_l * P_d2p_r */ : 0;
 	}
 }
 
