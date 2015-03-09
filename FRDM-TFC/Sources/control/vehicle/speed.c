@@ -15,12 +15,12 @@
 #define VEHICLE_DECEL_SLIP -0.15f
 
 
-#define VEHICLE_TURN_MOD_LOW 2.5f
+#define VEHICLE_TURN_MOD_LOW 5.0f
 #define VEHICLE_TURN_MOD_HIGH 20.0f
 #define VEHICLE_TURN_MOD_MAX 30.0f
-#define VEHICLE_CORNERING_SPEED_LOW 7.5f  //7.5
-#define VEHICLE_CORNERING_SPEED_HIGH 9.5f //9.5
-#define VEHICLE_STRAIGHT_SPEED 15.5f      //15.5
+#define VEHICLE_CORNERING_SPEED_LOW 7.0f  //7.5
+#define VEHICLE_CORNERING_SPEED_HIGH 9.0f //9.5
+#define VEHICLE_STRAIGHT_SPEED 13.5f      //15.5
 
 #define VSPEED_CONT_REGION(speed) ( 1.0f + (speed * 0.05f) )
 
@@ -32,7 +32,7 @@
 #define VSPEED_KI_CONT 0.0060f //0.0060
 #define VSPEED_KD_CONT 0.0000f
 
-#define TORQUE_VECTORING_CONST 0.5f
+#define TORQUE_VECTORING_CONST 0.2f
 VehicleSpeedControl_s VehicleSpeedControl;
 PID_s pid;
 
@@ -85,10 +85,12 @@ void _setByVehicleSpeed(float command)
 	MotorTorque_s * const right = &MotorTorque[REAR_RIGHT];
 	
 	//recalculate controller saturation point
+	/*
 	float tspd = speed->sensor->value > 31 ? 31 : speed->sensor->value;
 	float tsat = (TORQUE_SPEED_M * tspd) + TORQUE_SPEED_C;
 	speed->pid->value_max = tsat;
 	speed->pid->value_min = -tsat;
+	*/
 	
 	//set pid according to controllable region rules
 	float sdiff = command - speed->sensor->value;

@@ -84,7 +84,7 @@ void SetMotorTorque(MotorTorque_s *torque, float command)
 	UpdateMotorTorque(torque);
 	
 	//limit command torque to max torque
-	command = command > TORQUE_MAX ? TORQUE_MAX : (command < -TORQUE_MAX ? -TORQUE_MAX : command);
+	//command = command > TORQUE_MAX ? TORQUE_MAX : (command < -TORQUE_MAX ? -TORQUE_MAX : command);
 	
 	//recalculate saturation
 	//float tspd = torque->speed->value > 31 ? 31 : torque->speed->value;
