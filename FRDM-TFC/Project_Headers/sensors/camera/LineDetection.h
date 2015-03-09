@@ -33,15 +33,15 @@
 #define MIN_CERT_NEW 0.3f
 
 //weightEdges
-#define EDGE_DPOS_SD   15
-#define EDGE_DPOS_MEAN 0
+#define EDGE_DPOS_SD    10
+#define EDGE_DPOS_MEAN  0
 #define EDGE_D2POS_SD   5
 #define EDGE_D2POS_MEAN 0
 
 //weightLines
-#define LINE_WIDTH_SD    30
-#define LINE_WIDTH_MEAN  105
-#define LINE_DWIDTH_SD   30
+#define LINE_WIDTH_SD    10
+#define LINE_WIDTH_MEAN  100
+#define LINE_DWIDTH_SD   10
 #define LINE_DWIDTH_MEAN 0
 
 //findStop
@@ -99,7 +99,8 @@ void    diff(volatile uint16_t* input, int16_t* output, uint8_t length);
 
 /* Data sharing for telemetry */
 extern PositioningState positioningState; // Line_s tracking status
-extern Line_s             TargetLine;	// Current model line
+extern Line_s           BestMatch;
+extern Line_s           TargetLine;	// Current model line
 extern int8_t           trackPosition;     // Current detected road position
 
 #endif /* LINEDETECTION_H_ */

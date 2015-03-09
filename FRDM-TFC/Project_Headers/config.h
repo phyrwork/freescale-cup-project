@@ -34,15 +34,16 @@
 #define S_RL_COLLECTOR_INDEX              14
 #define S_RR_COLLECTOR_INDEX              15
 #define TARGET_LINE_COLLECTOR_INDEX       16
-#define SERVO_POSITION_COLLECTOR_INDEX    17
-#define T_RL_COLLECTOR_INDEX              18
-#define T_RR_COLLECTOR_INDEX              19
-#define TREF_RL_COLLECTOR_INDEX           20
-#define TREF_RR_COLLECTOR_INDEX           21
-#define S_V_COLLECTOR_INDEX               22
-#define SREF_V_COLLECTOR_INDEX            23
-#define W_V_COLLECTOR_INDEX               24
-#define WREF_V_COLLECTOR_INDEX            25
+#define BEST_MATCH_COLLECTOR_INDEX        17
+#define SERVO_POSITION_COLLECTOR_INDEX    18
+#define T_RL_COLLECTOR_INDEX              19
+#define T_RR_COLLECTOR_INDEX              20
+#define TREF_RL_COLLECTOR_INDEX           21
+#define TREF_RR_COLLECTOR_INDEX           22
+#define S_V_COLLECTOR_INDEX               23
+#define SREF_V_COLLECTOR_INDEX            24
+#define W_V_COLLECTOR_INDEX               25
+#define WREF_V_COLLECTOR_INDEX            26
 
 /* PIT1 config */
 #define PIT1_POLLING_FREQUENCY 2400

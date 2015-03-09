@@ -161,55 +161,61 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 		.flim = 50
 	},
 	//[17]
+	{ //BestMatch
+		.data = &BestMatch,
+		.endpoint = &TFTP_BEST_MATCH_ENDPOINT,
+		.flim = 50
+	},
+	//[18]
 	{ //ServoPosition
 		.data = &carState.servoPosition,
 		.endpoint = &TFTP_SERVO_POSITION_ENDPOINT,
 		.flim = 100
 	},
-	//[18]
+	//[19]
 	{ //T_rl
 		.data = &MotorTorque[REAR_LEFT].value,
 		.endpoint = &TFTP_T_RL_ENDPOINT,
 		.fauto = 30
 	},
-	//[19]
+	//[20]
 	{ //T_rr
 		.data = &MotorTorque[REAR_RIGHT].value,
 		.endpoint = &TFTP_T_RR_ENDPOINT,
 		.fauto = 30
 	},
-	//[20]
+	//[21]
 	{ //T*_rl
 		.data = &MotorTorque[REAR_LEFT].cmd,
 		.endpoint = &TFTP_TREF_RL_ENDPOINT,
 		.fauto = 30
 	},
-	//[21]
+	//[22]
 	{ //T*_rr
 		.data = &MotorTorque[REAR_RIGHT].cmd,
 		.endpoint = &TFTP_TREF_RR_ENDPOINT,
 		.fauto = 30
 	},
-	//[22]
+	//[23]
 	{ //S_v
 		.data = &VehicleSlipSensor.value,
 		.endpoint = &TFTP_S_V_ENDPOINT,
 		//.fauto = 20
 	},
-	//[23]
+	//[24]
 	{ //S*_v
 		.data = &VehicleSlipControl.cmd,
 		//.data = &contrib,
 		.endpoint = &TFTP_SREF_V_ENDPOINT,
 		.fauto = 30
 	},
-	//[24]
+	//[25]
 	{ //S_v
 		.data = &VehicleSpeedSensor.value,
 		.endpoint = &TFTP_W_V_ENDPOINT,
 		.fauto = 20
 	},
-	//[25]
+	//[26]
 	{ //S*_v
 		.data = &VehicleSpeedControl.cmd,
 		.endpoint = &TFTP_WREF_V_ENDPOINT,

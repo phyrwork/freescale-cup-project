@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include "telemetry/Collector.h"
 
+Line_s           BestMatch;
 Line_s           TargetLine;
 PositioningState positioningState;
 int8_t           trackPosition;
@@ -69,7 +70,7 @@ void findPosition(int16_t *dy, carState_s* carState)
 	Line_s *best = 0;
 	        best = fsh->P.fsh >= MIN_CERT_NEW ? fsh : best;
 	        best = rel->P.rel >= MIN_CERT_REL ? rel : best;
-	        best = asl->P.asl >= MIN_CERT_ABS ? asl : best; 
+	        best = asl->P.asl >= MIN_CERT_ABS ? asl : best;
 	
 	if (best)
 	{
@@ -77,7 +78,9 @@ void findPosition(int16_t *dy, carState_s* carState)
 		// Found a good match for at least one type of line //
 		//////////////////////////////////////////////////////
 		
+		BestMatch  = *best;
 		TargetLine = *best; //matched line becomes new target line
+		CollectorRequest(BEST_MATCH_COLLECTOR_INDEX);
 		CollectorRequest(TARGET_LINE_COLLECTOR_INDEX);
 		
 		//Update car status; reset timeout counter
@@ -123,6 +126,11 @@ void findPosition(int16_t *dy, carState_s* carState)
 		//////////////////////////////////////////	
 		// Didn't find a good match - line lost //
 		//////////////////////////////////////////
+		
+		best = rel->P.rel > fsh->P.fsh ? rel : fsh;
+		best = asl->P.asl > best->P.rel ? asl : best;
+		BestMatch  = *best;
+		CollectorRequest(BEST_MATCH_COLLECTOR_INDEX);
 
 		if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION)
 		{
