@@ -20,7 +20,7 @@ classdef EdgeAttribute < TftpAttribute
             %stream = typecast(stream, 'uint8');
             
             % initialise object
-            edge = EdgeType(stream);
+            edge = EdgeType(flip(stream));
         end
         
         % encode
