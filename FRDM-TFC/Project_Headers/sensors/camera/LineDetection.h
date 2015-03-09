@@ -21,7 +21,7 @@
 #include "support/Probability.h"
 #include "support/carState_s.h"
 
-#define MAX_NUMBER_OF_TRANSITIONS 16
+#define MAX_NUMBER_OF_TRANSITIONS 8
 
 //findPosition
 #define TRACK_DY_T                50
@@ -35,6 +35,8 @@
 //weightEdges
 #define EDGE_DPOS_SD   15
 #define EDGE_DPOS_MEAN 0
+#define EDGE_D2POS_SD   5
+#define EDGE_D2POS_MEAN 0
 
 //weightLines
 #define LINE_WIDTH_SD    30
@@ -68,13 +70,17 @@ typedef uint8_t EdgeType;
 typedef struct {
 	EdgeType type; //Type of edge (i.e. rising/falling)
 	uint8_t  pos;  //Location of edge
+	uint8_t  dpos; //difference in position from last edge
 } Edge_s;
 
 typedef struct {
 	Edge_s  edges[2];
 	uint8_t width;
-	float   match;
-	uint8_t type;
+	struct {
+		float asl; //abs
+		float rel;
+		float fsh; //new
+	} P;
 } Line_s;
 
 typedef uint8_t PositioningState;
@@ -86,7 +92,7 @@ typedef uint8_t PositioningState;
 void    findPosition(int16_t *dy, carState_s* carState);
 uint8_t findEdges(Edge_s *edges, int16_t* dy, uint16_t dy_t, uint16_t ry_t);
 uint8_t findLines(Line_s *lines, Edge_s *edges, uint8_t numEdges, uint8_t const type);
-Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t type);
+void    findTrack(Line_s* line, uint8_t lines);
 int8_t  findStop(int16_t *dy);
 void    preloadProbabilityTables();
 void    diff(volatile uint16_t* input, int16_t* output, uint8_t length);

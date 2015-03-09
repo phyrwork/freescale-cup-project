@@ -9,7 +9,7 @@
  * to choose most likely target to follow, but
  * is modified to follow the 2015 competition
  * track with lines at both sides of the
- * course.
+ * course. 
  * -------------------------------------------
  * Author: Connor Newton
  * Date:   November 17, 2014
@@ -45,130 +45,121 @@ void findPosition(int16_t *dy, carState_s* carState)
 	static uint8_t numFeatures = 0;
 	numFeatures = findEdges(edges, dy, TRACK_DY_T, TRACK_RY_T);
 	numFeatures = findLines(lines, edges, numFeatures, LINE_TYPE_WHITE);
-
-
-	///////////////////////////////////
-	// Look for absolute match first //
-	///////////////////////////////////
-
-	Line_s *best = findTrack(lines, numFeatures, TRACK_TYPE_ABS);
-	if (best->match > MIN_CERT_ABS)
-	{
-		//Found an absolute match - i.e. a complete line.
-
-		/* Calculate car's track position */
-		int8_t center = ((best->start + best->finish)/2) - 64;
-		carState->lineCenter = center; //this is offset from car's perspective
-		trackPosition = carState->lineCenter; //local copy of track position for telemetry
-
-		TargetLine = *best; //matched line becomes new target line
-		CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
-
-		/* Update car status; reset timeout counter */
-		carState->lineDetectionState = LINE_FOUND;
-		TFC_Ticker[3] = 0;
-
-		return;
-	}
-
-
-	////////////////////////////////////
-	// Next look for a relative match //
-	////////////////////////////////////
+	findTrack(lines, numFeatures);
 	
-	best = findTrack(lines, numFeatures, TRACK_TYPE_REL);
-	if (best->match > MIN_CERT_REL)
+	
+	//////////////////////////////////
+	// Find best match of each type //
+	//////////////////////////////////
+	
+	Line_s *asl = lines;
+	Line_s *rel = lines;
+	Line_s *fsh = lines;
+	for (uint8_t i = 0; i < numFeatures; ++i)
 	{
-		//Found a relative match - i.e. a partial line similar to the target line
+		asl = lines[i].P.asl > asl->P.asl ? &lines[i] : asl;
+		rel = lines[i].P.rel > rel->P.rel ? &lines[i] : rel;
+		fsh = lines[i].P.fsh > fsh->P.fsh ? &lines[i] : fsh;
+	}
+	
+	////////////////////////////////////////////////////////
+	// Choose suitable line - prioritise best match types //
+	////////////////////////////////////////////////////////
+	
+	Line_s *best = 0;
+	        best = fsh->P.fsh >= MIN_CERT_NEW ? fsh : best;
+	        best = rel->P.rel >= MIN_CERT_REL ? rel : best;
+	        best = asl->P.asl >= MIN_CERT_ABS ? asl : best; 
+	
+	if (best)
+	{
+		//////////////////////////////////////////////////////
+		// Found a good match for at least one type of line //
+		//////////////////////////////////////////////////////
+		
+		if (best->edges[L].type != EDGE_TYPE_VIRTUAL &&
+			best->edges[R].type != EDGE_TYPE_VIRTUAL)
+		{
+			//found an absolute match - i.e. a complete line.
 
-		int8_t offset = 0; //New position estimated by change in position of visible edge
+			//calculate car's track position
+			int8_t center = ((best->start + best->finish)/2) - 64;
+			carState->lineCenter = center; //this is offset from car's perspective
+			trackPosition = carState->lineCenter; //local copy of track position for telemetry
 
-		if (best->edges[L].type != EDGE_TYPE_VIRTUAL) {
-			//Left edge is not virtual i.e. visible
-			positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
-			offset = best->edges[L].pos - TargetLine.edges[L].pos;
+			TargetLine = *best; //matched line becomes new target line
+			CollectorRequest(TARGET_LINE_COLLECTOR_INDEX);
+
+			//Update car status; reset timeout counter
+			carState->lineDetectionState = LINE_FOUND;
+			TFC_Ticker[3] = 0;
+
+			return;
 		}
-		else if (best->edges[R].type != EDGE_TYPE_VIRTUAL) {
-			//Right edge is not virtual i.e. visible
-			positioningState = POSITIONING_STATE_PARTIAL_LEFT;
-			offset = best->edges[R].pos - TargetLine.edges[R].pos;
+		else
+		{
+			//Found a relative match - i.e. a partial line similar to the target line
+
+			int8_t offset = 0; //New position estimated by change in position of visible edge
+
+			if (best->edges[L].type != EDGE_TYPE_VIRTUAL)
+			{
+				//Left edge is not virtual i.e. visible
+				positioningState = POSITIONING_STATE_PARTIAL_RIGHT;
+				offset = best->edges[L].pos - TargetLine.edges[L].pos;
+			}
+			else if (best->edges[R].type != EDGE_TYPE_VIRTUAL)
+			{
+				//Right edge is not virtual i.e. visible
+				positioningState = POSITIONING_STATE_PARTIAL_LEFT;
+				offset = best->edges[R].pos - TargetLine.edges[R].pos;
+			}
+
+			//Apply offset to position
+			carState->lineCenter += offset;
+			trackPosition = carState->lineCenter; //local copy of road position for telemetry.
+
+			TargetLine = *best; //matched line becomes new target line
+			CollectorRequest(TARGET_LINE_COLLECTOR_INDEX);
+
+			// Update car status; reset timeout counter
+			carState->lineDetectionState = LINE_FOUND;
+			TFC_Ticker[3] = 0;
+
+			return;
 		}
+	}
+	else
+	{
+		//////////////////////////////////////////	
+		// Didn't find a good match - line lost //
+		//////////////////////////////////////////
 
-		/* Apply offset to position */
-		carState->lineCenter += offset;
-		trackPosition = carState->lineCenter; //local copy of road position for telemetry.
-
-		TargetLine = *best; //matched line becomes new target line
-		CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
-
-		/* Update car status; reset timeout counter */
-		carState->lineDetectionState = LINE_FOUND;
-		TFC_Ticker[3] = 0;
+		if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION)
+		{
+			 carState->lineDetectionState = LINE_LOST;
+			 TFC_ClearLED(1);
+			 TFC_ClearLED(2);
+			 TFC_SetLED(3);
+		}
+		else
+		{
+			carState->lineDetectionState = LINE_TEMPORARILY_LOST;
+			TFC_ClearLED(1);
+			TFC_SetLED(2);
+			TFC_ClearLED(3);
+		}
+		
+		/*
+		//send best line
+		best = asl;
+		rel = rel->P.rel > best->P.asl ? rel : best;
+		fsh = fsh->P.fsh > best->P.fsh ? fsh : best;
+		*/
 
 		return;
 	}
 
-	/////////////////////////////////
-	// Next look for the stop line //
-	/////////////////////////////////
-
-	/*
-	if ( findStop(lines, numFeatures) )
-	{
-	 	carState->lineDetectionState = STOPLINE_DETECTED;
-	 	TFC_ClearLED(1);
-	 	TFC_SetLED(2);
-	 	TFC_SetLED(3);
-	 	return;
-	}
-	*/
-	
-	/////////////////////////////////////////////////////////////
-	// Before giving up try and re-find the line if it is lost //
-	/////////////////////////////////////////////////////////////
-	
-	best = findTrack(lines, numFeatures, TRACK_TYPE_NEW);
-	if (best->match > MIN_CERT_NEW)
-	{
-		//Found an absolute match - i.e. a complete line.
-
-		/* Calculate car's track position */
-		int8_t center = ((best->start + best->finish)/2) - 64;
-		carState->lineCenter = center; //this is offset from car's perspective
-		trackPosition = carState->lineCenter; //local copy of track position for telemetry
-
-		TargetLine = *best; //matched line becomes new target line
-		CollectorRequest(LINESCAN0_COLLECTOR_INDEX);
-
-		/* Update car status; reset timeout counter */
-		carState->lineDetectionState = LINE_FOUND;
-		TFC_Ticker[3] = 0;
-
-		return;
-	}
-	
-	
-
-	/////////////////////////////////////////////////////	
-	// And if not this then probably just noise or car //
-	// is traversing a cross-over section              //
-	/////////////////////////////////////////////////////
-
-	if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION) {
-		 carState->lineDetectionState = LINE_LOST;
-		 TFC_ClearLED(1);
-		 TFC_ClearLED(2);
-		 TFC_SetLED(3);
-	}
- 	else {
- 		carState->lineDetectionState = LINE_TEMPORARILY_LOST;
- 		TFC_ClearLED(1);
- 		TFC_SetLED(2);
- 		TFC_ClearLED(3);
- 	}
-
-	return;
-	
 	#undef start
 	#undef finish
 }
@@ -287,69 +278,54 @@ uint8_t findLines(Line_s *lines, Edge_s *edge, uint8_t edges, uint8_t const type
 	return detected;
 }
 
-Line_s* findTrack(Line_s* line, uint8_t lines, uint8_t type)
+void findTrack(Line_s* line, uint8_t lines)
 {
-	Line_s *best = line; //best line to return
+	Line_s * const target = &TargetLine;
 
 	for(; lines; --lines)
 	{
-		int8_t dp;
-		switch (type)
+		//calculate dpos
+		line->edges[L].dpos = line->edges[L].pos - target->edges[L].pos;
+		line->edges[R].dpos = line->edges[R].pos - target->edges[R].pos;
+
+		//count virtual edges
+		uint8_t ve = 0;
+		if (line->edges[L].type == EDGE_TYPE_VIRTUAL) ++ve;
+		if (line->edges[R].type == EDGE_TYPE_VIRTUAL) ++ve;
+
+
+		//individual probs
+		float P_w;
+		float P_dw;
+		float P_dp_l;
+		float P_d2p_l;
+		float P_dp_r;
+		float P_d2p_r;
+
+		if (ve < 1)
 		{
-			case TRACK_TYPE_NEW: //search for a new match
-
-				//not a full match if one or more virtual edges
-				if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
-					line->edges[R].type == EDGE_TYPE_VIRTUAL)
-				{
-					line->match = 0;
-				}
-				//probability of a new match
-				else
-				{
-					line->match = getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN);
-				}
-				
-				break;
-
-			case TRACK_TYPE_REL: //search for a partial match
-
-				//probability of a full match
-				dp = TargetLine.edges[L].pos - line->edges[L].pos;
-				line->match  = getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-                dp = TargetLine.edges[R].pos - line->edges[R].pos;
-                line->match *= getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-                line->match *= getProbability(TargetLine.width - line->width, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
-
-				break;
-
-			case TRACK_TYPE_ABS: //search for a full match
-
-				//not a new match if one or more virtual edges
-				if (line->edges[L].type == EDGE_TYPE_VIRTUAL ||
-					line->edges[R].type == EDGE_TYPE_VIRTUAL)
-				{
-					line->match = 0;
-				}
-				//probability of a full match
-				else
-				{
-					int8_t dp = TargetLine.edges[L].pos - line->edges[L].pos;
-					line->match  = getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-	                       dp = TargetLine.edges[R].pos - line->edges[R].pos;
-	                line->match *= getProbability(dp, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
-	                line->match *= getProbability(TargetLine.width - line->width, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
-					line->match *= getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN);
-				}
-
-				break;
+			P_w = getProbability(line->width, LINE_WIDTH_SD, LINE_WIDTH_MEAN);
 		}
 
-		if (line->match > best->match) best = line; //store a superior match
-	}
+		if (ve < 2)
+		{
+			P_dw = getProbability(target->width - line->width, LINE_DWIDTH_SD, LINE_DWIDTH_MEAN);
+		}
 
-	best->type = type; //tag line
-	return best;
+		if (ve == 1)
+		{
+			P_dp_l  = getProbability(line->edges[L].dpos, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+			P_d2p_l = getProbability(line->edges[L].dpos - target->edges[L].dpos, EDGE_D2POS_SD, EDGE_D2POS_MEAN);
+			P_dp_r  = getProbability(line->edges[R].dpos, EDGE_DPOS_SD, EDGE_DPOS_MEAN);
+			P_d2p_r = getProbability(line->edges[R].dpos - target->edges[R].dpos, EDGE_D2POS_SD, EDGE_D2POS_MEAN);
+		}
+
+
+		//combined probs
+		line->P.fsh = ve == 0 ? P_w : 0;
+		line->P.asl = ve == 0 ? P_w * P_dw : 0;
+		line->P.rel = ve == 1 ? P_dw * P_dp_l * P_dp_r * P_d2p_l * P_d2p_r : 0;
+	}
 }
 
 
