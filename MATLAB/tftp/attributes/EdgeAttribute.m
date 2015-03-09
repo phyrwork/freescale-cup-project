@@ -5,7 +5,7 @@ classdef EdgeAttribute < TftpAttribute
         % EdgeAttribute constructor
         function obj = EdgeAttribute(code, attribute)
             % set default properties used in superclass constructor
-            fsize = 20;
+            fsize = 4;
             ssize = 1;
             ctype = 'uint8';
             mtype = 'EdgeType';

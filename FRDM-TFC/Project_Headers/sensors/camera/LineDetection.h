@@ -70,7 +70,7 @@ typedef uint8_t EdgeType;
 typedef struct {
 	EdgeType type; //Type of edge (i.e. rising/falling)
 	uint8_t  pos;  //Location of edge
-	uint8_t  dpos; //difference in position from last edge
+	int8_t  dpos; //difference in position from last edge
 } Edge_s;
 
 typedef struct {

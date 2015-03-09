@@ -5,7 +5,7 @@ classdef LineAttribute < TftpAttribute
         % LineAttribute constructor
         function obj = LineAttribute(code, attribute)
             % set default properties used in superclass constructor
-            fsize = 56;
+            fsize = 24;
             ssize = 1;
             ctype = 'uint8';
             mtype = 'LineType';
