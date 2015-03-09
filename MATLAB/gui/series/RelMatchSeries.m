@@ -20,10 +20,11 @@ classdef RelMatchSeries < ChartSeries
             
             % get most recent image from record
             [x, s] = obj.record.latest(obj.view.period);
-            s = [s(:).P.rel];
+            y = [s(:).P];
+            y = [y(:).rel];
             
             % draw the series
-            obj = obj.draw(x, s);
+            obj = obj.draw(x, y);
         end
     end
 end

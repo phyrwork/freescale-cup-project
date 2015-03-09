@@ -4,7 +4,7 @@ classdef LineType
     properties
         edges = LineType.empty;
         width = uint8.empty;
-        P     = struct.em
+        P     = struct.empty;
     end
 
     methods
@@ -16,13 +16,13 @@ classdef LineType
             end
             
             % Check input type
-            obj.edges(1) = EdgeType(stream(1:4));
-            obj.edges(2) = EdgeType(stream(5:8));
-            obj.width    = stream(9), 'uint8';
-            % (42:44) padding
-            obj.P.asl = typecast(stream(13:16), 'single');
-            obj.P.rel = typecast(stream(17:20), 'single');
-            obj.P.fsh = typecast(stream(21:24), 'single');
+            obj.edges    = EdgeType(stream(1:3));
+            obj.edges(2) = EdgeType(stream(4:6));
+            obj.width    = stream(7);
+            % 13 - padding
+            obj.P(1).asl = typecast(stream(9:12), 'single');
+            obj.P(1).rel = typecast(stream(13:16), 'single');
+            obj.P(1).fsh = typecast(stream(17:20), 'single');
         end
         
         function stream = pack(obj)
@@ -31,9 +31,9 @@ classdef LineType
             stream(5:8)   = obj.edges(2).pack();
             stream(9)     = typecast(obj.width, 'uint8');
             %10:12 - padding
-            stream(13:16) = typecast(obj.P.asl, 'uint8');
-            stream(17:20) = typecast(obj.P.rel, 'uint8');
-            stream(21:24) = typecast(obj.P.fsh, 'uint8');
+            stream(13:16) = typecast(obj.P(1).asl, 'uint8');
+            stream(17:20) = typecast(obj.P(1).rel, 'uint8');
+            stream(21:24) = typecast(obj.P(1).fsh, 'uint8');
         end
     end
     
