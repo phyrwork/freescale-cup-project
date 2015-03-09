@@ -11,8 +11,8 @@
 #include "support/ARM_SysTick.h"
 #include <stdlib.h>
 
-#define Kp 0.014f
-#define Ki 0.0f//0.05f
+#define Kp 0.018f
+#define Ki 0.02f//0.05f
 #define Kd 0.0003f//0.0004f
 #define INTEGRAL_LIMIT 1.0f
 #define STEERING_LIMIT_UPPER 0.55f
