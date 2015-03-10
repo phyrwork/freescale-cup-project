@@ -24,8 +24,8 @@
 #define MAX_NUMBER_OF_TRANSITIONS 8
 
 //findPosition
-#define TRACK_DY_T                200
-#define TRACK_RY_T                300
+#define TRACK_DY_T                300
+#define TRACK_RY_T                500
 #define MAX_LOST_LINE_DURATION    10000
 #define LOST_LINE_RESET_DURATION  15000
 #define MIN_CERT_ABS 0.3f
@@ -33,14 +33,14 @@
 #define MIN_CERT_NEW 0.3f
 
 //weightEdges
-#define EDGE_DPOS_SD    10
+#define EDGE_DPOS_SD    15
 #define EDGE_DPOS_MEAN  0
 #define EDGE_D2POS_SD   5
 #define EDGE_D2POS_MEAN 0
 
 //weightLines
-#define LINE_WIDTH_SD    10
-#define LINE_WIDTH_MEAN  100
+#define LINE_WIDTH_SD    15
+#define LINE_WIDTH_MEAN  90
 #define LINE_DWIDTH_SD   10
 #define LINE_DWIDTH_MEAN 0
 

@@ -13,7 +13,7 @@
 #define Kp 0.01f
 #define Ki 0.0f
 #define Kd 0.0001f
-#define MAX_EXPOSURE 100
+#define MAX_EXPOSURE 180
 #define MIN_EXPOSURE 10
 
 int32_t error = 0;

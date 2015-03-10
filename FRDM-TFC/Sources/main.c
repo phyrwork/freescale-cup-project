@@ -186,7 +186,7 @@ int main(void)
 	//launch control
 	while ( !TFC_PUSH_BUTTON_0_PRESSED ) {};
 	while ( TFC_PUSH_BUTTON_0_PRESSED ) {}; //wait for press and release
-	for (uint32_t wait = 0; wait < 10000000; ++wait) {};
+	for (uint32_t wait = 0; wait < 10000; ++wait) {};
 	TICKER = 0;
 	
 	MotorTorque[REAR_LEFT].PID->value = LAUNCH_TORQUE;
