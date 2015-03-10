@@ -12,7 +12,7 @@
 
 typedef enum {FORCED_DISABLED, RUNNING} motorState_t;
 typedef enum {SINGLE_SPEED_SINGLE_UART, DUAL_SPEED_NO_UART, UNDEFINED} UARTSpeedState_t;
-typedef enum {LINE_FOUND, LINE_TEMPORARILY_LOST, STOPLINE_DETECTED, LINE_LOST} lineDetectionState_t;
+typedef enum {LINE_FOUND, LINE_TEMPORARILY_LOST, STOPLINE_DETECTED, LINE_LOST, LINE_NOT_FOUND} lineDetectionState_t;
 typedef enum {LINESCAN_IMAGE_READY, NO_NEW_LINESCAN_IMAGE} lineScanState_t;
 
 typedef struct {
