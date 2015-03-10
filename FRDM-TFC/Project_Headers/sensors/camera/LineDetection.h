@@ -40,7 +40,7 @@
 
 //weightLines
 #define LINE_WIDTH_SD    15
-#define LINE_WIDTH_MEAN  90
+#define LINE_WIDTH_MEAN  95
 #define LINE_DWIDTH_SD   10
 #define LINE_DWIDTH_MEAN 0
 
