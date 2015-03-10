@@ -135,16 +135,16 @@ void findPosition(int16_t *dy, carState_s* carState)
 		if (TFC_Ticker[3] > LOST_LINE_RESET_DURATION)
 		{
 			 carState->lineDetectionState = LINE_LOST;
-			 TFC_ClearLED(1);
-			 TFC_ClearLED(2);
-			 TFC_SetLED(3);
+			 //TFC_ClearLED(1);
+			 //TFC_ClearLED(2);
+			 //TFC_SetLED(3);
 		}
-		else
+		else if (carState->lineDetectionState != LINE_NOT_FOUND)
 		{
 			carState->lineDetectionState = LINE_TEMPORARILY_LOST;
-			TFC_ClearLED(1);
-			TFC_SetLED(2);
-			TFC_ClearLED(3);
+			//TFC_ClearLED(1);
+			//TFC_SetLED(2);
+			//TFC_ClearLED(3);
 		}	
 	}
 	

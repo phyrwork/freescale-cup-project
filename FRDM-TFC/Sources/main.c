@@ -181,7 +181,8 @@ int main(void)
 	
 	//orientation
 	while ( !PollTaskPending(POSITIONING_REQUEST_INDEX) ){};
-	TFC_SetLED(0); //signal car position known
+	
+	TFC_SetLED(0); //signal car ready for launch
 	
 	//launch control
 	while ( !TFC_PUSH_BUTTON_0_PRESSED ) {};
@@ -223,11 +224,15 @@ int main(void)
 				else if (carState.lineDetectionState != STOPLINE_DETECTED)
 				{
 					findPosition(dy, &carState);
+					if (carState.lineDetectionState != LINE_FOUND)
+						TFC_SetLED(1); //signal car oriented
+					else
+						TFC_ClearLED(1); //signal car ready for launch
 				}
 
 				//adjust camera exposure
 				linescan[0].exposure.time = calculateNewExposure(&linescan[0], TARGET_TOTAL_INTENSITY);
-				linescan[1].exposure.time = calculateNewExposure(&linescan[1], TARGET_TOTAL_INTENSITY);
+				//linescan[1].exposure.time = calculateNewExposure(&linescan[1], TARGET_TOTAL_INTENSITY);
 			}
 			
 			//update steering
