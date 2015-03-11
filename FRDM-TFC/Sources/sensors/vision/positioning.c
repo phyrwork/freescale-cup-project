@@ -15,7 +15,7 @@
  * Date:   November 17, 2014
  */
 
-#include "sensors/camera/LineDetection.h"
+#include "sensors/vision/positioning.h"
 #include "support/ARM_SysTick.h"
 #include "devices/TFC_SHIELD.h"
 #include <math.h>

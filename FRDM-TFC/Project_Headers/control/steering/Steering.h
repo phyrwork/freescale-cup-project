@@ -9,7 +9,7 @@
 #define STEERINGCONTROL_H_
 
 #include "support/Types.h"
-#include "sensors/camera/LineDetection.h"
+#include "sensors/vision/positioning.h"
 
 float getDesiredServoValue(int8_t position, int8_t setpoint);
 

@@ -5,8 +5,8 @@
  *      Author: admin
  */
 
-#include "sensors/camera/AutoExposure.h"
-#include "sensors/camera/LineScanCamera.h"
+#include "sensors/vision/exposure.h"
+#include "sensors/vision/linescan.h"
 #include "support/Types.h"
 #include "support/ARM_SysTick.h"
 

@@ -7,7 +7,7 @@
 
 #include "control/steering/Steering.h"
 #include "support/Types.h"
-#include "sensors/camera/LineDetection.h"
+#include "sensors/vision/positioning.h"
 #include "support/ARM_SysTick.h"
 #include <stdlib.h>
 

@@ -2,7 +2,7 @@
 #include "devices/MKL25Z4.h"
 #include "devices/arm_cm0.h"
 #include "devices/CrystalClock.h"
-#include "sensors/camera/LineScanCamera.h"
+#include "sensors/vision/linescan.h"
 #include "control/motor/pwm.h"
 #include "support/rbuf_voidptr.h"
 #include "config.h"
@@ -467,7 +467,7 @@ void PrimeAdcConversion(uint8_t channel, AdcMux_e mux)
 // and ADC configuration        //
 //////////////////////////////////
 
-#include "sensors/camera/LineScanCamera.h"
+#include "sensors/vision/linescan.h"
 
 //linescan0
 AdcConfig_s AdcConfigLinescan[2];

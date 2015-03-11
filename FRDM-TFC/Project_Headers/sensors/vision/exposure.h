@@ -9,7 +9,7 @@
 #define AUTOEXPOSURE_H_
 
 #include "support/Types.h"
-#include "sensors/camera/LineScanCamera.h"
+#include "sensors/vision/linescan.h"
 
 uint32_t getTotalIntensity(volatile uint16_t* LineScanImage);
 int32_t calculateNewExposure(LineScan_s *linescan, int32_t targetTotalIntensity);

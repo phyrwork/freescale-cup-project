@@ -27,8 +27,8 @@
 #define TICKER TFC_Ticker[UPTIME_TICKER]
 
 //import data
-#include "sensors/camera/LineScanCamera.h"
-#include "sensors/camera/LineDetection.h"
+#include "sensors/vision/linescan.h"
+#include "sensors/vision/positioning.h"
 #include "sensors/motor/current.h"
 #include "sensors/cadence.h"
 #include "sensors/wheel/speed.h"

@@ -1,4 +1,4 @@
-#include "sensors/camera/LineScanCamera.h" 
+#include "sensors/vision/linescan.h" 
 #include "devices/MKL25Z4.h"
 #include "devices/CrystalClock.h"
 
