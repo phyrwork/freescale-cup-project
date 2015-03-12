@@ -752,18 +752,27 @@ void PIT_IRQHandler()
                 Sampler_Push(&AdcConfigLinescan[i]);
             }
         }
+        
+        //'freeze' uptime timer to prevent underflows
+        uint32_t const timer = UPTIME;
 
         //schedule next PIT0 interrupt
-        uint32_t earliest = 0xFFFFFFFF;
+        uint32_t earliest;
+        uint8_t  valid = 0;
         for (uint32_t i = 0; i < NUM_CAMERAS; ++i) //for each linescan camera
         {
             uint32_t next = linescan[i].exposure.start + linescan[i].exposure.time;
-            if (next < earliest && next > UPTIME) earliest = next;
+            if ((!valid || next < earliest) && next > timer)
+            {
+            	earliest = next;
+            	valid = 1;
+            }
         }
 
         //convert systicks into PIT ticks and set LDVAL0
-        if (earliest != 0xFFFFFFFF) {
-			PIT_LDVAL0 =  (PERIPHERAL_BUS_CLOCK / SYSTICK_FREQUENCY) * (earliest - UPTIME);
+        if (valid)
+        {
+			PIT_LDVAL0 =  (PERIPHERAL_BUS_CLOCK / SYSTICK_FREQUENCY) * (earliest - timer);
 			PIT_TCTRL0 &= ~PIT_TCTRL_TEN_MASK;
 			PIT_TCTRL0 |=  PIT_TCTRL_TEN_MASK; //restart timer to load new value
         }

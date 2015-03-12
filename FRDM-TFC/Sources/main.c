@@ -188,7 +188,6 @@ int main(void)
 	while ( !TFC_PUSH_BUTTON_0_PRESSED ) {};
 	while ( TFC_PUSH_BUTTON_0_PRESSED ) {}; //wait for press and release
 	for (uint32_t wait = 0; wait < 10000; ++wait) {};
-	TICKER = 0;
 	
 	MotorTorque[REAR_LEFT].PID->value = LAUNCH_TORQUE;
 	MotorTorque[REAR_LEFT].cmd = LAUNCH_TORQUE;
@@ -254,8 +253,8 @@ int main(void)
 				//UpdateWheelSlip(&WheelSlipSensors[REAR_RIGHT]);
 				UpdateWheelSpeed(&WheelSpeedSensors[FRONT_LEFT]);
 				UpdateWheelSpeed(&WheelSpeedSensors[FRONT_RIGHT]);
-				UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
-				UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
+				//UpdateMotorTorque(&MotorTorque[REAR_LEFT]);
+				//UpdateMotorTorque(&MotorTorque[REAR_RIGHT]);
 				
 				//if(1)
 				if (carState.lineDetectionState == LINE_FOUND || carState.lineDetectionState == LINE_TEMPORARILY_LOST)
