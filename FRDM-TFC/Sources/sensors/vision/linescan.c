@@ -35,7 +35,7 @@ LineScan_s linescan[2] = {
 		.buffer.data = &linescan[0].data[1][0],
 		.signal = &shield,
 		.exposure = {
-				.time = ((float)TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS / 1000000.0f) * SYSTICK_FREQUENCY
+				.time = TFC_DEFAULT_LINESCAN_EXPOSURE_TIME
 		}
 	},
 	//[1]
@@ -44,7 +44,7 @@ LineScan_s linescan[2] = {
 		.buffer.data = &linescan[1].data[1][0],
 		.signal = &breakout,
 		.exposure = {
-				.time = ((float)TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS / 1000000.0f) * SYSTICK_FREQUENCY
+				.time = TFC_DEFAULT_LINESCAN_EXPOSURE_TIME
 		}
 	}
 };
@@ -76,7 +76,7 @@ void TFC_InitLineScanCamera()
 	LINESCAN_SIGNAL_LOW(breakout.clk);
 	LINESCAN_SIGNAL_LOW(breakout.si);
 	
-	PIT_LDVAL0 = ((float)TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS / 1000000.0f) * PERIPHERAL_BUS_CLOCK;
+	PIT_LDVAL0 = TFC_DEFAULT_LINESCAN_EXPOSURE_TIME;
 	PIT_TCTRL0 = PIT_TCTRL_TEN_MASK | PIT_TCTRL_TIE_MASK; //Enable PIT channel 0; enable interrupts.
 }
 

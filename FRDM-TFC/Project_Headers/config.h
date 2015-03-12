@@ -85,7 +85,7 @@
 #define ADC_CURRENT_PROFILER 1
 
 //This is what the exposure time for the Linescan will be set to out of bootup
-#define TFC_DEFAULT_LINESCAN_EXPOSURE_TIME_uS	15000 //50000
+#define TFC_DEFAULT_LINESCAN_EXPOSURE_TIME	100
 
 #define TFC_MOTOR_SWITCHING_FREQUENCY	((float)(4000.0))
 
