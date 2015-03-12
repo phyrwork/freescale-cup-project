@@ -16,7 +16,7 @@
 
 /* Collector config */
 #define COLLECTOR_TLIM_SECONDS 0.0005f //2000Hz
-#define NUM_COLLECTOR_ITEMS               26
+#define NUM_COLLECTOR_ITEMS               28
 #define LINESCAN0_COLLECTOR_INDEX          0
 #define LINESCAN1_COLLECTOR_INDEX          1
 #define TRACK_POSITION_COLLECTOR_INDEX     2
@@ -44,16 +44,18 @@
 #define SREF_V_COLLECTOR_INDEX            24
 #define W_V_COLLECTOR_INDEX               25
 #define WREF_V_COLLECTOR_INDEX            26
+#define CORNER_PROXIMITY_COLLECTOR_INDEX  27
 
 /* PIT1 config */
 #define PIT1_POLLING_FREQUENCY 2400
 
 /* Trigger configuration */
-#define NUM_TASK_ITEMS 4
+#define NUM_TASK_ITEMS 5
 #define CONTROL_REQUEST_INDEX 0
 #define TELEMETRY_REQUEST_INDEX 1
 #define POSITIONING_REQUEST_INDEX 2
 #define STEERING_REQUEST_INDEX 3
+#define PROXIMITY_REQUEST_INDEX 4
 
 /* ADC sampling configuration - n.b. these are target sampling frequencies only */
 #define SAMPLER_QUEUE_LENGTH 16

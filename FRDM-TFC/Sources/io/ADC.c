@@ -497,7 +497,7 @@ int8_t Linescan1Callback ()
     else //image capture sequence complete
     {
         CollectorRequest(LINESCAN1_COLLECTOR_INDEX);
-        //SetTaskRequest(POSITIONING_REQUEST_INDEX);
+        SetTaskRequest(PROXIMITY_REQUEST_INDEX);
     }
     return 0;
 }

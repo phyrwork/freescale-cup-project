@@ -66,6 +66,10 @@
 #define TFTP_SERVO_POSITION_TYPE float
 #define TFTP_SERVO_POSITION_SIZE 1
 
+/* Corner proximity attribute */
+#define TFTP_CORNER_PROXIMITY_TYPE float
+#define TFTP_CORNER_PROXIMITY_SIZE 1
+
 #endif //TFTP_TYPES
 
 

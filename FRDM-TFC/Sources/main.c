@@ -5,6 +5,7 @@
 #include "control/vehicle/speed.h"
 #include "devices/TFC_SHIELD.h"
 #include "support/filtfilt4ma.h"
+#include "sensors/vision/proximity.h"
 
 ///////////////////////////////////////
 // Main Routine Task Request Handler //
@@ -68,6 +69,10 @@ MainTask_s tasks[NUM_TASK_ITEMS] =
 	//[3]
 	{ //steering
 		.fauto = 50
+	},
+	//[4]
+	{ //proximity
+		.flim = 50
 	}
 };
 
@@ -162,6 +167,7 @@ void TFC_Init(carState_s* carState)
 	InitVehicleSpeedControl();
 	InitWheelSlipSensors();
 	InitMotorTorqueControl();
+	InitProximitySensor();
 	TFC_HBRIDGE_DISABLE;
 	TFC_SetMotorPWM(0, 0);
 	preloadProbabilityTables(); //Prevents probability tables for stop line evaluation from being created too late
@@ -231,12 +237,23 @@ int main(void)
 
 				//adjust camera exposure
 				linescan[0].exposure.time = calculateNewExposure(&linescan[0], TARGET_TOTAL_INTENSITY);
-				//linescan[1].exposure.time = calculateNewExposure(&linescan[1], TARGET_TOTAL_INTENSITY);
+				
 			}
+			
+			//Positioning update tasks
+			if ( PollTaskPending(PROXIMITY_REQUEST_INDEX) )
+			{    ClearTaskPending(PROXIMITY_REQUEST_INDEX);
+			
+				updateProximitySensor();
+				linescan[1].exposure.time = calculateNewExposure(&linescan[1], TARGET_TOTAL_INTENSITY);
+				CollectorRequest(CORNER_PROXIMITY_COLLECTOR_INDEX);
+			}
+			
 			
 			//update steering
 			if ( PollTaskPending(STEERING_REQUEST_INDEX) )
 			{    ClearTaskPending(STEERING_REQUEST_INDEX);
+			
 				carState.servoPosition = getDesiredServoValue(carState.lineCenter, 0);
 				CollectorRequest(SERVO_POSITION_COLLECTOR_INDEX);
 				TFC_SetServo(0, carState.servoPosition);

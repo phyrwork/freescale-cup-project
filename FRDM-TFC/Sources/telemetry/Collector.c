@@ -158,13 +158,13 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 	{ //TargetLine
 		.data = &TargetLine,
 		.endpoint = &TFTP_TARGET_LINE_ENDPOINT,
-		.flim = 50
+		.flim = 20
 	},
 	//[17]
 	{ //BestMatch
 		.data = &BestMatch,
 		.endpoint = &TFTP_BEST_MATCH_ENDPOINT,
-		.flim = 50
+		.flim = 20
 	},
 	//[18]
 	{ //ServoPosition
@@ -207,19 +207,25 @@ CltrItem_s items[NUM_COLLECTOR_ITEMS] =
 		.data = &VehicleSlipControl.cmd,
 		//.data = &contrib,
 		.endpoint = &TFTP_SREF_V_ENDPOINT,
-		.fauto = 30
+		//.fauto = 30
 	},
 	//[25]
-	{ //S_v
+	{ //w_v
 		.data = &VehicleSpeedSensor.value,
 		.endpoint = &TFTP_W_V_ENDPOINT,
 		.fauto = 20
 	},
 	//[26]
-	{ //S*_v
+	{ //w*_v
 		.data = &VehicleSpeedControl.cmd,
 		.endpoint = &TFTP_WREF_V_ENDPOINT,
 		.fauto = 20
+	},
+	//[27]
+	{ //CornerProximity
+		.data = &carState.cornerProximity,
+		.endpoint = &TFTP_CORNER_PROXIMITY_ENDPOINT,
+		.flim = 20
 	}
 };
 
