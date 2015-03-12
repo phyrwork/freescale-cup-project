@@ -7,7 +7,7 @@
 
 #define ANGF 54.9f
 #define ANGV 57.6f
-//#define VH   0.225f
+#define VH   0.225f
 #define VN   0.225f
 #define P    128
 
@@ -22,7 +22,7 @@ void InitProximitySensor()
 	//construct proximity table from given parameters
 	for (int i = 0; i < P; ++i)
 	{
-		dtable[i] = tanf( ANGF - (ANGV/2) + (i+1)*( ANGV/( (2*P)+1) ) ) - VN;
+		dtable[i] = VH * tanf( ANGF - (ANGV/2) + ((2*i)+1)*( ANGV/( (2*P)+1) ) ) - VN;
 	}
 }
 
