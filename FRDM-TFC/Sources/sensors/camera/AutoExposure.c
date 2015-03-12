@@ -10,9 +10,9 @@
 #include "support/Types.h"
 #include "support/ARM_SysTick.h"
 
-#define Kp 0.01f
-#define Ki 0.0f
-#define Kd 0.0001f
+#define Kp 0.0001f
+#define Ki 0.00
+#define Kd 0.000001f
 #define MAX_EXPOSURE 180
 #define MIN_EXPOSURE 10
 
