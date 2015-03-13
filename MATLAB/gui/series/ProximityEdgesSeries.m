@@ -1,4 +1,4 @@
-classdef LinescanEdgesSeries < ChartSeries
+classdef ProximityEdgesSeries < ChartSeries
     %ChartSeries
     
     methods
@@ -23,7 +23,7 @@ classdef LinescanEdgesSeries < ChartSeries
             [~,y] = obj.record.peek;
             
             % identify edges
-            e = findEdges(y, 300, 500);
+            e = findEdges(y, , 300);
             x = [];
             for i = 1:length(e)
                 x = [x, e(i).pos];
