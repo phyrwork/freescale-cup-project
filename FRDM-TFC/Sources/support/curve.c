@@ -5,6 +5,8 @@
  *      Author: Connor
  */
 
+#include "support/curve.h"
+
 float curveApprox(uint32_t const p, float * const x, float * const y, float const in)
 {
 	if (in <= x[0]) return y[0];

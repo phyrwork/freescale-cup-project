@@ -18,7 +18,7 @@
 
 #define SIZEOF_EDGEBUFFER 16
 #define PROX_DY_T 35
-#define PROX_RY_T 100
+#define PROX_RY_T 150
 
 float dtable[P];
 

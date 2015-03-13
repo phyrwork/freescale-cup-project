@@ -2,6 +2,7 @@
 #include "control/motor/torque.h"
 #include "config.h"
 #include "support/carState_s.h"
+#include "support/curve.h"
 #include <math.h>
 
 #define PX_OPP_CONST 0.7345f   //estimated relationship between steering angle and servo position
@@ -14,6 +15,10 @@
 #define VEHICLE_ACCEL_SLIP 0.15f
 #define VEHICLE_DECEL_SLIP -0.15f
 
+#define VEHICLE_PROX_SPEED_P 2
+#define VEHICLE_PROX_SPEED_X {0.74,3.5}
+#define VEHICLE_PROX_SPEED_Y {7.0,44.8}
+
 
 #define VEHICLE_TURN_MOD_LOW 5.0f
 #define VEHICLE_TURN_MOD_HIGH 20.0f
@@ -24,7 +29,7 @@
 
 #define VSPEED_CONT_REGION(speed) ( 1.0f + (speed * 0.05f) )
 
-#define VSPEED_KP_UNCONT 0.0085f //0.0085
+#define VSPEED_KP_UNCONT 0.0060f //0.0060
 #define VSPEED_KI_UNCONT 0.0000f
 #define VSPEED_KD_UNCONT 0.0000f
 
@@ -136,19 +141,9 @@ void SetVehicleSpeed(float command)
 	else _setByVehicleSpeed(command);
 }
 
-float GetVehicleSpeed(float modifier)
+float GetVehicleSpeed()
 {
-	//VehicleSpeedControl_s * const speed = &VehicleSpeedControl;
-
-	modifier = fabsf(modifier);
-	
-	if ( modifier > VEHICLE_TURN_MOD_HIGH ) return VEHICLE_CORNERING_SPEED_LOW;
-	if ( modifier > VEHICLE_TURN_MOD_LOW )
-	{
-		float oscale = VEHICLE_CORNERING_SPEED_HIGH - VEHICLE_CORNERING_SPEED_LOW;
-		float iscale = VEHICLE_TURN_MOD_HIGH - VEHICLE_TURN_MOD_LOW;
-		float iratio = (modifier - VEHICLE_TURN_MOD_LOW)/iscale; //linear speed change between low and high cornerning
-		return VEHICLE_CORNERING_SPEED_HIGH - (iratio * oscale);
-	}
-	else return VEHICLE_STRAIGHT_SPEED;
+	float const x[] = VEHICLE_PROX_SPEED_X;
+	float const y[] = VEHICLE_PROX_SPEED_Y;
+	return curveApprox(VEHICLE_PROX_SPEED_P, x, y, carState.cornerProximity);
 }

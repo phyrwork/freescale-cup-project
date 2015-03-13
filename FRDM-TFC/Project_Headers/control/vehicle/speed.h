@@ -18,6 +18,6 @@ extern VehicleSpeedControl_s VehicleSpeedControl;
 
 void InitVehicleSpeedControl();
 void SetVehicleSpeed(float command);
-float GetVehicleSpeed(float modifier);
+float GetVehicleSpeed();
 
 #endif /* VEHICLE_SPEED_CONTROL_H_ */
