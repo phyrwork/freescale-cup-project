@@ -39,7 +39,7 @@ void updateProximitySensor()
 	uint8_t features = findEdges(edges, dy, PROX_DY_T, PROX_RY_T);
 
 	for (int i = 0; i < features; ++i)
-	if (edges[i].type == EDGE_TYPE_RISING)
+	if (edges[i].type == EDGE_TYPE_FALLING)
 	{
 		carState.cornerProximity = dtable[edges[i].pos];
 		return;
