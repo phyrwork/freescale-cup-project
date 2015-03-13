@@ -7,7 +7,7 @@ function gui = CornerProximityLayout( gui, fig )
     
     % initialise views
     % TODO - Add titles
-    gui = gui.addView(@LinescanView, 'linescan1', 'figure', fig, 'position', [2,1,1]);
+    gui = gui.addView(@ProximityImageView, 'linescan1', 'figure', fig, 'position', [2,1,1]);
     gui = gui.addView(@CornerProximityView, 'CornerProximity', 'figure', fig, 'position', [2,1,2]);
 end
 

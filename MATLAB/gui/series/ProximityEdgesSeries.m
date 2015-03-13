@@ -3,7 +3,7 @@ classdef ProximityEdgesSeries < ChartSeries
     
     methods
         % ChartSeries constructor
-        function obj = LinescanEdgesSeries(view, attribute, varargin)
+        function obj = ProximityEdgesSeries(view, attribute, varargin)
             
             % initialise series
             obj = obj@ChartSeries(...
@@ -23,7 +23,7 @@ classdef ProximityEdgesSeries < ChartSeries
             [~,y] = obj.record.peek;
             
             % identify edges
-            e = findEdges(y, , 300);
+            e = findEdges(y, 35, 100);
             x = [];
             for i = 1:length(e)
                 x = [x, e(i).pos];
