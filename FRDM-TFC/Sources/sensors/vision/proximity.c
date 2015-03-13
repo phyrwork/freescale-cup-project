@@ -7,15 +7,18 @@
 
 #include <math.h>
 
-#define ANGF 73.65f
-#define ANGV 58.69f
-#define VH   0.225f
-#define VN   0.325f
+#define PI 3.14159265359f
+#define DEG2RAD(deg) ( (deg/360.0f) * 2 * PI )
+
+#define ANGF DEG2RAD(73.65f)
+#define ANGV DEG2RAD(58.69f)
+#define VH   0.325f
+#define VN   0.225f
 #define P    128
 
-#define SIZEOF_EDGEBUFFER 8
-#define PROX_DY_T 100
-#define PROX_RY_T 300
+#define SIZEOF_EDGEBUFFER 16
+#define PROX_DY_T 35
+#define PROX_RY_T 100
 
 float dtable[P];
 
@@ -24,7 +27,9 @@ void InitProximitySensor()
 	//construct proximity table from given parameters
 	for (int i = 0; i < P; ++i)
 	{
-		dtable[i] = VH * tanf( ANGF - (ANGV/2) + ((2*i)+1)*( ANGV/( (2*P)+1) ) ) - VN;
+		float ang = ANGF - (ANGV/2) + ((2*i)+1)*( ANGV/( (2*P)+1) );
+		if ( ang >= DEG2RAD(90.0f) || ang <= DEG2RAD(-90.0f) ) dtable[i] = INFINITY;
+		else dtable[i] = (VH * tanf(ang)) - VN;
 	}
 }
 
@@ -32,16 +37,16 @@ void updateProximitySensor()
 {
 	int16_t dy[128];
 
-	diff(linescan[0].image, dy, 128);
+	diff(linescan[1].image, dy, 128);
 	filtfilt4ma(dy, dy);
 
 	Edge_s edges[SIZEOF_EDGEBUFFER];
 	uint8_t features = findEdges(edges, dy, PROX_DY_T, PROX_RY_T);
 
-	for (int i = 0; i < features; ++i)
+	for (int i = features-1; i >= 0; --i)
 	if (edges[i].type == EDGE_TYPE_RISING)
 	{
-		carState.cornerProximity = dtable[edges[i].pos];
+		carState.cornerProximity = dtable[127 - edges[i].pos];
 		return;
 	}
 	
